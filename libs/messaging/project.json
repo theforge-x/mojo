@@ -1,0 +1,1 @@
+{ "name": "messaging", "sourceRoot": "libs/messaging/src", "projectType": "library", "tags": ["scope:messaging"] }

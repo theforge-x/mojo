@@ -1,0 +1,10 @@
+{
+  "name": "admin",
+  "sourceRoot": "apps/admin",
+  "projectType": "application",
+  "tags": ["type:app", "scope:admin"],
+  "targets": {
+    "build": { "executor": "@nx/next:build", "options": { "outputPath": "dist/apps/admin" } },
+    "dev": { "executor": "@nx/next:server", "options": { "buildTarget": "admin:build", "dev": true } }
+  }
+}

@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+:root,
+.light {
+  --background: #fffffe;
+  --foreground: #1b2d45;
+  --headline: #00214d;
+  --card: #f2f4f6;
+  --card-foreground: #00214d;
+  --popover: #fffffe;
+  --popover-foreground: #00214d;
+  --primary: #00ebc7;
+  --primary-foreground: #00214d;
+  --secondary: #ff5470;
+  --secondary-foreground: #fffffe;
+  --tertiary: #fde24f;
+  --tertiary-foreground: #00214d;
+  --muted: #f2f4f6;
+  --muted-foreground: color-mix(in oklab, #1b2d45 72%, #fffffe);
+  --accent: color-mix(in oklab, #00ebc7 16%, #fffffe);
+  --accent-foreground: #00214d;
+  --destructive: #ff5470;
+  --destructive-foreground: #fffffe;
+  --border: color-mix(in oklab, #00214d 12%, #fffffe);
+  --input: color-mix(in oklab, #00214d 16%, #fffffe);
+  --ring: #00ebc7;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: #001534;
+  --foreground: color-mix(in oklab, #fffffe 88%, #001534);
+  --headline: #fffffe;
+  --card: #00214d;
+  --card-foreground: color-mix(in oklab, #fffffe 92%, #001534);
+  --popover: #00214d;
+  --popover-foreground: color-mix(in oklab, #fffffe 92%, #001534);
+  --primary: #00ebc7;
+  --primary-foreground: #00214d;
+  --secondary: #ff5470;
+  --secondary-foreground: #fffffe;
+  --tertiary: #fde24f;
+  --tertiary-foreground: #00214d;
+  --muted: color-mix(in oklab, #00214d 55%, #001534);
+  --muted-foreground: color-mix(in oklab, #fffffe 62%, #001534);
+  --accent: color-mix(in oklab, #00ebc7 20%, #00214d);
+  --accent-foreground: #fffffe;
+  --destructive: #ff5470;
+  --destructive-foreground: #fffffe;
+  --border: color-mix(in oklab, #fffffe 14%, transparent);
+  --input: color-mix(in oklab, #fffffe 22%, transparent);
+  --ring: #00ebc7;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-headline: var(--headline);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-foreground: var(--tertiary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 0.25rem);
+  --radius-sm: calc(var(--radius) - 0.4rem);
+  --font-display: var(--font-manrope);
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-dm-mono);
+}
+
+/*
+  --font-manrope / --font-dm-sans / --font-dm-mono are expected to be set on
+  <html> by next/font in app/layout.tsx, e.g.:
+
+  import { Manrope, DM_Sans, DM_Mono } from "next/font/google";
+
+  const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
+  const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
+  const dmMono = DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-dm-mono" });
+
+  export default function RootLayout({ children }: { children: React.ReactNode }) {
+    return (
+      <html lang="en" className={`${manrope.variable} ${dmSans.variable} ${dmMono.variable}`}>
+        <body>{children}</body>
+      </html>
+    );
+  }
+*/
+
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--headline);
+    font-family: var(--font-display);
+  }
+}

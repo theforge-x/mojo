@@ -1,0 +1,1 @@
+{ "name": "payments", "sourceRoot": "libs/payments/src", "projectType": "library", "tags": ["scope:payments"] }

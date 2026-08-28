@@ -1,0 +1,1 @@
+{ "name": "discovery", "sourceRoot": "libs/discovery/src", "projectType": "library", "tags": ["scope:discovery"] }

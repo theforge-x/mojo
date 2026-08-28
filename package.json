@@ -1,0 +1,47 @@
+{
+  "name": "mojo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "mojo — tutoring marketplace. Nx monorepo, Next.js apps, clean-architecture domain modules.",
+  "scripts": {
+    "dev:web": "nx dev web",
+    "dev:admin": "nx dev admin",
+    "build": "nx run-many --target=build --all",
+    "test": "nx run-many --target=test --all",
+    "test:affected": "nx affected --target=test",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@nx/eslint-plugin": "^20.3.0",
+    "@nx/next": "^20.3.0",
+    "@nx/vite": "^20.3.0",
+    "@nx/workspace": "^20.3.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "nx": "^20.3.0",
+    "prisma": "^6.1.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@livekit/components-react": "^2.6.7",
+    "@livekit/components-styles": "^1.1.4",
+    "@prisma/client": "^6.1.0",
+    "@radix-ui/react-slot": "^1.1.1",
+    "bcryptjs": "^2.4.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "livekit-client": "^2.7.4",
+    "livekit-server-sdk": "^2.9.4",
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.6.0",
+    "zod": "^3.24.1"
+  }
+}

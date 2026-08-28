@@ -1,0 +1,10 @@
+{
+  "name": "hub",
+  "sourceRoot": "apps/hub",
+  "projectType": "application",
+  "tags": ["type:app", "scope:hub"],
+  "targets": {
+    "build": { "executor": "@nx/next:build", "options": { "outputPath": "dist/apps/hub" } },
+    "dev": { "executor": "@nx/next:server", "options": { "buildTarget": "hub:build", "dev": true } }
+  }
+}

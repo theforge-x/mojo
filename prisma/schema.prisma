@@ -1,0 +1,373 @@
+// Mojo — consolidated Prisma schema.
+// One schema file across all modules deliberately: this is a modular
+// monolith with one database, not one database per module. Module
+// boundaries are enforced in code (Nx tags + the domain/application/
+// infrastructure layering), not by splitting the schema.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- identity ----------
+
+enum Role {
+  admin
+  tutor
+  student
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  role         Role
+  passwordHash String
+  timezone     String    @default("Africa/Lagos")
+  locale       String    @default("en-NG")
+  suspendedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  tutorProfile   TutorProfile?
+  tutorPerf      TutorPerformance?
+  wallet         Wallet?
+  schedulingCfg  SchedulingSettings?
+  sessionsAsTutor   Session[] @relation("TutorSessions")
+  sessionsAsStudent Session[] @relation("StudentSessions")
+  reviewsWritten Review[]     @relation("ReviewAuthor")
+  auditLogEntries AuditLogEntry[]
+
+  @@map("users")
+}
+
+// ---------- tutor-profile ----------
+
+enum ApplicationStatus {
+  pending
+  in_review
+  approved
+  rejected
+}
+
+model TutorApplication {
+  id             String            @id @default(cuid())
+  tutorId        String
+  subjects       String[]
+  bio            String
+  introVideoUrl  String
+  certifications String[]
+  status         ApplicationStatus @default(pending)
+  submittedAt    DateTime          @default(now())
+
+  @@map("tutor_applications")
+}
+
+model TutorProfile {
+  tutorId           String  @id
+  user              User    @relation(fields: [tutorId], references: [id])
+  displayName       String
+  photoUrl          String?
+  subjects          String[]
+  bio               String
+  moderationFlagged Boolean @default(false)
+
+  @@map("tutor_profiles")
+}
+
+// ---------- tutor-performance / pricing ----------
+
+enum TutorLevel {
+  entry
+  established
+  expert
+}
+
+model TutorPerformance {
+  tutorId                     String     @id
+  user                        User       @relation(fields: [tutorId], references: [id])
+  level                       TutorLevel @default(entry)
+  cumulativeHoursTaught       Float      @default(0)
+  responseTimeMinutesAvg      Float      @default(0)
+  trialToPaidConversionRate   Float      @default(0)
+  cancellationRate            Float      @default(0)
+  averageRating               Float      @default(0)
+  updatedAt                   DateTime   @updatedAt
+
+  @@map("tutor_performance")
+}
+
+model MojoPlusSubscription {
+  tutorId                String    @id
+  status                 String    @default("active") // active | cancelled
+  customSegmentRateMinor Int?
+  subscribedAt           DateTime  @default(now())
+  cancelledAt            DateTime?
+
+  @@map("mojo_plus_subscriptions")
+}
+
+// ---------- scheduling / booking ----------
+
+model AvailabilityRule {
+  id          String @id @default(cuid())
+  tutorId     String
+  weekday     Int // 0-6, matches JS Date
+  startMinute Int
+  endMinute   Int
+
+  @@index([tutorId, weekday])
+  @@map("availability_rules")
+}
+
+enum ExceptionKind {
+  blocked
+  extra
+}
+
+model AvailabilityException {
+  id          String        @id @default(cuid())
+  tutorId     String
+  date        String // YYYY-MM-DD in the tutor's timezone
+  kind        ExceptionKind
+  startMinute Int
+  endMinute   Int
+
+  @@index([tutorId, date])
+  @@map("availability_exceptions")
+}
+
+model SchedulingSettings {
+  tutorId                 String  @id
+  user                    User    @relation(fields: [tutorId], references: [id])
+  timezone                String  @default("Africa/Lagos")
+  bufferMinutes           Int     @default(15)
+  minimumNoticeMinutes    Int     @default(60)
+  pausedForNewBookings    Boolean @default(false)
+
+  @@map("scheduling_settings")
+}
+
+enum SessionStatus {
+  booked
+  confirmed
+  completed
+  cancelled
+  no_show
+}
+
+model Session {
+  id        String        @id @default(cuid())
+  tutorId   String
+  tutor     User          @relation("TutorSessions", fields: [tutorId], references: [id])
+  studentId String
+  student   User          @relation("StudentSessions", fields: [studentId], references: [id])
+  startAt   DateTime
+  endAt     DateTime
+  status    SessionStatus @default(booked)
+  isTrial   Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  statusHistory         SessionStatusEvent[]
+  deliveryConfirmation  DeliveryConfirmation?
+  review                Review?
+  dispute               Dispute?
+
+  @@index([tutorId, startAt])
+  @@index([studentId, startAt])
+  @@map("sessions")
+}
+
+model SessionStatusEvent {
+  id        String        @id @default(cuid())
+  sessionId String
+  session   Session       @relation(fields: [sessionId], references: [id])
+  status    SessionStatus
+  at        DateTime
+
+  @@map("session_status_events")
+}
+
+model DeliveryConfirmation {
+  sessionId    String   @id
+  session      Session  @relation(fields: [sessionId], references: [id])
+  confirmedBy  String // student | auto_window
+  confirmedAt  DateTime
+
+  @@map("delivery_confirmations")
+}
+
+// ---------- payments ----------
+
+model Wallet {
+  tutorId      String @id
+  user         User   @relation(fields: [tutorId], references: [id])
+  balanceMinor Int    @default(0)
+
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id                String   @id @default(cuid())
+  tutorId           String
+  wallet            Wallet   @relation(fields: [tutorId], references: [tutorId])
+  kind              String // credit | debit | payout | manual_adjustment
+  amountMinor       Int
+  relatedSessionId  String?
+  createdAt         DateTime @default(now())
+
+  @@map("wallet_transactions")
+}
+
+model PayoutRequest {
+  id           String   @id @default(cuid())
+  tutorId      String
+  amountMinor  Int
+  rail         String // paystack | flutterwave | payoneer | wise
+  status       String @default("pending") // pending | approved | completed | rejected
+  requestedAt  DateTime @default(now())
+
+  @@map("payout_requests")
+}
+
+// ---------- billing (student side) ----------
+
+model PaymentMethod {
+  id         String  @id @default(cuid())
+  studentId  String
+  rail       String // paystack | flutterwave | stripe
+  last4      String?
+  isDefault  Boolean @default(false)
+
+  @@map("payment_methods")
+}
+
+model LessonSubscription {
+  id              String  @id @default(cuid())
+  studentId       String
+  tutorId         String
+  lessonsPerCycle Int
+  cycleLengthDays Int     @default(28)
+  autoRenew       Boolean @default(true)
+  status          String  @default("active") // active | paused | cancelled
+
+  @@map("lesson_subscriptions")
+}
+
+// ---------- engagement ----------
+
+model Message {
+  id          String    @id @default(cuid())
+  senderId    String
+  recipientId String
+  body        String
+  sentAt      DateTime  @default(now())
+  readAt      DateTime?
+
+  @@index([senderId, recipientId])
+  @@map("messages")
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  sessionId  String   @unique
+  session    Session  @relation(fields: [sessionId], references: [id])
+  tutorId    String
+  studentId  String
+  student    User     @relation("ReviewAuthor", fields: [studentId], references: [id])
+  rating     Int
+  body       String
+  flagged    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@map("reviews")
+}
+
+model ReferralLink {
+  code      String @id
+  ownerId   String
+  ownerRole String // student | tutor
+
+  @@map("referral_links")
+}
+
+model ReferralConversion {
+  id              String    @id @default(cuid())
+  code            String
+  newUserId       String
+  convertedAt     DateTime  @default(now())
+  rewardAppliedAt DateTime?
+
+  @@map("referral_conversions")
+}
+
+// ---------- trust & safety ----------
+
+model Dispute {
+  id         String   @id @default(cuid())
+  sessionId  String   @unique
+  session    Session  @relation(fields: [sessionId], references: [id])
+  filedBy    String
+  reason     String
+  status     String   @default("open") // open | upheld | dismissed
+  filedAt    DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@map("disputes")
+}
+
+// ---------- AI learning ----------
+
+model LessonRecap {
+  sessionId        String   @id
+  summary          String
+  focusAreas       String[]
+  generatedAt      DateTime @default(now())
+  reviewedByTutor  Boolean  @default(false)
+
+  @@map("lesson_recaps")
+}
+
+model PracticeItem {
+  id           String    @id @default(cuid())
+  sessionId    String
+  studentId    String
+  kind         String // daily_exercise | scenario_drill
+  prompt       String
+  completedAt  DateTime?
+
+  @@map("practice_items")
+}
+
+// ---------- platform ----------
+
+model FeatureFlag {
+  key            String  @id
+  enabled        Boolean @default(false)
+  rolloutPercent Int     @default(0)
+
+  @@map("feature_flags")
+}
+
+model AuditLogEntry {
+  id        String   @id @default(cuid())
+  adminId   String
+  admin     User     @relation(fields: [adminId], references: [id])
+  action    String
+  targetId  String?
+  at        DateTime @default(now())
+
+  @@map("audit_log_entries")
+}
+
+model SubjectTaxonomyEntry {
+  id       String  @id @default(cuid())
+  name     String
+  parentId String?
+
+  @@map("subject_taxonomy")
+}

@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mojo — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ============================================================
+   TOKENS — copied verbatim from the Mojo brief
+   ============================================================ */
+:root, .light {
+  --background: #fffffe;
+  --foreground: #1b2d45;
+  --headline: #00214d;
+  --card: #f2f4f6;
+  --card-foreground: #00214d;
+  --popover: #fffffe;
+  --popover-foreground: #00214d;
+  --primary: #00ebc7;
+  --primary-foreground: #00214d;
+  --secondary: #ff5470;
+  --secondary-foreground: #fffffe;
+  --tertiary: #fde24f;
+  --tertiary-foreground: #00214d;
+  --muted: #f2f4f6;
+  --muted-foreground: color-mix(in oklab, #1b2d45 72%, #fffffe);
+  --accent: color-mix(in oklab, #00ebc7 16%, #fffffe);
+  --accent-foreground: #00214d;
+  --destructive: #ff5470;
+  --destructive-foreground: #fffffe;
+  --border: color-mix(in oklab, #00214d 12%, #fffffe);
+  --input: color-mix(in oklab, #00214d 16%, #fffffe);
+  --ring: #00ebc7;
+  --radius: 0.75rem;
+
+  --font-manrope: 'Manrope', sans-serif;
+  --font-dm-sans: 'DM Sans', sans-serif;
+  --font-dm-mono: 'DM Mono', monospace;
+  --font-display: var(--font-manrope);
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-dm-mono);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 0.25rem);
+  --radius-sm: calc(var(--radius) - 0.4rem);
+}
+.dark {
+  --background: #001534;
+  --foreground: color-mix(in oklab, #fffffe 88%, #001534);
+  --headline: #fffffe;
+  --card: #00214d;
+  --card-foreground: color-mix(in oklab, #fffffe 92%, #001534);
+  --popover: #00214d;
+  --popover-foreground: color-mix(in oklab, #fffffe 92%, #001534);
+  --primary: #00ebc7;
+  --primary-foreground: #00214d;
+  --secondary: #ff5470;
+  --secondary-foreground: #fffffe;
+  --tertiary: #fde24f;
+  --tertiary-foreground: #00214d;
+  --muted: color-mix(in oklab, #00214d 55%, #001534);
+  --muted-foreground: color-mix(in oklab, #fffffe 62%, #001534);
+  --accent: color-mix(in oklab, #00ebc7 20%, #00214d);
+  --accent-foreground: #fffffe;
+  --destructive: #ff5470;
+  --destructive-foreground: #fffffe;
+  --border: color-mix(in oklab, #fffffe 14%, transparent);
+  --input: color-mix(in oklab, #fffffe 22%, transparent);
+  --ring: #00ebc7;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background .3s ease, color .3s ease;
+}
+h1, h2, h3, h4 { font-family: var(--font-display); color: var(--headline); margin: 0; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: inherit; }
+code, .mono { font-family: var(--font-mono); }
+::selection { background: var(--primary); color: var(--primary-foreground); }
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* ============================================================
+   SHELL / LAYOUT
+   ============================================================ */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklab, var(--background) 82%, transparent);
+  backdrop-filter: blur(10px);
+}
+.topbar-brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--headline); }
+.topbar-brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 25%, transparent); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.menu-btn {
+  display: none;
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--card); color: var(--foreground);
+  align-items: center; justify-content: center; cursor: pointer;
+}
+
+.theme-switch {
+  position: relative;
+  width: 52px; height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex; align-items: center;
+}
+.theme-switch .thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+}
+.dark .theme-switch .thumb { transform: translateX(22px); }
+.theme-switch svg { width: 13px; height: 13px; }
+
+.shell { display: flex; max-width: 1240px; margin: 0 auto; }
+
+.sidenav {
+  width: 220px; flex-shrink: 0;
+  position: sticky; top: 64px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  padding: 28px 16px;
+  border-right: 1px solid var(--border);
+}
+.sidenav .grp { margin-bottom: 22px; }
+.sidenav .grp-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-foreground); padding: 0 10px; margin-bottom: 6px; display: block; }
+.sidenav a {
+  display: block; text-decoration: none; font-size: 13.5px; color: var(--foreground);
+  padding: 7px 10px; border-radius: var(--radius-sm); font-weight: 500;
+}
+.sidenav a:hover { background: var(--muted); }
+.sidenav a.active { background: var(--accent); color: var(--accent-foreground); }
+
+.content { flex: 1; min-width: 0; padding: 0 28px 100px; }
+.content > section { scroll-margin-top: 84px; padding-top: 64px; border-top: 1px solid var(--border); }
+.content > section:first-child { border-top: none; padding-top: 0; }
+
+.sec-head { max-width: 640px; margin-bottom: 28px; }
+.sec-head .eyebrow { margin-bottom: 8px; }
+.sec-head h2 { font-size: 28px; font-weight: 800; margin-bottom: 10px; }
+.sec-head p { color: var(--muted-foreground); font-size: 14.5px; }
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero { padding: 64px 0 56px; position: relative; overflow: hidden; }
+.hero-glow { position: absolute; inset: -120px -80px auto auto; width: 420px; height: 420px; border-radius: 50%; filter: blur(90px); opacity: .35; background: radial-gradient(circle, var(--primary), transparent 70%); pointer-events: none; z-index: -1; }
+.hero-glow.two { inset: auto auto -160px -100px; background: radial-gradient(circle, var(--secondary), transparent 70%); opacity: .22; }
+.hero-word { position: relative; display: inline-block; }
+.hero h1 {
+  font-size: clamp(48px, 8vw, 92px);
+  font-weight: 800;
+  line-height: .95;
+  letter-spacing: -0.03em;
+}
+.hero-mark {
+  position: absolute; left: -2%; bottom: 6%; width: 104%; height: 28%;
+  z-index: -1; opacity: .9;
+}
+.pulse-row { display: flex; gap: 8px; margin: 22px 0 20px; }
+.pulse-row span { width: 10px; height: 10px; border-radius: 3px; animation: pulse 1.8s ease-in-out infinite; }
+.pulse-row span:nth-child(1) { background: var(--primary); animation-delay: 0s; }
+.pulse-row span:nth-child(2) { background: var(--secondary); animation-delay: .2s; }
+.pulse-row span:nth-child(3) { background: var(--tertiary); animation-delay: .4s; }
+@keyframes pulse { 0%, 100% { transform: scale(1); opacity: .55; } 50% { transform: scale(1.6); opacity: 1; } }
+.hero-tag { max-width: 520px; font-size: 16.5px; color: var(--foreground); margin-bottom: 22px; }
+.hero-stats { display: flex; gap: 22px; flex-wrap: wrap; }
+.hero-stats div { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted-foreground); }
+.hero-stats b { color: var(--headline); font-weight: 500; }
+
+/* ============================================================
+   COLOR SWATCHES
+   ============================================================ */
+.swatch-legend { font-size: 13px; color: var(--muted-foreground); margin-bottom: 22px; padding: 12px 14px; background: var(--muted); border-radius: var(--radius-md); }
+.swatch-legend code { background: var(--card); padding: 1px 6px; border-radius: 4px; }
+.tok-group { margin-bottom: 34px; }
+.tok-group h3 { font-size: 13px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted-foreground); font-weight: 500; margin-bottom: 14px; }
+.swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 14px; }
+.swatch-card {
+  border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+  background: var(--card); cursor: pointer; position: relative;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.swatch-card:hover { transform: translateY(-3px) rotate(-0.4deg); box-shadow: 0 14px 30px -14px color-mix(in oklab, var(--headline) 35%, transparent); }
+.swatch-color { height: 76px; position: relative; }
+.swatch-meta { padding: 10px 12px 12px; }
+.swatch-name { font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; color: var(--card-foreground); }
+.swatch-role { font-size: 11.5px; color: var(--muted-foreground); margin: 3px 0 8px; line-height: 1.4; min-height: 30px; }
+.swatch-val { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted-foreground); display: flex; flex-direction: column; gap: 2px; border-top: 1px dashed var(--border); padding-top: 7px; }
+.swatch-val b { color: var(--card-foreground); font-weight: 500; }
+.swatch-copied { position: absolute; top: 8px; right: 8px; background: var(--headline); color: var(--background); font-family: var(--font-mono); font-size: 10px; padding: 3px 7px; border-radius: 5px; opacity: 0; transform: translateY(-4px); transition: all .18s ease; pointer-events: none; }
+.swatch-card.copied .swatch-copied { opacity: 1; transform: translateY(0); }
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+.type-block { margin-bottom: 30px; padding: 22px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); }
+.type-block + .type-block { margin-top: -10px; }
+.type-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+.type-label .fam { font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--headline); }
+.type-label .meta { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+.type-scale-row { display: flex; align-items: baseline; gap: 16px; padding: 9px 0; border-top: 1px dashed var(--border); }
+.type-scale-row:first-of-type { border-top: none; }
+.type-scale-row .tag { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted-foreground); width: 76px; flex-shrink: 0; }
+.type-scale-row .sample { color: var(--card-foreground); }
+.mono-sample { font-family: var(--font-mono); font-size: 13px; background: var(--muted); padding: 14px 16px; border-radius: var(--radius-md); color: var(--card-foreground); line-height: 1.7; }
+.mono-sample .k { color: var(--muted-foreground); }
+.mono-sample .v { color: var(--headline); font-weight: 500; }
+
+/* ============================================================
+   RADIUS
+   ============================================================ */
+.radius-grid { display: flex; gap: 20px; flex-wrap: wrap; }
+.radius-card { text-align: center; }
+.radius-box { width: 108px; height: 108px; background: var(--card); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.radius-card .name { font-family: var(--font-mono); font-size: 12px; color: var(--headline); font-weight: 500; }
+.radius-card .val { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.btn {
+  font-family: var(--font-sans); font-weight: 700; font-size: 14px;
+  border-radius: var(--radius-md); border: 1px solid transparent;
+  padding: 10px 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease, background .15s ease;
+}
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-primary { background: var(--primary); color: var(--primary-foreground); }
+.btn-primary:hover:not(:disabled) { box-shadow: 0 8px 20px -8px color-mix(in oklab, var(--primary) 70%, transparent); }
+.btn-secondary { background: var(--secondary); color: var(--secondary-foreground); }
+.btn-secondary:hover:not(:disabled) { box-shadow: 0 8px 20px -8px color-mix(in oklab, var(--secondary) 70%, transparent); }
+.btn-tertiary { background: var(--tertiary); color: var(--tertiary-foreground); }
+.btn-tertiary:hover:not(:disabled) { box-shadow: 0 8px 20px -8px color-mix(in oklab, var(--tertiary) 70%, transparent); }
+.btn-outline { background: transparent; border-color: var(--input); color: var(--headline); }
+.btn-outline:hover:not(:disabled) { background: var(--muted); }
+.btn-ghost { background: transparent; color: var(--headline); }
+.btn-ghost:hover:not(:disabled) { background: var(--muted); }
+.btn-destructive { background: var(--destructive); color: var(--destructive-foreground); }
+.btn-link { background: transparent; color: var(--headline); text-decoration: underline; text-underline-offset: 3px; padding: 10px 4px; }
+.btn-sm { padding: 6px 12px; font-size: 12.5px; }
+.btn-lg { padding: 13px 24px; font-size: 15px; }
+.btn-icon { padding: 10px; width: 38px; height: 38px; justify-content: center; }
+
+/* ============================================================
+   BADGES
+   ============================================================ */
+.badge { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; }
+.badge-primary { background: var(--primary); color: var(--primary-foreground); }
+.badge-secondary { background: var(--secondary); color: var(--secondary-foreground); }
+.badge-tertiary { background: var(--tertiary); color: var(--tertiary-foreground); }
+.badge-outline { background: transparent; border-color: var(--border); color: var(--foreground); }
+.badge-destructive { background: var(--destructive); color: var(--destructive-foreground); }
+.badge-muted { background: var(--muted); color: var(--muted-foreground); }
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.demo-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+.demo-card h4 { color: var(--card-foreground); font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.demo-card .desc { font-size: 13px; color: var(--muted-foreground); margin-bottom: 16px; line-height: 1.55; }
+.demo-card .stat { font-family: var(--font-display); font-weight: 800; font-size: 34px; color: var(--headline); }
+.demo-card .stat-label { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
+.card-footer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+/* ============================================================
+   FORMS
+   ============================================================ */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 620px; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.field label { font-size: 12.5px; font-weight: 700; color: var(--headline); }
+.field .hint { font-size: 11.5px; color: var(--muted-foreground); }
+.input, .textarea, select.input {
+  font-family: var(--font-sans); font-size: 14px; color: var(--foreground);
+  background: var(--background); border: 1.5px solid var(--input); border-radius: var(--radius-sm);
+  padding: 9px 12px; width: 100%;
+}
+.input:focus, .textarea:focus, select.input:focus { outline: none; border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 25%, transparent); }
+.textarea { resize: vertical; min-height: 74px; }
+.check-row { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+.check-row input[type="checkbox"], .check-row input[type="radio"] { accent-color: var(--primary); width: 16px; height: 16px; }
+.check-row label { font-size: 13.5px; color: var(--foreground); }
+
+.switch { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch .track { width: 40px; height: 24px; background: var(--muted); border: 1px solid var(--input); border-radius: 999px; position: relative; transition: background .15s ease; }
+.switch .track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: var(--background); border-radius: 50%; box-shadow: 0 1px 3px color-mix(in oklab, var(--headline) 30%, transparent); transition: transform .18s ease; }
+.switch input:checked + .track { background: var(--primary); }
+.switch input:checked + .track::after { transform: translateX(16px); }
+.switch span.lbl { font-size: 13.5px; }
+
+/* ============================================================
+   ALERTS
+   ============================================================ */
+.alert { display: flex; gap: 12px; padding: 14px 16px; border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 14px; }
+.alert .ic { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 12px; font-weight: 700; margin-top: 1px; }
+.alert .body strong { display: block; font-size: 13.5px; color: var(--headline); margin-bottom: 2px; }
+.alert .body p { font-size: 12.5px; color: var(--muted-foreground); line-height: 1.5; }
+.alert-info { background: var(--accent); border-color: color-mix(in oklab, var(--primary) 30%, var(--border)); }
+.alert-info .ic { background: var(--primary); color: var(--primary-foreground); }
+.alert-warning { background: color-mix(in oklab, var(--tertiary) 14%, var(--background)); border-color: color-mix(in oklab, var(--tertiary) 40%, var(--border)); }
+.alert-warning .ic { background: var(--tertiary); color: var(--tertiary-foreground); }
+.alert-danger { background: color-mix(in oklab, var(--destructive) 10%, var(--background)); border-color: color-mix(in oklab, var(--destructive) 35%, var(--border)); }
+.alert-danger .ic { background: var(--destructive); color: var(--destructive-foreground); }
+
+/* ============================================================
+   TABS
+   ============================================================ */
+.tabs-list { display: inline-flex; gap: 4px; background: var(--muted); padding: 4px; border-radius: var(--radius-md); margin-bottom: 18px; }
+.tab-btn { font-family: var(--font-sans); font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: var(--radius-sm); border: none; background: transparent; color: var(--muted-foreground); cursor: pointer; }
+.tab-btn[aria-selected="true"] { background: var(--background); color: var(--headline); box-shadow: 0 1px 4px color-mix(in oklab, var(--headline) 15%, transparent); }
+.tab-panel[hidden] { display: none; }
+.code-block { background: var(--headline); color: color-mix(in oklab, var(--background) 92%, var(--headline)); font-family: var(--font-mono); font-size: 12.5px; padding: 18px 20px; border-radius: var(--radius-lg); line-height: 1.7; overflow-x: auto; }
+.code-block .tag { color: var(--tertiary); }
+.code-block .attr { color: color-mix(in oklab, var(--background) 55%, var(--headline)); }
+.code-block .str { color: var(--primary); }
+.preview-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; display: flex; align-items: center; justify-content: center; }
+
+/* ============================================================
+   TABLE
+   ============================================================ */
+.ds-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ds-table th { text-align: left; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-foreground); font-weight: 500; padding: 10px 12px; background: var(--muted); }
+.ds-table th:first-child { border-top-left-radius: var(--radius-sm); border-bottom-left-radius: var(--radius-sm); }
+.ds-table th:last-child { border-top-right-radius: var(--radius-sm); border-bottom-right-radius: var(--radius-sm); }
+.ds-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); color: var(--foreground); }
+.ds-table td.mono { font-family: var(--font-mono); font-size: 12px; color: var(--headline); }
+.ds-table tr:last-child td { border-bottom: none; }
+.swatch-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; border: 1px solid var(--border); }
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+footer.ds-footer { max-width: 640px; padding: 40px 0 20px; color: var(--muted-foreground); font-size: 12.5px; font-family: var(--font-mono); border-top: 1px solid var(--border); margin-top: 10px; }
+
+@media (max-width: 900px) {
+  .menu-btn { display: flex; }
+  .sidenav {
+    position: fixed; top: 64px; left: 0; height: calc(100vh - 64px); width: 78vw; max-width: 300px;
+    background: var(--popover); z-index: 39; transform: translateX(-100%); transition: transform .25s ease;
+    box-shadow: 10px 0 30px color-mix(in oklab, var(--headline) 20%, transparent);
+  }
+  .sidenav.open { transform: translateX(0); }
+  .content { padding: 0 18px 80px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .nav-scrim { display: none; position: fixed; inset: 64px 0 0 0; background: color-mix(in oklab, var(--headline) 40%, transparent); z-index: 38; }
+  .nav-scrim.show { display: block; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-brand"><span class="dot"></span> Mojo <span class="eyebrow" style="margin-left:6px;font-weight:400;">design system</span></div>
+  <div class="topbar-right">
+    <button class="theme-switch" id="themeToggle" aria-pressed="false" aria-label="Toggle dark mode">
+      <span class="thumb">
+        <svg id="thumbIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+      </span>
+    </button>
+    <button class="menu-btn" id="menuBtn" aria-label="Open navigation">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="nav-scrim" id="navScrim"></div>
+
+<div class="shell">
+  <nav class="sidenav" id="sidenav">
+    <div class="grp">
+      <span class="grp-label">Foundations</span>
+      <a href="#overview">Overview</a>
+      <a href="#color">Color</a>
+      <a href="#typography">Typography</a>
+      <a href="#radius">Radius</a>
+    </div>
+    <div class="grp">
+      <span class="grp-label">Components</span>
+      <a href="#buttons">Buttons</a>
+      <a href="#badges">Badges</a>
+      <a href="#cards">Cards</a>
+      <a href="#forms">Forms</a>
+      <a href="#alerts">Alerts</a>
+      <a href="#tabs">Tabs &amp; code</a>
+      <a href="#reference">Token reference</a>
+    </div>
+  </nav>
+
+  <main class="content">
+
+    <section id="overview" class="hero">
+      <div class="hero-glow"></div>
+      <div class="hero-glow two"></div>
+      <span class="eyebrow">Design system · v1.0</span>
+      <div class="hero-word">
+        <h1>Mojo</h1>
+        <svg class="hero-mark" viewBox="0 0 400 40" preserveAspectRatio="none"><path d="M2 30 C 80 10, 320 10, 398 30" stroke="var(--primary)" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.5"/></svg>
+      </div>
+      <div class="pulse-row" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="hero-tag">Twenty-two CSS variables, three type families, and a component set — tuned so mint, coral, and yellow carry the energy while navy and paper keep it legible.</p>
+      <div class="hero-stats">
+        <div><b>22</b> tokens</div>
+        <div><b>3</b> type families — Manrope · DM Sans · DM Mono</div>
+        <div><b>2</b> themes — light &amp; dark</div>
+        <div><b>0.75rem</b> base radius</div>
+      </div>
+    </section>
+
+    <section id="color">
+      <div class="sec-head">
+        <span class="eyebrow">Foundations / Color</span>
+        <h2>Color</h2>
+        <p>Every surface and label in Mojo resolves to one of these variables. Toggle the switch in the header — this whole page is styled with them, nothing is hardcoded.</p>
+      </div>
+      <div class="swatch-legend">Values with a percentage are <code>color-mix(in oklab, …)</code> blends — <code>72% #1b2d45 → #fffffe</code> reads as "72% of the first color mixed into the second." Click any card to copy its variable name.</div>
+
+      <div class="tok-group">
+        <h3>Base &amp; surfaces</h3>
+        <div class="swatch-grid" id="grp-base"></div>
+      </div>
+      <div class="tok-group">
+        <h3>Brand</h3>
+        <div class="swatch-grid" id="grp-brand"></div>
+      </div>
+      <div class="tok-group">
+        <h3>Feedback &amp; focus</h3>
+        <div class="swatch-grid" id="grp-feedback"></div>
+      </div>
+    </section>
+
+    <section id="typography">
+      <div class="sec-head">
+        <span class="eyebrow">Foundations / Type</span>
+        <h2>Typography</h2>
+        <p>Manrope carries the voice in headlines. DM Sans handles everything you read. DM Mono marks anything that's a value, a token, or code.</p>
+      </div>
+
+      <div class="type-block">
+        <div class="type-label"><span class="fam">Manrope — display</span><span class="meta">--font-display</span></div>
+        <div class="type-scale-row"><span class="tag">800 / 40px</span><span class="sample" style="font-family:var(--font-display);font-weight:800;font-size:40px;color:var(--headline);letter-spacing:-0.02em;">Built with mojo</span></div>
+        <div class="type-scale-row"><span class="tag">700 / 26px</span><span class="sample" style="font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--headline);">Section headline</span></div>
+        <div class="type-scale-row"><span class="tag">500 / 17px</span><span class="sample" style="font-family:var(--font-display);font-weight:500;font-size:17px;color:var(--headline);">Card title weight</span></div>
+      </div>
+
+      <div class="type-block">
+        <div class="type-label"><span class="fam">DM Sans — sans</span><span class="meta">--font-sans</span></div>
+        <div class="type-scale-row"><span class="tag">700 / 16px</span><span class="sample" style="font-weight:700;font-size:16px;">Emphasis and labels sit at 700.</span></div>
+        <div class="type-scale-row"><span class="tag">400 / 15px</span><span class="sample" style="font-weight:400;font-size:15px;">Body copy runs at 15px with 1.6 line height, tuned for long-form reading.</span></div>
+        <div class="type-scale-row"><span class="tag">400 / 12.5px</span><span class="sample" style="font-weight:400;font-size:12.5px;color:var(--muted-foreground);">Captions and helper text drop to muted-foreground.</span></div>
+      </div>
+
+      <div class="type-block">
+        <div class="type-label"><span class="fam">DM Mono — mono</span><span class="meta">--font-mono</span></div>
+        <div class="mono-sample">
+          <div><span class="k">.btn-primary</span> { <span class="k">background</span>: <span class="v">var(--primary)</span>; }</div>
+          <div><span class="k">.btn-primary</span> { <span class="k">color</span>: <span class="v">var(--primary-foreground)</span>; }</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="radius">
+      <div class="sec-head">
+        <span class="eyebrow">Foundations / Shape</span>
+        <h2>Radius</h2>
+        <p>One base value, two steps down — <code class="mono">md</code> and <code class="mono">sm</code> are calculated from <code class="mono">--radius</code>, so tightening the brand only means editing one number.</p>
+      </div>
+      <div class="radius-grid">
+        <div class="radius-card"><div class="radius-box" style="border-radius:var(--radius-lg);"></div><div class="name">radius-lg</div><div class="val">0.75rem · cards, dialogs</div></div>
+        <div class="radius-card"><div class="radius-box" style="border-radius:var(--radius-md);"></div><div class="name">radius-md</div><div class="val">0.5rem · buttons, inputs</div></div>
+        <div class="radius-card"><div class="radius-box" style="border-radius:var(--radius-sm);"></div><div class="name">radius-sm</div><div class="val">0.35rem · badges, chips</div></div>
+      </div>
+    </section>
+
+    <section id="buttons">
+      <div class="sec-head">
+        <span class="eyebrow">Components / Buttons</span>
+        <h2>Buttons</h2>
+        <p>Primary for the one action you want taken. Secondary and tertiary carry equal visual weight for when a screen genuinely offers two good paths.</p>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary">Add task</button>
+        <button class="btn btn-secondary">Rename</button>
+        <button class="btn btn-tertiary">Highlight</button>
+        <button class="btn btn-outline">Cancel</button>
+        <button class="btn btn-ghost">Dismiss</button>
+        <button class="btn btn-destructive">Delete project</button>
+        <button class="btn btn-link">View changelog</button>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary btn-sm">Small</button>
+        <button class="btn btn-primary">Default</button>
+        <button class="btn btn-primary btn-lg">Large</button>
+        <button class="btn btn-outline btn-icon" aria-label="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
+        <button class="btn btn-primary" disabled>Disabled</button>
+      </div>
+    </section>
+
+    <section id="badges">
+      <div class="sec-head">
+        <span class="eyebrow">Components / Badges</span>
+        <h2>Badges</h2>
+        <p>Status labels, tags, and counts — always set in DM Mono to read as data, not prose.</p>
+      </div>
+      <div class="row">
+        <span class="badge badge-primary">live</span>
+        <span class="badge badge-secondary">urgent</span>
+        <span class="badge badge-tertiary">new</span>
+        <span class="badge badge-outline">draft</span>
+        <span class="badge badge-destructive">failed</span>
+        <span class="badge badge-muted">archived</span>
+      </div>
+    </section>
+
+    <section id="cards">
+      <div class="sec-head">
+        <span class="eyebrow">Components / Cards</span>
+        <h2>Cards</h2>
+        <p>The default surface for grouping content. Card and card-foreground shift together across themes, so nested text never needs its own override.</p>
+      </div>
+      <div class="card-grid">
+        <div class="demo-card">
+          <h4>Weekly focus</h4>
+          <p class="desc">Track the three things that matter this week — everything else can wait.</p>
+          <div class="card-footer-row">
+            <span class="badge badge-primary">3 active</span>
+            <button class="btn btn-outline btn-sm">Open</button>
+          </div>
+        </div>
+        <div class="demo-card">
+          <div class="stat">4.2k</div>
+          <div class="stat-label">Components shipped this quarter</div>
+          <div class="card-footer-row">
+            <span class="eyebrow">Updated 2h ago</span>
+            <span class="badge badge-tertiary">+12%</span>
+          </div>
+        </div>
+        <div class="demo-card">
+          <h4>Auto-sync tokens</h4>
+          <p class="desc">Pull color and radius updates from Figma into <code class="mono">globals.css</code> on save.</p>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="track"></span>
+            <span class="lbl">Enabled</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section id="forms">
+      <div class="sec-head">
+        <span class="eyebrow">Components / Forms</span>
+        <h2>Forms</h2>
+        <p>Inputs use the <code class="mono">input</code> token for their resting border and switch to <code class="mono">ring</code> on focus — modeled here on adding a new entry to the system.</p>
+      </div>
+      <div class="form-grid">
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="fName">Component name</label>
+          <input class="input" id="fName" type="text" placeholder="e.g. Primary button" value="Segmented control">
+        </div>
+        <div class="field">
+          <label for="fCat">Category</label>
+          <select class="input" id="fCat">
+            <option>Foundation</option>
+            <option selected>Component</option>
+            <option>Pattern</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fVis">Visibility</label>
+          <select class="input" id="fVis">
+            <option selected>Public</option>
+            <option>Internal only</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label for="fNotes">Usage notes <span class="hint">(optional)</span></label>
+          <textarea class="input textarea" id="fNotes" placeholder="When should someone reach for this over a tab group?"></textarea>
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <div class="check-row"><input type="checkbox" id="c1" checked><label for="c1">Include in the Figma library</label></div>
+          <div class="check-row"><input type="checkbox" id="c2"><label for="c2">Request a design review before merge</label></div>
+          <div class="check-row"><input type="radio" name="state" id="r1" checked><label for="r1">Ready for use</label></div>
+          <div class="check-row"><input type="radio" name="state" id="r2"><label for="r2">In review</label></div>
+        </div>
+      </div>
+      <button class="btn btn-primary">Save component</button>
+    </section>
+
+    <section id="alerts">
+      <div class="sec-head">
+        <span class="eyebrow">Components / Alerts</span>
+        <h2>Alerts</h2>
+        <p>Three states, mapped to tokens that already exist — no colors were invented to make these work.</p>
+      </div>
+      <div class="alert alert-info">
+        <div class="ic">i</div>
+        <div class="body"><strong>Tokens synced from Figma</strong><p>18 variables updated across light and dark. Nothing needs your review.</p></div>
+      </div>
+      <div class="alert alert-warning">
+        <div class="ic">!</div>
+        <div class="body"><strong>Secondary drops below 4.5:1 on small text</strong><p>Coral-on-white passes AA for large or bold text and UI components (3:1), but not for body-sized copy. Reserve it for labels ≥16px.</p></div>
+      </div>
+      <div class="alert alert-danger">
+        <div class="ic">×</div>
+        <div class="body"><strong>Token file failed to save</strong><p><code class="mono">globals.css</code> has unsaved edits — check your connection and try again.</p></div>
+      </div>
+    </section>
+
+    <section id="tabs">
+      <div class="sec-head">
+        <span class="eyebrow">Components / Tabs</span>
+        <h2>Tabs &amp; code</h2>
+        <p>Every component in this system ships both ways — here's the primary button, live and as markup.</p>
+      </div>
+      <div class="tabs-list" role="tablist">
+        <button class="tab-btn" role="tab" aria-selected="true" data-tab="preview">Preview</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="code">Code</button>
+      </div>
+      <div class="tab-panel" data-panel="preview">
+        <div class="preview-box"><button class="btn btn-primary btn-lg">Add task</button></div>
+      </div>
+      <div class="tab-panel" data-panel="code" hidden>
+        <pre class="code-block"><span class="tag">&lt;button</span> <span class="attr">class</span>=<span class="str">"btn btn-primary btn-lg"</span><span class="tag">&gt;</span>
+  Add task
+<span class="tag">&lt;/button&gt;</span></pre>
+      </div>
+    </section>
+
+    <section id="reference">
+      <div class="sec-head">
+        <span class="eyebrow">Reference</span>
+        <h2>Token reference</h2>
+        <p>The full set, alphabetical, for quick lookup while you build.</p>
+      </div>
+      <table class="ds-table" id="refTable">
+        <thead><tr><th>Token</th><th>Light</th><th>Dark</th><th>Used for</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <footer class="ds-footer">
+      mojo/design-system · built on 22 CSS custom properties · light &amp; dark via <code>.light</code> / <code>.dark</code> on root
+    </footer>
+
+  </main>
+</div>
+
+<script>
+// ---- token data (single source for swatches + reference table) ----
+const TOKENS = {
+  base: [
+    { name: '--background', role: 'Page canvas', light: '#fffffe', dark: '#001534' },
+    { name: '--foreground', role: 'Body text', light: '#1b2d45', dark: '88% #fffffe → #001534' },
+    { name: '--headline', role: 'Headings & wordmarks', light: '#00214d', dark: '#fffffe' },
+    { name: '--card', role: 'Elevated surfaces', light: '#f2f4f6', dark: '#00214d' },
+    { name: '--card-foreground', role: 'Text on cards', light: '#00214d', dark: '92% #fffffe → #001534' },
+    { name: '--popover', role: 'Menus & floating panels', light: '#fffffe', dark: '#00214d' },
+    { name: '--popover-foreground', role: 'Text on popovers', light: '#00214d', dark: '92% #fffffe → #001534' },
+    { name: '--muted', role: 'Low-emphasis fills', light: '#f2f4f6', dark: '55% #00214d → #001534' },
+    { name: '--muted-foreground', role: 'Placeholder & helper text', light: '72% #1b2d45 → #fffffe', dark: '62% #fffffe → #001534' },
+    { name: '--border', role: 'Hairline dividers', light: '12% #00214d → #fffffe', dark: '14% #fffffe → transparent' },
+    { name: '--input', role: 'Form field borders', light: '16% #00214d → #fffffe', dark: '22% #fffffe → transparent' },
+  ],
+  brand: [
+    { name: '--primary', role: 'Mojo mint — primary actions', light: '#00ebc7', dark: '#00ebc7' },
+    { name: '--primary-foreground', role: 'Text on primary', light: '#00214d', dark: '#00214d' },
+    { name: '--secondary', role: 'Coral — high-energy accents', light: '#ff5470', dark: '#ff5470' },
+    { name: '--secondary-foreground', role: 'Text on secondary', light: '#fffffe', dark: '#fffffe' },
+    { name: '--tertiary', role: 'Yellow — highlights', light: '#fde24f', dark: '#fde24f' },
+    { name: '--tertiary-foreground', role: 'Text on tertiary', light: '#00214d', dark: '#00214d' },
+    { name: '--accent', role: 'Soft mint wash', light: '16% #00ebc7 → #fffffe', dark: '20% #00ebc7 → #00214d' },
+    { name: '--accent-foreground', role: 'Text on accent', light: '#00214d', dark: '#fffffe' },
+  ],
+  feedback: [
+    { name: '--destructive', role: 'Danger & destructive actions', light: '#ff5470', dark: '#ff5470' },
+    { name: '--destructive-foreground', role: 'Text on destructive', light: '#fffffe', dark: '#fffffe' },
+    { name: '--ring', role: 'Focus outlines', light: '#00ebc7', dark: '#00ebc7' },
+  ],
+};
+
+function swatchCard(t) {
+  const el = document.createElement('div');
+  el.className = 'swatch-card';
+  el.tabIndex = 0;
+  el.setAttribute('role', 'button');
+  el.setAttribute('aria-label', 'Copy ' + t.name);
+  el.innerHTML = `
+    <div class="swatch-color" style="background:var(${t.name})"><span class="swatch-copied">Copied ${t.name}</span></div>
+    <div class="swatch-meta">
+      <div class="swatch-name">${t.name}</div>
+      <div class="swatch-role">${t.role}</div>
+      <div class="swatch-val"><span><b>L</b> ${t.light}</span><span><b>D</b> ${t.dark}</span></div>
+    </div>`;
+  const copy = () => {
+    navigator.clipboard?.writeText(t.name).catch(() => {});
+    el.classList.add('copied');
+    setTimeout(() => el.classList.remove('copied'), 1100);
+  };
+  el.addEventListener('click', copy);
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copy(); } });
+  return el;
+}
+
+document.getElementById('grp-base').append(...TOKENS.base.map(swatchCard));
+document.getElementById('grp-brand').append(...TOKENS.brand.map(swatchCard));
+document.getElementById('grp-feedback').append(...TOKENS.feedback.map(swatchCard));
+
+const tbody = document.querySelector('#refTable tbody');
+[...TOKENS.base, ...TOKENS.brand, ...TOKENS.feedback]
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .forEach(t => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="mono"><span class="swatch-dot" style="background:var(${t.name})"></span>${t.name}</td>
+      <td class="mono">${t.light}</td><td class="mono">${t.dark}</td><td>${t.role}</td>`;
+    tbody.appendChild(tr);
+  });
+
+// ---- theme toggle ----
+const root = document.documentElement;
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click', () => {
+  const isDark = root.classList.toggle('dark');
+  themeToggle.setAttribute('aria-pressed', String(isDark));
+});
+
+// ---- mobile nav ----
+const sidenav = document.getElementById('sidenav');
+const scrim = document.getElementById('navScrim');
+const menuBtn = document.getElementById('menuBtn');
+function closeNav() { sidenav.classList.remove('open'); scrim.classList.remove('show'); }
+menuBtn.addEventListener('click', () => { sidenav.classList.toggle('open'); scrim.classList.toggle('show'); });
+scrim.addEventListener('click', closeNav);
+sidenav.querySelectorAll('a').forEach(a => a.addEventListener('click', closeNav));
+
+// ---- active link on scroll ----
+const links = [...sidenav.querySelectorAll('a')];
+const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = '#' + entry.target.id;
+      links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === id));
+    }
+  });
+}, { rootMargin: '-40% 0px -55% 0px' });
+sections.forEach(s => s && io.observe(s));
+
+// ---- tabs ----
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const group = btn.closest('section');
+    group.querySelectorAll('.tab-btn').forEach(b => b.setAttribute('aria-selected', String(b === btn)));
+    group.querySelectorAll('.tab-panel').forEach(p => p.hidden = p.dataset.panel !== btn.dataset.tab);
+  });
+});
+</script>
+</body>
+</html>
