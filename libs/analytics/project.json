@@ -1,1 +1,6 @@
-{ "name": "analytics", "sourceRoot": "libs/analytics/src", "projectType": "library", "tags": ["scope:analytics"] }
+{
+  "name": "analytics",
+  "sourceRoot": "libs/analytics/src",
+  "projectType": "library",
+  "tags": ["scope:analytics"]
+}

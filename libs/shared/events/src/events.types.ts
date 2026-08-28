@@ -47,7 +47,10 @@ export type MojoPlusSubscribed = DomainEvent<'MojoPlusSubscribed', { tutorId: st
 export type MojoPlusCancelled = DomainEvent<'MojoPlusCancelled', { tutorId: string }>;
 
 export type PayoutRequested = DomainEvent<'PayoutRequested', { tutorId: string; amount: Money }>;
-export type PayoutCompleted = DomainEvent<'PayoutCompleted', { tutorId: string; amount: Money; rail: string }>;
+export type PayoutCompleted = DomainEvent<
+  'PayoutCompleted',
+  { tutorId: string; amount: Money; rail: string }
+>;
 
 export type TutorApplicationSubmitted = DomainEvent<
   'TutorApplicationSubmitted',
@@ -64,8 +67,14 @@ export type ReferralConverted = DomainEvent<
   { code: string; newUserId: string }
 >;
 
-export type DisputeFiled = DomainEvent<'DisputeFiled', { sessionId: string; filedBy: string; reason: string }>;
-export type DisputeResolved = DomainEvent<'DisputeResolved', { disputeId: string; outcome: 'upheld' | 'dismissed' }>;
+export type DisputeFiled = DomainEvent<
+  'DisputeFiled',
+  { sessionId: string; filedBy: string; reason: string }
+>;
+export type DisputeResolved = DomainEvent<
+  'DisputeResolved',
+  { disputeId: string; outcome: 'upheld' | 'dismissed' }
+>;
 
 export type MojoEvent =
   | SessionBooked

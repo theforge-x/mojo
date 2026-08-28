@@ -43,7 +43,7 @@ and not implemented.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> pending : submitApplication() (scaffold)
+    [*] --> pending : submitApplication()
     pending --> in_review
     in_review --> approved
     in_review --> rejected
@@ -90,7 +90,7 @@ stateDiagram-v2
     }
     state "LessonSubscription.status" as ls {
         [*] --> active
-        active --> paused : pauseSubscription() (scaffold)
+        active --> paused : pauseSubscription()
         active --> cancelled
     }
 ```
@@ -174,7 +174,7 @@ sequenceDiagram
 
     Stud->>UC: confirmDelivery({sessionId, confirmedBy, nowIso})
     UC->>R: findById(sessionId)
-    R-->>UC: ScheduledSession (or null → SessionNotBookedError)
+    R-->>UC: BookingSession (booking's own domain contract; null → SessionNotBookedError)
     UC->>R: markCompleted(sessionId, nowIso)
     UC->>R: saveConfirmation({confirmedBy, confirmedAt})
     UC->>UC: segmentCount = segmentsBetween(start,end) ceil/15
@@ -290,10 +290,11 @@ sequenceDiagram
 
 ## 11. Event catalog (as defined in code)
 
-The 12 events **that actually exist** in `libs/shared/events/src/events.types.ts`,
-with the module that publishes each in the current code, and the subscribers the
-planning docs assign. Wiring of subscribers happens at the composition root, so
-"subscribers" below are from `assets/mojo-modules.md` unless gated in code.
+The 15 events **that actually exist** in `libs/shared/events/src/events.types.ts`,
+with the module that publishes each in the current code. Wiring of subscribers
+happens at the composition root (`apps/**`), so the "handled by" column below is the
+intended consumer per [`docs/mojo-modules.md`](../mojo-modules.md), not code-level
+subscriptions.
 
 | Event | Published by (in code) | Payload (from code) |
 |---|---|---|
@@ -307,7 +308,9 @@ planning docs assign. Wiring of subscribers happens at the composition root, so
 | `MojoPlusCancelled` | mojo-plus `cancelMojoPlus` | `{ tutorId }` |
 | `PayoutRequested` | payments `releasePayout` | `{ tutorId, amount: Money }` |
 | `PayoutCompleted` | payments `releasePayout` | `{ tutorId, amount: Money, rail }` |
+| `TutorApplicationSubmitted` | tutor-profile `submitApplication` | `{ applicationId, tutorId }` |
 | `ReviewSubmitted` | reviews `submitReview` | `{ sessionId, tutorId, rating }` |
+| `ReferralConverted` | referrals `trackReferral` | `{ code, newUserId }` |
 | `DisputeFiled` | trust-safety `fileDispute` | `{ sessionId, filedBy, reason }` |
 | `DisputeResolved` | *(not published in code)* | `{ disputeId, outcome }` |
 
@@ -316,21 +319,12 @@ planning docs assign. Wiring of subscribers happens at the composition root, so
 ```mermaid
 flowchart LR
     subgraph PLANNED["Roadmap event, absent from events.types.ts"]
-        A[TutorApplicationSubmitted / Approved / Rejected]
-        B[SessionRescheduled]
-        C[ReferralConverted]
+        A[SessionRescheduled]
     end
-    A -.->|referenced in tutor-profile TODO| TP[tutor-profile/src/application]
-    C -.->|referenced in referrals TODO| RF[referrals/src/application]
+    A -.->|referenced in cancel-session TODO| SC[scheduling/src/application]
 ```
 
-These are called out in code as TODOs (e.g. `referrals`' `track-referral.use-case.ts`
-says "TODO: publish `ReferralConverted` once it's added to @mojo/shared/events"). The
-catalog in the README (`@mojo/shared/events` "doesn't yet cover every event the
-scaffold modules' TODO comments reference") confirms this.
-
-> **[divergence]** The `assets/mojo-modules.md` event table lists
-> `TutorApplicationSubmitted/Approved/Rejected`, `SessionRescheduled`,
-> `ReferralConverted`, and `DisputeResolved` as part of the plan. Of these, only
-> `DisputeResolved` is typed in `events.types.ts` (though nothing publishes it yet);
-> the others are absent from the catalog entirely.
+`SessionRescheduled` is the only roadmap event still missing from the catalog; the
+`reschedule` action from the permissions matrix has no use-case or event yet (see
+§1 note). `DisputeResolved` and `SessionNoShow` are typed but nothing publishes
+them yet.

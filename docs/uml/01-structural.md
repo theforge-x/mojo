@@ -4,8 +4,9 @@ System structure of the Mojo Nx monorepo as built. Two Next.js applications comp
 ~19 domain modules plus four shared libraries, all behind one database and one
 in-process event bus.
 
-Reference: `assets/mojo-monorepo-structure.md` and `assets/mojo-modules.md` describe
-the *intent*; this document reflects what actually exists in the tree.
+Reference: [`docs/mojo-monorepo-structure.md`](../mojo-monorepo-structure.md) and
+[`docs/mojo-modules.md`](../mojo-modules.md) describe the *intent*; this document
+reflects what actually exists in the tree.
 
 ---
 
@@ -29,41 +30,41 @@ flowchart TB
     subgraph SHARED["libs/shared/"]
         UI[shared/ui · design system]
         UTIL[shared/util · cn, dates]
-        DOMSG[shared/domain · Money, TimeRange]
+        DOMSG[shared/domain · Money, TimeRange, TutorLevel]
         EVT[shared/events · EventBus + catalog]
     end
 
     subgraph PLATFORM["Platform modules"]
-        NOTIF["notifications · scaffold"]
-        ADMC["admin-config · scaffold"]
-        ANALY["analytics · scaffold"]
+        NOTIF["notifications · full-depth"]
+        ADMC["admin-config · full-depth"]
+        ANALY["analytics · full-depth"]
     end
 
     subgraph ENGAGE["Trust / Engage / Learning"]
-        TRUST["trust-safety · scaffold"]
-        MESS["messaging · scaffold"]
-        REV["reviews · scaffold"]
-        REF["referrals · scaffold"]
-        AI["ai-learning · scaffold"]
+        TRUST["trust-safety · full-depth"]
+        MESS["messaging · full-depth"]
+        REV["reviews · full-depth"]
+        REF["referrals · full-depth"]
+        AI["ai-learning · full-depth"]
     end
 
     subgraph COMMERCE["Commerce"]
         PRIC["pricing · full-depth"]
         PLUS["mojo-plus · full-depth"]
         PAY["payments · full-depth"]
-        BILL["billing · scaffold"]
+        BILL["billing · full-depth"]
     end
 
     subgraph MKT["Marketplace"]
-        DISC["discovery · scaffold"]
+        DISC["discovery · full-depth"]
         SCHED["scheduling · full-depth"]
         BOOK["booking · full-depth"]
         LAB["lab · full-depth"]
     end
 
     subgraph TUTOR["Tutor"]
-        TPROF["tutor-profile · scaffold"]
-        TPERF["tutor-performance · scaffold"]
+        TPROF["tutor-profile · full-depth"]
+        TPERF["tutor-performance · full-depth"]
     end
 
     subgraph IDENT["Foundation"]
@@ -82,8 +83,8 @@ flowchart TB
     PAY --> DOMSG
     EVT --> DOMSG
     SCHED --> DOMSG
+    DISC --> DOMSG
 
-    BOOK --> SCHED
     BOOK --> EVT
     REV --> EVT
     TRUST --> EVT
@@ -91,6 +92,8 @@ flowchart TB
     PLUS --> EVT
     TPERF --> EVT
     PRIC --> EVT
+    TPROF --> EVT
+    REF --> EVT
 
     LAB --> LK
     PAY --> PS
@@ -112,14 +115,22 @@ flowchart TB
     AI --> DB
     TPROF --> DB
     TPERF --> DB
-    TPERF --> PRIC
     DISC --> PRIC
+    DISC --> DOMSG
 ```
 
-> **[divergence]** The planning docs list `pricing` and `discovery`, etc., with the
-> same layering. Only the modules tagged `full-depth` above have repositories that
-> touch Postgres today; the rest are domain-type depth only even though the schema
-> already contains their tables.
+> Every module above is **full-depth**: each has `domain` ports/types, an
+> `application/` use-case layer, `infrastructure/` Prisma/SDK adapters implementing
+> its ports (all wired to Postgres), and Vitest specs. The `[divergence]` notes that
+> previously flagged scaffold-depth modules no longer apply.
+
+Module-to-module dependency is deliberately minimal (dependency inversion): the only
+module that imports another module is `discovery` → `@mojo/pricing/domain` (its search
+index reads pricing's published rate contract `DEFAULT_SEGMENT_RATE_NGN`).
+`booking` used to reach into `@mojo/scheduling/domain` and `tutor-performance` into
+`@mojo/pricing/domain`; both now depend only on `@mojo/shared/*` — booking declares
+its own `BookingSession` contract, and `TutorLevel` lives in `shared/domain`. All
+other inter-module behaviour flows through `@mojo/shared/events`.
 
 Note the external systems actually referenced **in code**:
 - `libs/lab/src/infrastructure/livekit-lab.adapter.ts` → LiveKit (`AccessToken`, JWT)
@@ -179,16 +190,25 @@ flowchart TB
 ```
 
 Nx tags declare each library's scope; the `shared/*` libraries additionally carry
-layer tags (`type:domain`, `type:ui`, `type:util`) so module boundaries can be
-enforced by the build (the `@nx/enforce-module-boundaries` convention described in
-the monorepo doc — note the actual `project.json` files only tag `scope:*` today;
-layer enforcement is planned, not yet wired, see `[divergence]` below).
+layer tags (`type:domain`, `type:ui`, `type:util`) so module boundaries are
+enforced at build time. `eslint.config.mjs` configures
+`@nx/enforce-module-boundaries` with `depConstraints` (each module may depend only
+on the shared libraries plus its declared peers) **plus** a custom
+`@mojo/clean-architecture` layer rule (domains depend only on `@mojo/shared/*` and
+their own module; cross-module access is restricted to `domain` contract types from
+`application`/`infrastructure` and to `@mojo/shared/events`; Prisma lives only in
+`infrastructure`). The `build` script runs `lint:boundaries` first, so any code that
+violates a module boundary **fails the build**. See
+[`docs/mojo-monorepo-structure.md`](../mojo-monorepo-structure.md) for the dependency
+matrix and `[05-spec §7](#7-implementation-depth-matrix)` for the per-module table.
 
-> **[divergence]** `assets/mojo-monorepo-structure.md:99-101` says boundaries are
-> enforced with `type:*` tags + `depConstraints` in `biome.json`. Inspecting the
-> tree: every **module** library carries only `["scope:<module>"]`; only the four
-> `shared/*` libraries carry `type:*` tags, and `biome.json` has **no** `useImport`
-> / `overrides` for dependency rules. Enforcement is therefore aspirational.
+> **[resolved]** Earlier revisions of this doc flagged boundary enforcement as
+> "aspirational" (`docs/mojo-monorepo-structure.md`). It is now wired:
+> `eslint.config.mjs` registers `@nx/enforce-module-boundaries` with per-module
+> `depConstraints` and the `tools/eslint/mojo-clean-architecture.mjs` layer rule,
+> exposed as `npm run lint:boundaries` and run first by `npm run build`, so boundary
+> violations fail the build. The only cross-project relative imports allowed are the
+> shared-ui root stylesheet (no alias exists) and the `vitest` tooling configs.
 
 ---
 
@@ -203,7 +223,7 @@ apps/
   admin/   app/  nexus · tutors/applications · layout
 libs/
   shared/
-    domain/      money.ts · time-range.ts
+    domain/      money.ts · time-range.ts · tutor-level.ts
     events/      event-bus.ts · events.types.ts
     ui/          button.tsx · badge.tsx · card.tsx · input.tsx · alert.tsx · styles/globals.css
     util/        cn.ts · date.ts
@@ -211,25 +231,25 @@ libs/
                  infrastructure(prisma-user, bcrypt) · feature(login-form)
   scheduling/    domain(availability, session, ports, conflict-detection)
                  application(book, cancel, set-availability) · infrastructure(prisma) · feature(calendar, editor)
-  booking/       domain(ports, session-lifecycle) · application(confirm-delivery) · infrastructure(prisma)
+  booking/       domain(ports, booking-session, session-lifecycle) · application(confirm-delivery) · infrastructure(prisma)
   lab/           domain(lab.types) · infrastructure(livekit.adapter) · feature(lab-room)
   pricing/       domain(types, ports, calculate-lesson-charge) · application(record-session-completion)
                  infrastructure(prisma-tutor-level)
   payments/      domain(wallet, ports) · application(release-payout) · infrastructure(prisma-wallet, paystack)
   mojo-plus/     domain(mojo-plus.types) · application(subscribe) · [no infrastructure, no feature]
-  # scaffold-depth modules — domain type + one thin use-case each:
-  tutor-profile  domain · application(submit-application)
-  tutor-performance domain · application(recompute-level)
-  discovery      domain · application(search-tutors)
-  billing        domain · application(manage-subscription)
-  messaging      domain · application(send-message)
-  reviews        domain · application(submit-review)
-  referrals      domain · application(track-referral)
-  trust-safety   domain · application(file-dispute)
-  ai-learning    domain · application(generate-recap)
-  notifications  domain · infrastructure(email, whatsapp)   [domain + infra only]
-  admin-config   domain                                  [domain only]
-  analytics      domain                                  [domain only]
+  # full-depth modules — domain ports/types · application use-cases · infrastructure Prisma adapters:
+  tutor-profile  domain(ports, types) · application(submit-application) · infrastructure(prisma-application)
+  tutor-performance domain(ports, types) · application(recompute-level, compute-level) · infrastructure(prisma-tutor-performance)
+  discovery      domain(ports, types) · application(search-tutors) · infrastructure(prisma-tutor-search)
+  billing        domain(ports, types) · application(manage-subscription) · infrastructure(prisma-subscription)
+  messaging      domain(ports, types) · application(send-message) · infrastructure(prisma-message)
+  reviews        domain(ports, types) · application(submit-review) · infrastructure(prisma-review)
+  referrals      domain(ports, types) · application(track-referral) · infrastructure(prisma-referral)
+  trust-safety   domain(ports, types) · application(file-dispute) · infrastructure(prisma-dispute)
+  ai-learning    domain(ports, types) · application(generate-recap) · infrastructure(prisma-recap)
+  notifications  domain(ports, types) · application(dispatch-notification) · infrastructure(email, whatsapp, prisma)
+  admin-config   domain(ports, types) · application(set-feature-flag, append-audit-log, list-subjects) · infrastructure(prisma-admin-config)
+  analytics      domain(ports, types) · application(compute-platform-metrics, build-leaderboard) · infrastructure(prisma-analytics)
 prisma/          schema.prisma (23 models, 6 enums)
 ```
 
@@ -237,6 +257,5 @@ Notes on asymmetry (honest reflection, not an error):
 - `mojo-plus` is **full-depth by tests/specs** (its use-cases are unit-tested) but has
   **no infrastructure layer** and no `feature` — it is implemented only as far as its
   repository port + use-cases.
-- `notifications` has domain + infrastructure (email/whatsapp adapters) but **no
-  application use-case** — the dispatchers exist but nothing orchestrates them.
-- `admin-config` and `analytics` are **domain-only** (types, no logic, no port-I/O).
+- `lab` has no application-layer orchestration beyond `domain` + `infrastructure`;
+  `scheduling`/`payments`/`lab`/`mojo-plus` predate the module-boundary work.

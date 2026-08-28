@@ -19,6 +19,11 @@ export function makeDispatchNotification(deps: {
   return async function dispatchNotification(notification: Notification): Promise<void> {
     const dispatcher = deps.dispatchers[notification.channel];
     if (!dispatcher) throw new UnsupportedChannelError(notification.channel);
-    await dispatcher.send(notification.channel, notification.to, notification.templateId, notification.data);
+    await dispatcher.send(
+      notification.channel,
+      notification.to,
+      notification.templateId,
+      notification.data,
+    );
   };
 }

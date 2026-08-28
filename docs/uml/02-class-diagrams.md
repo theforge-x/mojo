@@ -8,14 +8,14 @@ traditional inheritance, the diagrams below mix:
 - **`<<class>>` infrastructure adapters** — the only place Prisma/SDK imports live
 - **`<<function>>` use-case factories** (`make*`) — the `application/` layer
 - **pure functions** and **value objects** from `domain/`
-- **`<<scaffold>>`** — modules at domain-type depth only
 
 Mermaid `classDiagram` has no native "function returns a function API" concept, so
 factories are drawn as classes exposing their returned use-case method; the
 `make*` factory is named on the class via a note where relevant.
 
-Full-depth modules are documented in detail. Scaffold modules are documented
-compactly. See `assets/uml/README.md` for the depth legend.
+Every module is full-depth: `domain` ports/types, `application` use-cases,
+`infrastructure` adapters, and Vitest specs. See `docs/uml/README.md` for the depth
+legend.
 
 ---
 
@@ -57,6 +57,12 @@ classDiagram
         <<function>>
         +(range TimeRange) number
     }
+    class TutorLevel {
+        <<enum>>
+        entry
+        established
+        expert
+    }
     money --> Money : creates
     addMoney ..> Money : uses
     subtractMoney ..> Money : uses
@@ -65,9 +71,11 @@ classDiagram
     durationMinutes ..> TimeRange : uses
 ```
 
-`libs/shared/domain/src/money.ts`, `time-range.ts`. `Money` is always an integer
-count in the smallest unit (kobo/cents); `addMoney`, `subtractMoney`, `percentOf`,
-`formatMoney` are the arithmetic helpers.
+`libs/shared/domain/src/money.ts`, `time-range.ts`, `tutor-level.ts`. `Money` is an
+integer count in the smallest unit (kobo/cents); `addMoney`, `subtractMoney`,
+`percentOf`, `formatMoney` are the arithmetic helpers. `TutorLevel` is the
+cross-cutting tier type shared by pricing, discovery, and tutor-performance — domains
+depend on it via this lib instead of on each other.
 
 ---
 
@@ -85,8 +93,8 @@ classDiagram
         <<type alias union>>
         SessionBooked | SessionCancelled | SessionCompleted | SessionNoShow
         SessionDeliveryConfirmed | TutorLevelChanged | MojoPlusSubscribed
-        MojoPlusCancelled | PayoutRequested | PayoutCompleted | ReviewSubmitted
-        DisputeFiled | DisputeResolved
+        MojoPlusCancelled | PayoutRequested | PayoutCompleted | TutorApplicationSubmitted
+        ReviewSubmitted | ReferralConverted | DisputeFiled | DisputeResolved
     }
     class EventBus {
         -handlers Map~MojoEventName, Set~Handler~~
@@ -104,7 +112,7 @@ classDiagram
 `EventBus` (`libs/shared/events/src/event-bus.ts`) is in-process pub/sub: modules
 import the shared `eventBus` singleton rather than constructing their own, so a
 publisher and a subscriber talk to the same bus within the single process. The full
-12-event union is listed in [04-behavioral](04-behavioral.md#11-event-catalog-as-defined-in-code).
+15-event union is listed in [04-behavioral](04-behavioral.md#11-event-catalog-as-defined-in-code).
 
 ---
 
@@ -323,16 +331,20 @@ classDiagram
         +confirmedBy 'student' | 'auto_window'
         +confirmedAt string
     }
+    class BookingSession {
+        <<domain contract>>
+        +readonly own to scheduling: id, tutorId, studentId, startIso, endIso, isTrial
+    }
     class BookingRepository {
         <<interface port>>
-        +findById(sessionId) Promise~ScheduledSession|null~
+        +findById(sessionId) Promise~BookingSession|null~
         +markCompleted(sessionId, at) Promise~void~
         +markNoShow(sessionId, by, at) Promise~void~
         +saveConfirmation(confirmation) Promise~void~
     }
     class PrismaBookingRepository {
         +prisma PrismaClient
-        +findById(sessionId) Promise~ScheduledSession|null~
+        +findById(sessionId) Promise~BookingSession|null~
         +markCompleted(sessionId, at) Promise~void~
         +markNoShow(sessionId, by, at) Promise~void~
         +saveConfirmation(confirmation) Promise~void~
@@ -343,17 +355,20 @@ classDiagram
         +publishes SessionCompleted
         +publishes SessionDeliveryConfirmed
     }
-    BookingRepository ..> ScheduledSession : returns (from scheduling)
+    BookingRepository ..> BookingSession : own contract (DIP, not scheduling's type)
     PrismaBookingRepository ..|> BookingRepository
     confirmDelivery --> BookingRepository
     confirmDelivery ..> segmentsBetween : from shared/util
 ```
 
 `libs/booking`. `AUTO_CONFIRM_WINDOW_HOURS = 48` is the constant referenced by the
-roadmap's payout logic (`session-lifecycle.types.ts`). `confirmDelivery` derives
-`segmentCount` via `segmentsBetween` (ceil-to-15-min) and publishes both
-`SessionCompleted` and `SessionDeliveryConfirmed`. Domain error: `SessionNotBookedError`.
-Tested in `confirm-delivery.use-case.spec.ts`.
+roadmap's payout logic (`session-lifecycle.types.ts`). The `BookingRepository` port
+returns booking's **own** `BookingSession` contract (`booking-session.types.ts`) —
+dependency inversion: booking never imports scheduling's `ScheduledSession`; the
+Prisma adapter projects the shared `Session` row into booking's shape.
+`confirmDelivery` derives `segmentCount` via `segmentsBetween` (ceil-to-15-min) and
+publishes both `SessionCompleted` and `SessionDeliveryConfirmed`. Domain error:
+`SessionNotBookedError`. Tested in `confirm-delivery.use-case.spec.ts`.
 
 ---
 
@@ -418,8 +433,10 @@ classDiagram
 
 `libs/pricing`. Constants: `BASE_TAKE_HOME_PERCENT = { entry:50, established:60,
 expert:70 }`, `MOJO_PLUS_BONUS_PERCENT = 10`, `DEFAULT_SEGMENT_RATE_NGN =
-{ entry:400000, established:600000, expert:800000 }` (kobo). This is the pure,
-I/O-free Phase 2 monetization model called out in `mojo-roadmap.md`; fully
+{ entry:400000, established:600000, expert:800000 }` (kobo). `TutorLevel` and `Money`
+are defined in `@mojo/shared/domain` (pricing imports and re-exports them) so
+`discovery`/`tutor-performance` share them without importing pricing. This is the
+pure, I/O-free Phase 2 monetization model called out in `mojo-roadmap.md`; fully
 unit-tested in `calculate-lesson-charge.spec.ts` and
 `record-session-completion.use-case.spec.ts`.
 
@@ -647,298 +664,611 @@ classDiagram
 
 ---
 
-## 11. Scaffold-depth modules (domain types + one thin use-case each)
+## 11. Previously-scaffold modules — now full-depth
+
+The twelve modules that were scaffold-depth are now full-depth: each has a `domain`
+ports file + types, an `application/` use-case layer, `infrastructure/` Prisma
+adapters, and Vitest specs. Per `eslint.config.mjs`, the only cross-module
+dependency allowed in code is `discovery → @mojo/pricing/domain` (the rate
+contract); every module otherwise depends only on the shared libs (`@mojo/shared/*`)
+and communicates cross-module via the event bus — `booking` and `tutor-performance`
+formerly coupled to `scheduling`/`pricing` were decoupled via dependency inversion
+(`BookingSession` contract, `TutorLevel` promoted to `shared/domain`).
+
+### 11.1 tutor-profile
 
 ```mermaid
 classDiagram
-    namespace tutor-profile {
-        class TutorApplication {
-            <<scaffold>>
-            +id string
-            +tutorId string
-            +subjects string[]
-            +bio string
-            +introVideoUrl string
-            +certifications string[]
-            +status ApplicationStatus
-            +submittedAt string
-        }
-        class TutorProfile {
-            <<scaffold>>
-            +tutorId string
-            +displayName string
-            +photoUrl string
-            +subjects string[]
-            +bio string
-            +moderationFlagged boolean
-        }
-        class ApplicationStatus {
-            <<scaffold enum>>
-            +pending
-            +in_review
-            +approved
-            +rejected
-        }
-        class submitApplication {
-            <<scaffold use-case>>
-            +(app TutorApplication) void
-        }
-        submitApplication --> TutorApplication
-        TutorApplication --> ApplicationStatus
+    class TutorApplication {
+        <<domain type>>
+        +id string
+        +tutorId string
+        +subjects readonly string[]
+        +bio string
+        +introVideoUrl string
+        +certifications readonly string[]
+        +status ApplicationStatus
+        +submittedAt string
     }
-    namespace tutor-performance {
-        class TutorPerformance {
-            <<scaffold>>
-            +tutorId string
-            +level TutorLevel
-            +cumulativeHoursTaught number
-            +responseTimeMinutesAvg number
-            +trialToPaidConversionRate number
-            +cancellationRate number
-            +averageRating number
-        }
-        class computeLevel {
-            <<scaffold pure>>
-            +(perf TutorPerformance) TutorLevel
-        }
-        class recomputeLevel {
-            <<scaffold use-case>>
-            +(perf TutorPerformance, nowIso string) void
-            +publishes TutorLevelChanged
-        }
-        computeLevel --> TutorPerformance
-        recomputeLevel --> TutorPerformance
+    class TutorProfile {
+        <<domain type>>
+        +tutorId string
+        +displayName string
+        +photoUrl string | null
+        +subjects readonly string[]
+        +bio string
+        +moderationFlagged boolean
     }
-    namespace discovery {
-        class TutorSearchFilters {
-            <<scaffold>>
-            +subject string
-            +level TutorLevel
-            +language string
-            +minRating number
-            +availableWithinHours number
-        }
-        class TutorSearchResult {
-            <<scaffold>>
-            +tutorId string
-            +displayName string
-            +level TutorLevel
-            +perSegmentMinor number
-            +rating number
-            +responseTimeMinutesAvg number
-        }
-        class searchTutors {
-            <<scaffold use-case>>
-            +(filters TutorSearchFilters) TutorSearchResult[]
-        }
-        searchTutors --> TutorSearchFilters
+    class ApplicationStatus {
+        <<enum>>
+        pending
+        in_review
+        approved
+        rejected
     }
-    namespace billing {
-        class PaymentMethod {
-            <<scaffold>>
-            +id string
-            +studentId string
-            +rail string
-            +last4 string
-            +isDefault boolean
-        }
-        class LessonSubscription {
-            <<scaffold>>
-            +id string
-            +studentId string
-            +tutorId string
-            +lessonsPerCycle number
-            +cycleLengthDays number
-            +autoRenew boolean
-            +status string
-        }
-        class pauseSubscription {
-            <<scaffold use-case>>
-            +(sub LessonSubscription) void
-        }
-        pauseSubscription --> LessonSubscription
+    class ApplicationRepository {
+        <<interface port>>
+        +findById(applicationId) Promise~TutorApplication|null~
+        +save(application) Promise~void~
     }
-    namespace messaging {
-        class Message {
-            <<scaffold>>
-            +id string
-            +senderId string
-            +recipientId string
-            +body string
-            +sentAt string
-            +readAt string
-        }
-        class sendMessage {
-            <<scaffold use-case>>
-            +(message Message) void
-        }
-        sendMessage --> Message
+    class TutorProfileRepository {
+        <<interface port>>
+        +findByTutorId(tutorId) Promise~TutorProfile|null~
+        +save(profile) Promise~void~
     }
-    namespace reviews {
-        class Review {
-            <<scaffold>>
-            +id string
-            +sessionId string
-            +tutorId string
-            +studentId string
-            +rating number
-            +body string
-            +flagged boolean
-            +createdAt string
-        }
-        class submitReview {
-            <<scaffold use-case>>
-            +(review Review) void
-            +publishes ReviewSubmitted
-        }
-        submitReview --> Review
+    class PrismaApplicationRepository {
+        +prisma PrismaClient
+        +findById(applicationId) Promise~TutorApplication|null~
+        +save(application) Promise~void~
     }
-    namespace referrals {
-        class ReferralLink {
-            <<scaffold>>
-            +code string
-            +ownerId string
-            +ownerRole string
-        }
-        class ReferralConversion {
-            <<scaffold>>
-            +code string
-            +newUserId string
-            +convertedAt string
-            +rewardAppliedAt string
-        }
-        class trackReferralConversion {
-            <<scaffold use-case>>
-            +(conversion ReferralConversion) void
-        }
-        trackReferralConversion --> ReferralConversion
+    class PrismaTutorProfileRepository {
+        +prisma PrismaClient
+        +findByTutorId(tutorId) Promise~TutorProfile|null~
+        +save(profile) Promise~void~
     }
-    namespace trust-safety {
-        class Dispute {
-            <<scaffold>>
-            +id string
-            +sessionId string
-            +filedBy string
-            +reason string
-            +status DisputeStatus
-            +filedAt string
-            +resolvedAt string
-        }
-        class Suspension {
-            <<scaffold>>
-            +userId string
-            +reason string
-            +suspendedAt string
-            +liftedAt string
-        }
-        class fileDispute {
-            <<scaffold use-case>>
-            +(dispute Dispute) void
-            +publishes DisputeFiled
-        }
-        fileDispute --> Dispute
+    class submitApplication {
+        <<use-case factory makeSubmitApplication>>
+        +(app TutorApplication, nowIso string) Promise~void~
+        +publishes TutorApplicationSubmitted
+        +throws ApplicationSubmittedError
     }
-    namespace ai-learning {
-        class LessonRecap {
-            <<scaffold>>
-            +sessionId string
-            +summary string
-            +focusAreas string[]
-            +generatedAt string
-            +reviewedByTutor boolean
-        }
-        class PracticeItem {
-            <<scaffold>>
-            +id string
-            +sessionId string
-            +studentId string
-            +kind string
-            +prompt string
-            +completedAt string
-        }
-        class generateRecap {
-            <<scaffold use-case>>
-            +(sessionId string, transcript string, nowIso string) LessonRecap
-        }
-        generateRecap --> LessonRecap
-    }
-    namespace notifications {
-        class NotificationDispatcher {
-            <<scaffold interface>>
-            +send(channel, to, templateId, data) void
-        }
-        class EmailDispatcher {
-            <<scaffold adapter Resend>>
-            +send(channel, to, templateId, data) void
-        }
-        class WhatsAppDispatcher {
-            <<scaffold adapter WhatsApp>>
-            +send(channel, to, templateId, data) void
-        }
-        EmailDispatcher ..|> NotificationDispatcher
-        WhatsAppDispatcher ..|> NotificationDispatcher
-    }
-    namespace admin-config {
-        class FeatureFlag {
-            <<scaffold>>
-            +key string
-            +enabled boolean
-            +rolloutPercent number
-        }
-        class AuditLogEntry {
-            <<scaffold>>
-            +id string
-            +adminId string
-            +action string
-            +targetId string
-            +at string
-        }
-        class SubjectTaxonomyEntry {
-            <<scaffold>>
-            +id string
-            +name string
-            +parentId string
-        }
-    }
-    namespace analytics {
-        class PlatformMetrics {
-            <<scaffold>>
-            +gmvMinor number
-            +activeTutors number
-            +activeStudents number
-            +trialToPaidConversionRate number
-            +asOf string
-        }
-        class TutorLeaderboardEntry {
-            <<scaffold>>
-            +tutorId string
-            +displayName string
-            +responseTimeMinutesAvg number
-            +cancellationRate number
-            +rank number
-        }
-    }
+    PrismaApplicationRepository ..|> ApplicationRepository
+    PrismaTutorProfileRepository ..|> TutorProfileRepository
+    submitApplication --> ApplicationRepository
+    TutorApplication --> ApplicationStatus
 ```
 
-Scaffold detail (from source, all `<<scaffold>>`):
+`libs/tutor-profile`. `submitApplication` rejects duplicates with
+`ApplicationSubmittedError` then publishes `TutorApplicationSubmitted`
+(`{ applicationId, tutorId }`); tested in `submit-application.use-case.spec.ts`.
 
-- **tutor-profile** — `submit-application.use-case.ts` saves a `TutorApplication`.
-  TODO comment: publish `TutorApplicationSubmitted` once the events catalog has it.
-- **tutor-performance** — `computeLevel` (pure: gate on hours + rating floor) and
-  `recomputeLevel` publishes `TutorLevelChanged`; never written to directly (built
-  from events per the modular-monolith doc). `LEVEL_THRESHOLDS =
-  { established: {hours:50, minRating:4.5}, expert: {hours:200, minRating:4.7} }`.
-- **discovery** — `searchTutors` delegates to a `TutorSearchIndex` port.
-- **billing** — `makePauseSubscription` toggles a `LessonSubscription` to `paused`.
-- **messaging** — `makeSendMessage` saves a `Message` through a `MessageRepository`.
-- **reviews** — `submitReview` saves + publishes `ReviewSubmitted`.
-- **referrals** — `trackReferralConversion` saves only; TODO to publish
-  `ReferralConverted` (not in catalog).
-- **trust-safety** — `fileDispute` saves + publishes `DisputeFiled`.
-- **ai-learning** — `generateRecap` (fires on `SessionCompleted` at composition root)
-  depends on a `TranscriptSummarizer` port.
-- **notifications** — domain `NotificationDispatcher` interface + two infra adapters
-  (`EmailDispatcher`, `WhatsAppDispatcher`); **no application layer**.
-- **admin-config** — domain types only (`FeatureFlag`, `AuditLogEntry`,
-  `SubjectTaxonomyEntry`).
-- **analytics** — domain types only (`PlatformMetrics`, `TutorLeaderboardEntry`).
+### 11.2 tutor-performance
+
+```mermaid
+classDiagram
+    class TutorPerformance {
+        <<domain type>>
+        +tutorId string
+        +level TutorLevel
+        +cumulativeHoursTaught number
+        +responseTimeMinutesAvg number
+        +trialToPaidConversionRate number
+        +cancellationRate number
+        +averageRating number
+    }
+    class computeLevel {
+        <<pure function>>
+        +(perf TutorPerformance) TutorLevel
+    }
+    class TutorPerformanceRepository {
+        <<interface port>>
+        +findByTutorId(tutorId) Promise~TutorPerformance|null~
+        +save(perf) Promise~void~
+    }
+    class PrismaTutorPerformanceRepository {
+        +prisma PrismaClient
+        +findByTutorId(tutorId) Promise~TutorPerformance|null~
+        +save(perf) Promise~void~
+    }
+    class recomputeLevel {
+        <<use-case factory makeRecomputeLevel>>
+        +(perf TutorPerformance, nowIso string) Promise~void~
+        +publishes TutorLevelChanged
+    }
+    PrismaTutorPerformanceRepository ..|> TutorPerformanceRepository
+    recomputeLevel --> TutorPerformanceRepository
+    computeLevel --> TutorPerformance
+```
+
+`libs/tutor-performance`. `computeLevel` is a pure function gated on
+`LEVEL_THRESHOLDS` (established 50h/4.5, expert 200h/4.7); `recomputeLevel` persists
+and publishes `TutorLevelChanged` only when the level changes. The `TutorLevel` value
+object comes from `@mojo/shared/domain` — tutor-performance has no dependency on
+pricing (layering: domain imports only shared).
+
+### 11.3 discovery
+
+```mermaid
+classDiagram
+    class TutorSearchFilters {
+        <<domain type>>
+        +subject string?
+        +level TutorLevel?
+        +language string?
+        +minRating number?
+        +availableWithinHours number?
+    }
+    class TutorSearchResult {
+        <<domain type>>
+        +tutorId string
+        +displayName string
+        +level TutorLevel
+        +perSegmentMinor number
+        +rating number
+        +responseTimeMinutesAvg number
+    }
+    class TutorSearchIndex {
+        <<interface port>>
+        +search(filters TutorSearchFilters) Promise~TutorSearchResult[]~
+    }
+    class PrismaTutorSearchIndex {
+        +prisma PrismaClient
+        +search(filters TutorSearchFilters) Promise~TutorSearchResult[]~
+    }
+    class searchTutors {
+        <<use-case factory makeSearchTutors>>
+        +(filters TutorSearchFilters) Promise~TutorSearchResult[]~
+    }
+    PrismaTutorSearchIndex ..|> TutorSearchIndex
+    searchTutors --> TutorSearchIndex
+```
+
+`libs/discovery`. `searchTutors` delegates to the `TutorSearchIndex` port; the
+`PrismaTutorSearchIndex` joins `TutorProfile` + `TutorPerformance` in JS by `tutorId`
+and applies subject/level/minRating (note: `language` and `availableWithinHours`
+have no persisted column, so are not applied — documented in code). `TutorLevel`
+comes from `@mojo/shared/domain`; only `DEFAULT_SEGMENT_RATE_NGN` still comes from
+`@mojo/pricing/domain` — the rate contract discovery's infrastructure reads at
+query time (boundary: discovery/infrastructure → pricing/domain, the sole
+cross-module dependency in the tree).
+
+### 11.4 billing
+
+```mermaid
+classDiagram
+    class PaymentMethod {
+        <<domain type>>
+        +id string
+        +studentId string
+        +rail paystack | flutterwave | stripe
+        +last4 string | null
+        +isDefault boolean
+    }
+    class LessonSubscription {
+        <<domain type>>
+        +id string
+        +studentId string
+        +tutorId string
+        +lessonsPerCycle number
+        +cycleLengthDays number
+        +autoRenew boolean
+        +status active | paused | cancelled
+    }
+    class SubscriptionRepository {
+        <<interface port>>
+        +findById(id) Promise~LessonSubscription|null~
+        +findByStudent(studentId) Promise~LessonSubscription[]~
+        +save(subscription) Promise~void~
+    }
+    class PrismaSubscriptionRepository {
+        +prisma PrismaClient
+        +findById(id) Promise~LessonSubscription|null~
+        +findByStudent(studentId) Promise~LessonSubscription[]~
+        +save(subscription) Promise~void~
+    }
+    class pauseSubscription {
+        <<use-case factory makePauseSubscription>>
+        +(sub LessonSubscription) Promise~void~
+    }
+    PrismaSubscriptionRepository ..|> SubscriptionRepository
+    pauseSubscription --> SubscriptionRepository
+```
+
+`libs/billing`. `pauseSubscription` saves a `LessonSubscription` with status `paused`;
+tested in `manage-subscription.use-case.spec.ts`.
+
+### 11.5 messaging
+
+```mermaid
+classDiagram
+    class Message {
+        <<domain type>>
+        +id string
+        +senderId string
+        +recipientId string
+        +body string
+        +sentAt string
+        +readAt string | null
+    }
+    class MessageRepository {
+        <<interface port>>
+        +findById(id) Promise~Message|null~
+        +save(message) Promise~void~
+    }
+    class PrismaMessageRepository {
+        +prisma PrismaClient
+        +findById(id) Promise~Message|null~
+        +save(message) Promise~void~
+    }
+    class sendMessage {
+        <<use-case factory makeSendMessage>>
+        +(message Message) Promise~void~
+    }
+    PrismaMessageRepository ..|> MessageRepository
+    sendMessage --> MessageRepository
+```
+
+`libs/messaging`. `sendMessage` persists a `Message`; tested in
+`send-message.use-case.spec.ts`.
+
+### 11.6 reviews
+
+```mermaid
+classDiagram
+    class Review {
+        <<domain type>>
+        +id string
+        +sessionId string
+        +tutorId string
+        +studentId string
+        +rating number
+        +body string
+        +flagged boolean
+        +createdAt string
+    }
+    class ReviewRepository {
+        <<interface port>>
+        +findById(id) Promise~Review|null~
+        +findBySession(sessionId) Promise~Review|null~
+        +save(review) Promise~void~
+    }
+    class PrismaReviewRepository {
+        +prisma PrismaClient
+        +findById(id) Promise~Review|null~
+        +findBySession(sessionId) Promise~Review|null~
+        +save(review) Promise~void~
+    }
+    class submitReview {
+        <<use-case factory makeSubmitReview>>
+        +(review Review) Promise~void~
+        +publishes ReviewSubmitted
+    }
+    PrismaReviewRepository ..|> ReviewRepository
+    submitReview --> ReviewRepository
+```
+
+`libs/reviews`. `submitReview` persists and publishes `ReviewSubmitted`
+(`{ sessionId, tutorId, rating }`); tested in `submit-review.use-case.spec.ts`.
+
+### 11.7 referrals
+
+```mermaid
+classDiagram
+    class ReferralLink {
+        <<domain type>>
+        +code string
+        +ownerId string
+        +ownerRole student | tutor
+    }
+    class ReferralConversion {
+        <<domain type>>
+        +code string
+        +newUserId string
+        +convertedAt string
+        +rewardAppliedAt string | null
+    }
+    class ReferralRepository {
+        <<interface port>>
+        +findLink(code) Promise~ReferralLink|null~
+        +saveLink(link) Promise~void~
+        +findConversion(code, newUserId) Promise~ReferralConversion|null~
+        +saveConversion(conversion) Promise~void~
+    }
+    class PrismaReferralRepository {
+        +prisma PrismaClient
+        +findLink(code) Promise~ReferralLink|null~
+        +saveLink(link) Promise~void~
+        +findConversion(code, newUserId) Promise~ReferralConversion|null~
+        +saveConversion(conversion) Promise~void~
+    }
+    class trackReferralConversion {
+        <<use-case factory makeTrackReferralConversion>>
+        +(conversion ReferralConversion) Promise~void~
+        +publishes ReferralConverted
+        +throws ReferralAlreadyTrackedError
+    }
+    PrismaReferralRepository ..|> ReferralRepository
+    trackReferralConversion --> ReferralRepository
+```
+
+`libs/referrals`. `trackReferralConversion` rejects duplicates with
+`ReferralAlreadyTrackedError` then publishes `ReferralConverted`
+(`{ code, newUserId }`); tested in `track-referral.use-case.spec.ts`.
+
+### 11.8 trust-safety
+
+```mermaid
+classDiagram
+    class Dispute {
+        <<domain type>>
+        +id string
+        +sessionId string
+        +filedBy string
+        +reason string
+        +status DisputeStatus
+        +filedAt string
+        +resolvedAt string | null
+    }
+    class Suspension {
+        <<domain type>>
+        +userId string
+        +reason string
+        +suspendedAt string
+        +liftedAt string | null
+    }
+    class DisputeStatus {
+        <<enum>>
+        open
+        upheld
+        dismissed
+    }
+    class DisputeRepository {
+        <<interface port>>
+        +findById(id) Promise~Dispute|null~
+        +findBySession(sessionId) Promise~Dispute|null~
+        +save(dispute) Promise~void~
+    }
+    class PrismaDisputeRepository {
+        +prisma PrismaClient
+        +findById(id) Promise~Dispute|null~
+        +findBySession(sessionId) Promise~Dispute|null~
+        +save(dispute) Promise~void~
+    }
+    class fileDispute {
+        <<use-case factory makeFileDispute>>
+        +(dispute Dispute) Promise~void~
+        +publishes DisputeFiled
+    }
+    PrismaDisputeRepository ..|> DisputeRepository
+    fileDispute --> DisputeRepository
+    Dispute --> DisputeStatus
+```
+
+`libs/trust-safety`. `fileDispute` persists a `Dispute` and publishes `DisputeFiled`
+(`{ sessionId, filedBy, reason }`); tested in `file-dispute.use-case.spec.ts`.
+
+### 11.9 ai-learning
+
+```mermaid
+classDiagram
+    class LessonRecap {
+        <<domain type>>
+        +sessionId string
+        +summary string
+        +focusAreas readonly string[]
+        +generatedAt string
+        +reviewedByTutor boolean
+    }
+    class PracticeItem {
+        <<domain type>>
+        +id string
+        +sessionId string
+        +studentId string
+        +kind daily_exercise | scenario_drill
+        +prompt string
+        +completedAt string | null
+    }
+    class TranscriptSummarizer {
+        <<interface port outbound>>
+        +summarize(transcript string) Promise~{summary string; focusAreas string[]}~
+    }
+    class RecapRepository {
+        <<interface port>>
+        +findBySession(sessionId) Promise~LessonRecap|null~
+        +save(recap) Promise~void~
+    }
+    class PrismaRecapRepository {
+        +prisma PrismaClient
+        +findBySession(sessionId) Promise~LessonRecap|null~
+        +save(recap) Promise~void~
+    }
+    class generateRecap {
+        <<use-case factory makeGenerateRecap>>
+        +(sessionId string, transcript string, nowIso string) Promise~LessonRecap~
+        +throws DuplicateRecapError
+    }
+    PrismaRecapRepository ..|> RecapRepository
+    generateRecap --> RecapRepository
+    generateRecap --> TranscriptSummarizer
+```
+
+`libs/ai-learning`. `generateRecap` is triggered externally on `SessionCompleted` at
+the composition root; it calls the `TranscriptSummarizer`, rejects a second recap for
+the same session with `DuplicateRecapError`, then persists via `RecapRepository`;
+tested in `generate-recap.use-case.spec.ts`.
+
+### 11.10 notifications
+
+```mermaid
+classDiagram
+    class NotificationDispatcher {
+        <<interface port>>
+        +send(channel NotificationChannel, to string, templateId string, data Record) Promise~void~
+    }
+    class EmailDispatcher {
+        +apiKey string
+        +send(channel, to, templateId, data) Promise~void~
+    }
+    class WhatsAppDispatcher {
+        +phoneNumberId string
+        +accessToken string
+        +send(channel, to, templateId, data) Promise~void~
+    }
+    class Notification {
+        <<application type>>
+        +channel NotificationChannel
+        +to string
+        +templateId string
+        +data Record
+    }
+    class dispatchNotification {
+        <<use-case factory makeDispatchNotification>>
+        +(notification Notification) Promise~void~
+        +throws UnsupportedChannelError
+    }
+    EmailDispatcher ..|> NotificationDispatcher
+    WhatsAppDispatcher ..|> NotificationDispatcher
+    dispatchNotification --> NotificationDispatcher
+```
+
+`libs/notifications`. A five-layer addition brought in the missing `application/`
+layer: `makeDispatchNotification({ dispatchers })` routes a `Notification` to the
+adapter registered for its channel (email/whatsapp), throwing
+`UnsupportedChannelError` when none matches. `EmailDispatcher` → Resend, `WhatsAppDispatcher`
+→ WhatsApp Business Cloud API; tested in `dispatch-notification.use-case.spec.ts`.
+
+### 11.11 admin-config
+
+```mermaid
+classDiagram
+    class FeatureFlag {
+        <<domain type>>
+        +key string
+        +enabled boolean
+        +rolloutPercent number
+    }
+    class AuditLogEntry {
+        <<domain type>>
+        +id string
+        +adminId string
+        +action string
+        +targetId string | null
+        +at string
+    }
+    class SubjectTaxonomyEntry {
+        <<domain type>>
+        +id string
+        +name string
+        +parentId string | null
+    }
+    class FeatureFlagRepository {
+        <<interface port>>
+        +findByKey(key) Promise~FeatureFlag|null~
+        +list() Promise~FeatureFlag[]~
+        +save(flag) Promise~void~
+    }
+    class AuditLogRepository {
+        <<interface port>>
+        +append(entry) Promise~void~
+    }
+    class SubjectTaxonomyRepository {
+        <<interface port>>
+        +list() Promise~SubjectTaxonomyEntry[]~
+        +save(entry) Promise~void~
+    }
+    class PrismaFeatureFlagRepository {
+        +findByKey(key) Promise~FeatureFlag|null~
+        +list() Promise~FeatureFlag[]~
+        +save(flag) Promise~void~
+    }
+    class PrismaAuditLogRepository {
+        +append(entry) Promise~void~
+    }
+    class PrismaSubjectTaxonomyRepository {
+        +list() Promise~SubjectTaxonomyEntry[]~
+        +save(entry) Promise~void~
+    }
+    class setFeatureFlag {
+        <<use-case factory makeSetFeatureFlag>>
+        +(input FeatureFlag) Promise~void~
+        +throws InvalidRolloutPercentError
+    }
+    class appendAuditLog {
+        <<use-case factory makeAppendAuditLog>>
+        +(entry AuditLogEntry) Promise~void~
+    }
+    class listSubjects {
+        <<use-case factory makeListSubjects>>
+        +() Promise~SubjectTaxonomyEntry[]~
+    }
+    PrismaFeatureFlagRepository ..|> FeatureFlagRepository
+    PrismaAuditLogRepository ..|> AuditLogRepository
+    PrismaSubjectTaxonomyRepository ..|> SubjectTaxonomyRepository
+    setFeatureFlag --> FeatureFlagRepository
+    appendAuditLog --> AuditLogRepository
+    listSubjects --> SubjectTaxonomyRepository
+```
+
+`libs/admin-config`. Three use-cases: `setFeatureFlag` (rejects
+`rolloutPercent` outside 0–100 with `InvalidRolloutPercentError`), `appendAuditLog`,
+and `listSubjects`, each backed by a Prisma adapter; tested in
+`admin-config.use-cases.spec.ts`.
+
+### 11.12 analytics
+
+```mermaid
+classDiagram
+    class PlatformMetrics {
+        <<domain type>>
+        +gmvMinor number
+        +activeTutors number
+        +activeStudents number
+        +trialToPaidConversionRate number
+        +asOf string
+    }
+    class TutorLeaderboardEntry {
+        <<domain type>>
+        +tutorId string
+        +displayName string
+        +responseTimeMinutesAvg number
+        +cancellationRate number
+        +rank number
+    }
+    class LeaderboardCandidate {
+        <<domain type>>
+        +tutorId string
+        +displayName string
+        +responseTimeMinutesAvg number
+        +cancellationRate number
+    }
+    class AnalyticsRepository {
+        <<interface port>>
+        +countActiveTutors() Promise~number~
+        +countActiveStudents() Promise~number~
+        +sumWalletCreditsMinor() Promise~number~
+        +listLeaderboardCandidates() Promise~LeaderboardCandidate[]~
+    }
+    class PrismaAnalyticsRepository {
+        +countActiveTutors() Promise~number~
+        +countActiveStudents() Promise~number~
+        +sumWalletCreditsMinor() Promise~number~
+        +listLeaderboardCandidates() Promise~LeaderboardCandidate[]~
+    }
+    class computePlatformMetrics {
+        <<use-case factory makeComputePlatformMetrics>>
+        +(nowIso string) Promise~PlatformMetrics~
+    }
+    class buildLeaderboard {
+        <<use-case factory makeBuildLeaderboard>>
+        +(limit number) Promise~TutorLeaderboardEntry[]~
+    }
+    PrismaAnalyticsRepository ..|> AnalyticsRepository
+    computePlatformMetrics --> AnalyticsRepository
+    buildLeaderboard --> AnalyticsRepository
+```
+
+`libs/analytics`. `computePlatformMetrics` aggregates GMV (sum of wallet credits),
+active tutors/students (User counts by role), and sets `trialToPaidConversionRate: 0`
+(a true cohort rate is not yet derived — documented in code); `buildLeaderboard`
+sorts candidates by response time then cancellation rate, caps at `limit`, and
+assigns ranks; tested in `analytics.use-cases.spec.ts`.

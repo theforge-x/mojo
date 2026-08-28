@@ -1,19 +1,17 @@
-import { describe, expect, it } from 'vitest';
 import { eventBus } from '@mojo/shared/events';
+import { describe, expect, it } from 'vitest';
+import type { BookingSession } from '../domain/booking-session.types';
 import type { BookingRepository } from '../domain/booking.ports';
-import type { ScheduledSession } from '@mojo/scheduling/domain';
-import { makeConfirmDelivery, SessionNotBookedError } from './confirm-delivery.use-case';
+import { SessionNotBookedError, makeConfirmDelivery } from './confirm-delivery.use-case';
 
-function fakeSession(overrides: Partial<ScheduledSession> = {}): ScheduledSession {
+function fakeSession(overrides: Partial<BookingSession> = {}): BookingSession {
   return {
     id: 's_1',
     tutorId: 't_1',
     studentId: 'st_1',
     startIso: '2026-09-01T10:00:00.000Z',
     endIso: '2026-09-01T11:00:00.000Z',
-    status: 'confirmed',
     isTrial: false,
-    statusHistory: [],
     ...overrides,
   };
 }
@@ -33,7 +31,11 @@ describe('confirmDelivery', () => {
     });
 
     const confirmDelivery = makeConfirmDelivery({ bookings });
-    await confirmDelivery({ sessionId: 's_1', confirmedBy: 'student', nowIso: '2026-09-01T11:05:00.000Z' });
+    await confirmDelivery({
+      sessionId: 's_1',
+      confirmedBy: 'student',
+      nowIso: '2026-09-01T11:05:00.000Z',
+    });
 
     expect(completed).toMatchObject({ payload: { segmentCount: 4, tutorId: 't_1' } });
   });
@@ -48,7 +50,11 @@ describe('confirmDelivery', () => {
     const confirmDelivery = makeConfirmDelivery({ bookings });
 
     await expect(
-      confirmDelivery({ sessionId: 'missing', confirmedBy: 'student', nowIso: '2026-09-01T11:05:00.000Z' }),
+      confirmDelivery({
+        sessionId: 'missing',
+        confirmedBy: 'student',
+        nowIso: '2026-09-01T11:05:00.000Z',
+      }),
     ).rejects.toThrow(SessionNotBookedError);
   });
 });

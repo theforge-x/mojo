@@ -1,1 +1,6 @@
-{ "name": "notifications", "sourceRoot": "libs/notifications/src", "projectType": "library", "tags": ["scope:notifications"] }
+{
+  "name": "notifications",
+  "sourceRoot": "libs/notifications/src",
+  "projectType": "library",
+  "tags": ["scope:notifications"]
+}

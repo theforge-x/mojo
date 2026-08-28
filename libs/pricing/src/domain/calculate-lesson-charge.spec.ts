@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { money } from '@mojo/shared/domain';
+import { describe, expect, it } from 'vitest';
 import {
   calculateLessonCharge,
   calculateTrialLessonCharge,

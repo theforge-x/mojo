@@ -29,7 +29,10 @@ export class PrismaDisputeRepository implements DisputeRepository {
         filedAt: new Date(dispute.filedAt),
         resolvedAt: dispute.resolvedAt ? new Date(dispute.resolvedAt) : null,
       },
-      update: { status: dispute.status, resolvedAt: dispute.resolvedAt ? new Date(dispute.resolvedAt) : null },
+      update: {
+        status: dispute.status,
+        resolvedAt: dispute.resolvedAt ? new Date(dispute.resolvedAt) : null,
+      },
     });
   }
 

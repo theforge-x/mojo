@@ -3,7 +3,12 @@ import type { NotificationDispatcher } from '../domain/notifications.types';
 export class EmailDispatcher implements Pick<NotificationDispatcher, 'send'> {
   constructor(private readonly apiKey: string) {}
 
-  async send(_channel: 'email', to: string, templateId: string, data: Record<string, unknown>): Promise<void> {
+  async send(
+    _channel: 'email',
+    to: string,
+    templateId: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
     // Provider-agnostic shape deliberately — swap the fetch target for
     // Resend/Postmark/SES without touching any module that calls `send`.
     const response = await fetch('https://api.resend.com/emails', {

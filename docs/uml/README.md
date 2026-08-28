@@ -3,7 +3,7 @@
 A formal UML model of the Mojo codebase, generated *from the code* — every diagram
 here is intended to be an honest reflection of `libs/`, `apps/`, and
 `prisma/schema.prisma`. Where the implementation differs from the intent in the
-planning docs (`assets/mojo-*.md`), those gaps are **flagged explicitly** rather than
+planning docs (`docs/mojo-*.md`), those gaps are **flagged explicitly** rather than
 silently papered over.
 
 ## Documents
@@ -20,11 +20,13 @@ silently papered over.
 
 - **Diagrams are Mermaid**, embedded as fenced code blocks. They render on GitHub
   and anywhere that supports Mermaid, and stay diffable as plain text with the code.
-- **Full-depth modules** — `identity`, `scheduling`, `pricing`, `booking`, `lab`,
-  `payments`, `mojo-plus` — have use-cases, Prisma repositories, and Vitest specs.
-- **Scaffold-depth modules** — the remaining twelve — have domain types and a single
-  thin use-case, but no wired persistence or tests. In the diagrams they are marked
-  `<<scaffold>>` so the UML never implies they are more implemented than they are.
+- **Full-depth modules** — every module in `libs/` — have pure domain types, an
+  `application/` use-case layer, `infrastructure/` Prisma adapters that implement
+  `domain/*.ports.ts`, and Vitest specs (`*.spec.ts`) registered in
+  `vitest.workspace.ts`. Previously scaffold-depth modules (`tutor-profile`,
+  `tutor-performance`, `discovery`, `billing`, `messaging`, `reviews`, `referrals`,
+  `trust-safety`, `ai-learning`, `notifications`, `admin-config`, `analytics`) were
+  upgraded to full depth; `<<scaffold>>` markers no longer apply.
 - The **source of truth is the code**. The planning docs are cited for rationale
   only; any mismatch between a plan and the code is called out in `[divergence]`
   notes.
@@ -37,7 +39,7 @@ mojo/
 │   ├── hub       # student + tutor marketplace (Next.js)
 │   └── admin     # admin panel, separate trust boundary (Next.js)
 ├── libs/
-│   ├── shared/   # ui · util · domain (Money, TimeRange) · events (EventBus)
+│   ├── shared/   # ui · util · domain (Money, TimeRange, TutorLevel) · events (EventBus)
 │   └── <module>/ # one folder per bounded module, clean-architecture layers
 └── prisma/       # single consolidated schema.prisma
 ```

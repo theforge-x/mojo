@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { eventBus } from '@mojo/shared/events';
+import { describe, expect, it } from 'vitest';
 import type { TutorPerformanceRepository } from '../domain/tutor-performance.ports';
 import type { TutorPerformance } from '../domain/tutor-performance.types';
 import { makeRecomputeLevel } from './recompute-level.use-case';
@@ -52,7 +52,9 @@ describe('recomputeLevel', () => {
   });
 
   it('does not write or publish when the level is unchanged', async () => {
-    const { repo, get } = fakePerformances(perf({ level: 'established', cumulativeHoursTaught: 60, averageRating: 4.6 }));
+    const { repo, get } = fakePerformances(
+      perf({ level: 'established', cumulativeHoursTaught: 60, averageRating: 4.6 }),
+    );
     let published = false;
     const unsubscribe = eventBus.subscribe('TutorLevelChanged', () => {
       published = true;

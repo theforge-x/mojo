@@ -24,22 +24,38 @@ currently does.
 ### 2.1 Clean-architecture layering (per module)
 
 1. `domain/` declares **types**, **ports** (interfaces), and **pure functions**.
-   It must not import Prisma, Next.js, or any framework, and must not import its own
-   module's `application`/`infrastructure`/`feature`.
+   It is **fully isolated**: it may import only `@mojo/shared/*` and its own module —
+   never Prisma/Next.js/frameworks, never its own `application`/`infrastructure`/
+   `feature`, and never another module (not even its `domain`). Cross-cutting
+   concepts several domains need (e.g. `TutorLevel`) live in `@mojo/shared/domain`;
+   a module that needs another module's data declares its **own local contract**
+   (dependency inversion, e.g. booking's `BookingSession`) instead of importing it.
 2. `application/` contains **use-case factories** (`make*`). It may import only
-   `domain/` (own module), `@mojo/shared/domain`, and `@mojo/shared/events`.
-   It must not import Prisma or `infrastructure/`.
+   `domain/` (own module), `@mojo/shared/domain`, `@mojo/shared/events`, and other
+   modules' `domain` **contract types**. It must not import Prisma, other modules'
+   `application`/`infrastructure`/`feature`, or `infrastructure/` itself.
 3. `infrastructure/` implements `domain/` ports. It is the only layer allowed to
-   import Prisma, the video SDK, or payment/notification HTTP clients.
+   import Prisma, the video SDK, or payment/notification HTTP clients. Like
+   `application/`, it may consume another module's `domain` contract types but never
+   its `application`/`infrastructure`/`feature`.
 4. `feature/` is React; it imports `application/` and `@mojo/shared/ui`, never
    `infrastructure/`.
 
-**Conformance caveat:** these rules are followed *by convention* in the code. They
-are **not yet machine-enforced** — the Nx libraries carry only `scope:*` tags (no
-`type:*`), and `biome.json` has no dependency-constraint rules. The `lab` feature
-component imports `libs/lab/src/feature` from the hub app via a bare relative path
-(`apps/hub/app/(tutor)/lab/[sessionId]/page.tsx:1`), which bypasses the `@mojo/*`
-path-alias boundary — see the structural doc's `[divergence]`.
+**Enforcement:** these rules **are machine-enforced** and gate the build. `npm run
+build` runs `npm run lint:boundaries` first, which runs two ESLint rules over
+`libs/**` and `apps/**`:
+
+- `@nx/enforce-module-boundaries` (`eslint.config.mjs`) — the module-scope rule:
+  each module carries a `scope:*` tag and may depend only on `@mojo/shared/*` plus
+  its explicit peers (`discovery` → `pricing/domain`); no module may reach another
+  module's `application`/`infrastructure`/`feature`.
+- `@mojo/clean-architecture` (`tools/eslint/mojo-clean-architecture.mjs`) — the
+  layer-direction rule: domain isolation, `domain <- application <- feature` and
+  `domain <- infrastructure`, cross-module imports restricted to `domain` contract
+  types (from `application`/`infrastructure`) and `@mojo/shared/events`, and Prisma
+  confined to `infrastructure`.
+
+Apps (`apps/**`) are the composition root and are exempt from the layer rule.
 
 ### 2.2 Modular-monolith & event usage
 
@@ -166,7 +182,7 @@ path-alias boundary — see the structural doc's `[divergence]`.
   (`LEVEL_THRESHOLDS` in `tutor-performance.types.ts`).
 - **TP2** `recomputeLevel` only persists + publishes `TutorLevelChanged` when the
   computed level differs from the current one. It never derives from direct writes —
-  it is event-driven (scaffold: subscriber wiring at composition root).
+  it is event-driven (subscriber wiring happens at the composition root, `apps/**`).
 
 ---
 
@@ -179,11 +195,10 @@ path-alias boundary — see the structural doc's `[divergence]`.
 4. **Mojo+ subscription** states: `active → cancelled`.
 5. **Dispute** states: `open → upheld | dismissed`.
 6. **Lesson subscription** states: `active → paused | cancelled`.
-7. The **event catalog** is the 12–13 events in `events.types.ts` (publisher →
-   subscriber mapping in [04-behavioral §11](04-behavioral.md#11-event-catalog)).
-   Events referenced in TODO comments but absent from the catalog:
-   `TutorApplicationSubmitted/Approved/Rejected`, `SessionRescheduled`,
-   `ReferralConverted`.
+7. The **event catalog** is the **15 events** in `events.types.ts` (publisher →
+   subscriber mapping in [04-behavioral §11](04-behavioral.md#11-event-catalog-as-defined-in-code)). Two
+   of them (`SessionNoShow`, `DisputeResolved`) are typed but not yet published.
+   The only roadmap event absent from the catalog is `SessionRescheduled`.
 
 ---
 
@@ -207,36 +222,38 @@ All secrets/keys come from `process.env` (see `.env.example`):
 
 | Module | domain | application | infrastructure | feature | tests | depth |
 |---|---|---|---|---|---|---|
-| `shared/domain` | ✅ value objects | — | — | — | — | full |
-| `shared/events` | ✅ EventBus + catalog | — | — | — | ✅ `event-bus.spec` | full |
+| `shared/domain` | ✅ value objects (`Money`, `TimeRange`, `TutorLevel`) | — | — | — | — | full |
+| `shared/events` | ✅ EventBus + 15-event catalog | — | — | — | ✅ `event-bus.spec` | full |
 | `shared/ui` | — | — | — | ✅ 5 components | — | full |
-| `shared/util` | — | — | — | — | — | full |
-| `identity` | ✅ | ✅ register/authenticate | ✅ prisma + bcrypt | ✅ login-form | ✅ 2 specs | **full** |
-| `scheduling` | ✅ | ✅ book/cancel/set-availability | ✅ prisma | ✅ calendar/editor | ✅ 2 specs | **full** |
-| `pricing` | ✅ | ✅ record-session-completion | ✅ prisma tutor-level | — | ✅ 2 specs | **full** |
-| `booking` | ✅ | ✅ confirm-delivery | ✅ prisma | — | ✅ 1 spec | **full** |
-| `lab` | ✅ | — | ✅ livekit | ✅ lab-room | ✅ 1 spec | **full** |
-| `payments` | ✅ | ✅ release-payout | ✅ prisma + paystack | — | ✅ 1 spec | **full** |
+| `shared/util` | — | — | — | — | ✅ | full |
+| `identity` | ✅ | ✅ register/authenticate | ✅ prisma + bcrypt | ✅ login-form | ✅ 2 specs | full |
+| `scheduling` | ✅ | ✅ book/cancel/set-availability | ✅ prisma | ✅ calendar/editor | ✅ 2 specs | full |
+| `pricing` | ✅ | ✅ record-session-completion | ✅ prisma tutor-level | — | ✅ 2 specs | full |
+| `booking` | ✅ | ✅ confirm-delivery | ✅ prisma | — | ✅ 1 spec | full |
+| `lab` | ✅ | — | ✅ livekit | ✅ lab-room | ✅ 1 spec | full |
+| `payments` | ✅ | ✅ release-payout | ✅ prisma + paystack | — | ✅ 1 spec | full |
 | `mojo-plus` | ✅ | ✅ 3 use-cases | ❌ none | — | ✅ 1 spec | full (no infra) |
-| `tutor-profile` | ✅ | ✅ submit-application | ❌ | — | — | scaffold |
-| `tutor-performance` | ✅ | ✅ recompute-level | ❌ | — | — | scaffold |
-| `discovery` | ✅ | ✅ search-tutors | ❌ | — | — | scaffold |
-| `billing` | ✅ | ✅ manage-subscription | ❌ | — | — | scaffold |
-| `messaging` | ✅ | ✅ send-message | ❌ | — | — | scaffold |
-| `reviews` | ✅ | ✅ submit-review | ❌ | — | — | scaffold |
-| `referrals` | ✅ | ✅ track-referral | ❌ | — | — | scaffold |
-| `trust-safety` | ✅ | ✅ file-dispute | ❌ | — | — | scaffold |
-| `ai-learning` | ✅ | ✅ generate-recap | ❌ | — | — | scaffold |
-| `notifications` | ✅ | ❌ | ✅ email/whatsapp | — | — | partial |
-| `admin-config` | ✅ | ❌ | ❌ | — | — | domain-only |
-| `analytics` | ✅ | ❌ | ❌ | — | — | domain-only |
+| `tutor-profile` | ✅ | ✅ submit-application | ✅ prisma | — | ✅ 1 spec | full |
+| `tutor-performance` | ✅ | ✅ recompute-level | ✅ prisma | — | ✅ 2 specs | full |
+| `discovery` | ✅ | ✅ search-tutors | ✅ prisma search index | — | ✅ 1 spec | full |
+| `billing` | ✅ | ✅ manage-subscription | ✅ prisma | — | ✅ 1 spec | full |
+| `messaging` | ✅ | ✅ send-message | ✅ prisma | — | ✅ 1 spec | full |
+| `reviews` | ✅ | ✅ submit-review | ✅ prisma | — | ✅ 1 spec | full |
+| `referrals` | ✅ | ✅ track-referral | ✅ prisma | — | ✅ 1 spec | full |
+| `trust-safety` | ✅ | ✅ file-dispute | ✅ prisma | — | ✅ 1 spec | full |
+| `ai-learning` | ✅ | ✅ generate-recap | ✅ prisma | — | ✅ 1 spec | full |
+| `notifications` | ✅ | ✅ dispatch-notification | ✅ email + whatsapp | — | ✅ 1 spec | full |
+| `admin-config` | ✅ | ✅ set-flag/list-subjects/append-audit-log | ✅ prisma | — | ✅ 1 spec | full |
+| `analytics` | ✅ | ✅ compute-metrics/build-leaderboard | ✅ prisma | — | ✅ 1 spec | full |
 
-**Key** — ✅ present in the tree; ❌ absent. "Full" = has use-cases + repository +
-tests earning a `vitest.config.ts` (the workspace-test opt-in list in
-`vitest.workspace.ts`). `mojo-plus` is full-depth on tests but lacks infrastructure;
-`notifications`/`admin-config`/`analytics` are noted as partial because they lack the
-application/orchestration layer. All "scaffold" modules' repositories and tests are
-absent, matching `README.md`'s provenance note.
+**Key** — ✅ present in the tree; ❌ absent. All 12 domain modules plus the three
+service modules (`notifications`, `admin-config`, `analytics`) are now **full-depth**:
+each has use-cases + real `infrastructure/` repositories/adapters + specs, earning a
+`vitest.config.ts` (the workspace-test opt-in list in `vitest.workspace.ts`).
+`mojo-plus` is full-depth on tests but its persistence rides on pricing's
+`TutorLevelReader` (no own infra). The two domain-only gaps that remain are
+module-internal (`mojo-plus` infra, `PaymentMethod` writing) — the architectural
+layer rules in §2 apply uniformly and are enforced by `lint:boundaries`.
 
 ---
 
@@ -247,8 +264,9 @@ root** (in `apps/`) calls `eventBus.subscribe` with the relevant handlers and wi
 ports to Prisma adapters. In the current tree:
 
 - `apps/hub` wires `bookSession`/`cancelSession`-style orchestration only to the
-  extent shown in scaffold server components (e.g. `(tutor)/home/page.tsx` returns
-  hard-coded sessions; the lab page constructs `LiveKitLabProvider` directly).
+  extent shown in thin server components (e.g. `(tutor)/home/page.tsx` returns
+  hard-coded sessions; the lab page composes the `@mojo/lab/feature` `LabRoom` with
+  `LiveKitLabProvider`).
 - `apps/admin` renders `TutorApplication` rows from a hard-coded array.
 - **No module's use-case is wired to a real HTTP/session flow yet.** The event
   subscribers for `pricing`, `payments`, `tutor-performance`, etc. are not present.

@@ -4,7 +4,7 @@ The persistence model is a **single consolidated Postgres schema**
 (`prisma/schema.prisma`). Mojo deliberately uses one database with one schema file
 across all modules — a modular monolith — rather than a database per module; module
 boundaries are enforced in code, not by splitting storage (see
-`assets/mojo-modules.md`).
+[`docs/mojo-modules.md`](../mojo-modules.md)).
 
 This document is generated from the actual schema: 23 models, 6 enums, and every
 relation/cardinality as declared.
@@ -279,37 +279,39 @@ classDiagram
 | Model | Domain owns | Backing repository in code? | Kind |
 |---|---|---|---|
 | `User` | identity | ✅ `PrismaUserRepository` | full-depth |
-| `TutorApplication` | tutor-profile | ❌ (schema only) | scaffold |
-| `TutorProfile` | tutor-profile | ❌ | scaffold |
-| `TutorPerformance` | tutor-performance / pricing (level) | ✅ read by `PrismaTutorLevelReader` | scaffold |
-| `MojoPlusSubscription` | mojo-plus | ❌ (no infra) | full-depth types |
-| `AvailabilityRule` | scheduling | ✅ `PrismaAvailabilityRepository` (read) | full-depth |
+| `TutorApplication` | tutor-profile | ✅ `PrismaApplicationRepository` | full-depth |
+| `TutorProfile` | tutor-profile | ✅ `PrismaApplicationRepository` (read); `PrismaAnalyticsRepository` (read) | full-depth |
+| `TutorPerformance` | tutor-performance / pricing (level) | ✅ `PrismaTutorPerformanceRepository`; level read by `PrismaTutorLevelReader` (pricing) | full-depth |
+| `MojoPlusSubscription` | mojo-plus | ❌ no own infra — read by `PrismaTutorLevelReader` (pricing) | full-depth types |
+| `AvailabilityRule` | scheduling | ✅ `PrismaSchedulingRepository` (read) | full-depth |
 | `AvailabilityException` | scheduling | ✅ (read) | full-depth |
 | `SchedulingSettings` | scheduling | ✅ (read) | full-depth |
-| `Session` | scheduling / booking | ✅ both `PrismaSessionRepository` and `PrismaBookingRepository` | full-depth |
-| `SessionStatusEvent` | scheduling / booking | ✅ (written via booking) | full-depth |
-| `DeliveryConfirmation` | booking | ✅ `PrismaBookingRepository` | full-depth |
+| `Session` | scheduling / booking | ✅ `PrismaSchedulingRepository` and `PrismaBookingRepository` | full-depth |
+| `SessionStatusEvent` | scheduling / booking | ✅ (written via scheduling/booking) | full-depth |
+| `DeliveryConfirmation` | booking | ✅ `PrismaBookingRepository` (write) | full-depth |
 | `Wallet` | payments | ✅ `PrismaWalletRepository` | full-depth |
 | `WalletTransaction` | payments | ✅ | full-depth |
 | `PayoutRequest` | payments | ✅ (write) | full-depth |
-| `PaymentMethod` | billing | ❌ | scaffold |
-| `LessonSubscription` | billing | ❌ | scaffold |
-| `Message` | messaging | ❌ | scaffold |
-| `Review` | reviews | ❌ | scaffold |
-| `ReferralLink` | referrals | ❌ | scaffold |
-| `ReferralConversion` | referrals | ❌ | scaffold |
-| `Dispute` | trust-safety | ❌ | scaffold |
-| `LessonRecap` | ai-learning | ❌ | scaffold |
-| `PracticeItem` | ai-learning | ❌ | scaffold |
-| `FeatureFlag` | admin-config | ❌ | scaffold |
-| `AuditLogEntry` | admin-config | ❌ | scaffold |
-| `SubjectTaxonomyEntry` | admin-config | ❌ | scaffold |
+| `PaymentMethod` | billing | ❌ (not yet persisted) | full-depth types |
+| `LessonSubscription` | billing | ✅ `PrismaSubscriptionRepository` | full-depth |
+| `Message` | messaging | ✅ `PrismaMessageRepository` | full-depth |
+| `Review` | reviews | ✅ `PrismaReviewRepository` | full-depth |
+| `ReferralLink` | referrals | ✅ `PrismaReferralRepository` | full-depth |
+| `ReferralConversion` | referrals | ✅ (write) | full-depth |
+| `Dispute` | trust-safety | ✅ `PrismaDisputeRepository` | full-depth |
+| `LessonRecap` | ai-learning | ✅ `PrismaRecapRepository` | full-depth |
+| `PracticeItem` | ai-learning | ❌ (schema only) | full-depth types |
+| `FeatureFlag` | admin-config | ✅ `PrismaAdminConfigRepository` | full-depth |
+| `AuditLogEntry` | admin-config | ✅ (write) | full-depth |
+| `SubjectTaxonomyEntry` | admin-config | ✅ (read) | full-depth |
 
-> **[dark spots]** Many models exist in the schema with **no repository** in the
-> scaffold modules. For example `Message`, `Review`, `Dispute`, `LessonRecap`,
-> `ReferralConversion`: their domain types and thin use-cases exist, but nothing
-> reads/writes these tables yet. `SubscriptionLet`/etc. not touched. This matches the
-> README's "scaffolded at domain-type depth" provenance note.
+> **[dark spots]** Every module now has real `infrastructure/` repositories wired to
+> `ports`, and nearly every model has a backing repository. The few remaining
+> schema-only models are deliberate: `PaymentMethod` (billing rails are configured
+> through the Paystack adapter, no table writes yet), `PracticeItem` (ai-learning has
+> only the recap pipeline), and `MojoPlusSubscription` (its data is read via
+> pricing's `TutorLevelReader`, with mutation lives in pricing's repo). These are
+> full-depth *types* with the owning module's other invariants in place.
 
 ---
 
@@ -319,10 +321,13 @@ classDiagram
   as `Int` (kobo/cents). The domain value object `Money { amountMinor, currency }` in
   `libs/shared/domain/src/money.ts` maps to these columns — a float is never stored.
 - **`SESSION` status history.** `SessionStatusEvent` is a child table; the domain
-  `ScheduledSession.statusHistory` is a `{ status, at }[]` array that the repositories
-  (de)serialize from these rows (`prisma-session` and `prisma-booking`
-  `toDomain`/`include.statusHistory`). This satisfies the roadmap's "status transition
-  timestamps" requirement for ranking.
+  `ScheduledSession.statusHistory` is a `{ status, at }[]` array that the scheduling
+  repository (de)serializes from these rows (see `prisma-scheduling.repository.ts`
+  `include.statusHistory`). This satisfies the roadmap's "status transition
+  timestamps" requirement for ranking. Booking's `BookingRepository` deliberately
+  reads **without** the history — it projects only the fields its
+  `BookingSession` contract needs (dependency inversion; booking depends on
+  scheduling's data only through its own shared `Session` table read).
 - **Room name.** The `lab` module does **not** persist a room mapping — the room name
   is deterministically `mojo-session-<sessionId>`, and `Session.id` is the join
   key between sessions and LiveKit rooms.

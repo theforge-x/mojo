@@ -1,7 +1,7 @@
+import type { TutorLevel } from '@mojo/shared/domain';
 import { eventBus } from '@mojo/shared/events';
-import { LEVEL_THRESHOLDS, type TutorPerformance } from '../domain/tutor-performance.types';
 import type { TutorPerformanceRepository } from '../domain/tutor-performance.ports';
-import type { TutorLevel } from '@mojo/pricing/domain';
+import { LEVEL_THRESHOLDS, type TutorPerformance } from '../domain/tutor-performance.types';
 
 /**
  * This is the module the modular-monolith doc singles out: never written to
@@ -10,7 +10,10 @@ import type { TutorLevel } from '@mojo/pricing/domain';
  * happens at the composition root, not shown here).
  */
 export function computeLevel(perf: TutorPerformance): TutorLevel {
-  if (perf.cumulativeHoursTaught >= LEVEL_THRESHOLDS.expert.hours && perf.averageRating >= LEVEL_THRESHOLDS.expert.minRating) {
+  if (
+    perf.cumulativeHoursTaught >= LEVEL_THRESHOLDS.expert.hours &&
+    perf.averageRating >= LEVEL_THRESHOLDS.expert.minRating
+  ) {
     return 'expert';
   }
   if (
