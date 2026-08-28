@@ -16,12 +16,12 @@ export interface Wallet {
   readonly balance: Money;
 }
 
-export type PayoutRail = 'paystack' | 'flutterwave' | 'payoneer' | 'wise';
+export type PayoutRailName = 'paystack' | 'flutterwave' | 'payoneer' | 'wise';
 
 export interface PayoutRequest {
   readonly id: string;
   readonly tutorId: string;
   readonly amount: Money;
-  readonly rail: PayoutRail;
+  readonly rail: PayoutRailName;
   readonly status: 'pending' | 'approved' | 'completed' | 'rejected';
 }

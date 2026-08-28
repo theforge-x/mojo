@@ -4,6 +4,7 @@ dist
 .nx/cache
 .nx/workspace-data
 coverage
+*.tsbuildinfo
 *.env
 *.env.local
 prisma/dev.db

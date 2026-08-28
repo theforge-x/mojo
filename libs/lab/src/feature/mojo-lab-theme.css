@@ -1,10 +1,10 @@
 /*
  * Re-skins LiveKit's default component theme with Mojo's tokens instead of
- * writing lab UI from scratch. LiveKit prefixes every themeable
- * variable with --lk- (see @livekit/components-styles) specifically so a
- * consuming app can override them without fighting specificity — this file
- * is that override, mapped 1:1 onto the same custom properties the rest of
- * Mojo already uses.
+ * writing video UI from scratch. LiveKit prefixes every themeable variable
+ * with --lk- (see @livekit/components-styles) specifically so a consuming
+ * app can override them without fighting specificity — this file is that
+ * override, mapped 1:1 onto the same custom properties the rest of Mojo
+ * already uses.
  *
  * Import order matters: this file must load AFTER '@livekit/components-styles'
  * so these overrides win.
@@ -31,12 +31,15 @@
   font-family: var(--font-sans);
 }
 
-/* The participant name label and connection-quality chip both render as
-   plain elements inside LiveKit's components, so — per LiveKit's own
-   "style it like a div" guidance — Mojo's mono/eyebrow treatment applies
-   directly rather than needing a component override. */
 [data-lk-theme='mojo'] .lk-participant-name {
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.02em;
+}
+
+/* Screen-share tiles get a mint outline so a presenting participant reads
+   as "live" at a glance, consistent with badge-primary elsewhere in Mojo. */
+[data-lk-theme='mojo'] .lk-participant-tile[data-lk-source='screen_share'] {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
 }

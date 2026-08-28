@@ -1,3 +1,4 @@
+"use client";
 import { Slot } from "@radix-ui/react-slot";
 import { PanelLeft } from "lucide-react";
 import * as React from "react";
@@ -5,8 +6,7 @@ import { Button } from "./button";
 import { Separator } from "./separator";
 import { Sheet, SheetContent, SheetTitle } from "./sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
-import { cn } from '@mojo/shared/util';
-import { useIsMobile } from "@mojo/shared/use-mobile";
+import { cn, useIsMobile } from '@mojo/shared/util';
 
 const SIDEBAR_COOKIE_NAME = "mojo:sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;

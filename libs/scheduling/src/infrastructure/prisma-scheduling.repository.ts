@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import type { AvailabilityException, AvailabilityRule, SchedulingSettings } from '../domain/availability.types';
+import type { AvailabilityException, AvailabilityRule, Weekday, SchedulingSettings } from '../domain/availability.types';
 import type { AvailabilityRepository, SessionRepository } from '../domain/scheduling.ports';
 import type { ScheduledSession } from '../domain/session.types';
 
@@ -8,7 +8,7 @@ export class PrismaAvailabilityRepository implements AvailabilityRepository {
 
   async getRules(tutorId: string): Promise<AvailabilityRule[]> {
     const rows = await this.prisma.availabilityRule.findMany({ where: { tutorId } });
-    return rows.map((r) => ({ ...r }));
+    return rows.map((r) => ({ ...r, weekday: r.weekday as Weekday }));
   }
 
   async getExceptions(tutorId: string, date: string): Promise<AvailabilityException[]> {

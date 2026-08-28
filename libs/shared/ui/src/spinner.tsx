@@ -1,3 +1,4 @@
+'use client';
 import { Loader2 } from "lucide-react";
 import type * as React from "react";
 import { cn } from '@mojo/shared/util';

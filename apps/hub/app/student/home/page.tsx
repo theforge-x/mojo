@@ -1,0 +1,104 @@
+import Link from 'next/link';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Empty,
+  EmptyDescription,
+  EmptyTitle,
+} from '@mojo/shared/ui';
+import { CalendarView } from '@mojo/scheduling/feature';
+import { currentUser } from '../../../lib/session';
+import { getHub } from '../../../demo/composition-root';
+import { formatWhen } from '../../../lib/format';
+import { ConfirmDeliveryButton, CancelSessionButton } from '../../../components/session-actions';
+
+export default async function StudentDashboardPage() {
+  const user = await currentUser();
+  if (!user || user.role !== 'student') return null;
+
+  const hub = getHub();
+  const sessions = await hub.scheduling.sessionsByStudent(user.id);
+  const label = async (tutorId: string) => (await hub.profile.byTutor(tutorId))?.displayName ?? 'Your tutor';
+  const upcoming = sessions
+    .filter((s) => s.status === 'booked' || s.status === 'confirmed')
+    .sort((a, b) => a.startIso.localeCompare(b.startIso));
+  const next = upcoming[0] ?? null;
+
+  return (
+    <main className="mx-auto max-w-4xl p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="font-display text-2xl font-bold text-headline">Hi {user.email.split('@')[0]}</h1>
+        <Link href="/student/tutors">
+          <Button>Find a tutor</Button>
+        </Link>
+      </div>
+
+      {next ? (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Next lesson</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <span>
+              {await label(next.tutorId)} — {formatWhen(next.startIso, next.endIso)}
+            </span>
+            <Badge variant={next.status === 'confirmed' ? 'primary' : 'tertiary'}>{next.status}</Badge>
+            <CancelSessionButton sessionId={next.id} />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="mb-6">
+          <CardContent>
+            <Empty>
+              <EmptyTitle>No upcoming lessons</EmptyTitle>
+              <EmptyDescription>Find a tutor and book your first session.</EmptyDescription>
+            </Empty>
+          </CardContent>
+        </Card>
+      )}
+
+      <h2 className="mb-3 font-display text-lg font-bold text-headline">Your sessions</h2>
+      {sessions.length === 0 ? (
+        <Empty>
+          <EmptyTitle>Nothing here yet</EmptyTitle>
+          <EmptyDescription>Head to Find a tutor to get started.</EmptyDescription>
+        </Empty>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {(
+            await Promise.all(
+              sessions.map(async (session) => ({ session, tutor: await label(session.tutorId) })),
+            )
+          ).map(({ session, tutor }) => (
+            <Card key={session.id}>
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+                <div>
+                  <div className="text-sm">
+                    {tutor} · {formatWhen(session.startIso, session.endIso)}
+                  </div>
+                  {session.status === 'completed' && <p className="text-xs text-muted-foreground">Done — deliver the review.</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={session.status === 'confirmed' ? 'primary' : session.status === 'completed' ? 'muted' : 'tertiary'}>
+                    {session.status.replace('_', ' ')}
+                  </Badge>
+                  {session.status === 'confirmed' && <ConfirmDeliveryButton sessionId={session.id} />}
+                  {(session.status === 'booked' || session.status === 'confirmed') && <CancelSessionButton sessionId={session.id} />}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <h2 className="mb-3 mt-8 font-display text-lg font-bold text-headline">This week</h2>
+      <CalendarView
+        sessions={sessions.filter((s) => s.status !== 'cancelled' && s.status !== 'no_show')}
+      />
+    </main>
+  );
+}

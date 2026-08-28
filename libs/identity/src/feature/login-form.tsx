@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { Alert, Button, Input } from '@mojo/shared/ui';
 
 export interface LoginFormProps {
-  onSubmit: (input: { email: string; password: string }) => Promise<void>;
+  onSubmit: (
+    input: { email: string; password: string },
+  ) => Promise<void> | Promise<{ redirectTo: string }>;
 }
 
 export function LoginForm({ onSubmit }: LoginFormProps) {
@@ -18,7 +20,10 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
     setError(null);
     setSubmitting(true);
     try {
-      await onSubmit({ email, password });
+      const result = await onSubmit({ email, password });
+      if (result && typeof (result as { redirectTo?: string }).redirectTo === 'string') {
+        window.location.assign((result as { redirectTo: string }).redirectTo);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {

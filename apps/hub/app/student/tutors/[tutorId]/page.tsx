@@ -1,0 +1,78 @@
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Empty,
+  EmptyDescription,
+} from '@mojo/shared/ui';
+import { currentUser } from '../../../../lib/session';
+import { getHub } from '../../../../demo/composition-root';
+import { bookableSlots } from '../../../../lib/slots';
+import { formatMinor, formatWhen } from '../../../../lib/format';
+import { BookButton } from '../../../../components/book-button';
+
+export default async function TutorDetailPage({ params }: { params: Promise<{ tutorId: string }> }) {
+  const user = await currentUser();
+  if (!user || user.role !== 'student') return null;
+
+  const { tutorId } = await params;
+  const hub = getHub();
+
+  const [tutors, rules, settings] = await Promise.all([
+    hub.discovery.search({}),
+    hub.scheduling.availabilityRules(tutorId),
+    hub.scheduling.settings(tutorId),
+  ]);
+  const tutor = tutors.find((t) => t.tutorId === tutorId);
+  if (!tutor) notFound();
+
+  const slots = bookableSlots(rules, settings);
+
+  return (
+    <main className="mx-auto max-w-4xl p-6">
+      <div className="mb-6">
+        <h1 className="font-display text-2xl font-bold text-headline">{tutor.displayName}</h1>
+        <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+          <Badge variant="primary">{tutor.level}</Badge>
+          <span>{formatMinor(tutor.perSegmentMinor)}/segment</span>
+          {tutor.rating > 0 && <span>{tutor.rating.toFixed(1)}★</span>}
+        </div>
+      </div>
+
+      <h2 className="mb-3 font-display text-lg font-bold text-headline">Available slots</h2>
+      {slots.length === 0 ? (
+        <Card>
+          <CardContent>
+            <Empty>
+              <EmptyDescription>This tutor has no open slots in the coming week.</EmptyDescription>
+            </Empty>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {slots.slice(0, 24).map((slot) => (
+            <Card key={slot.startIso}>
+              <CardContent className="flex items-center justify-between py-4">
+                <span className="text-sm">{formatWhen(slot.startIso, slot.endIso)}</span>
+                <BookButton tutorId={tutorId} studentId={user.id} startIso={slot.startIso} endIso={slot.endIso} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <p className="mt-6 text-xs text-muted-foreground">
+        Slots shown respect this tutor&apos;s weekly availability and minimum-notice window. Booking is verified again by
+        the scheduling domain before it&apos;s confirmed.
+      </p>
+      <Link href="/student/tutors" className="mt-2 inline-block">
+        <Button variant="outline" size="sm">
+          Back to tutors
+        </Button>
+      </Link>
+    </main>
+  );
+}

@@ -1,3 +1,4 @@
+'use client';
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker, UI } from "react-day-picker";
 import { cn } from '@mojo/shared/util';

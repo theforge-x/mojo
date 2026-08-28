@@ -1,3 +1,4 @@
+"use client";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { cn } from '@mojo/shared/util';
 
@@ -143,7 +144,9 @@ export function WeeklyCalendar({
 
   const slotToDate = useCallback(
     (day: number, slot: number): Date => {
-      const d = new Date(weekDays[day]);
+      const base = weekDays[day];
+      if (!base) return new Date(NaN);
+      const d = new Date(base.getTime());
       const hour = startHour + Math.floor(slot / HOUR_SLOTS);
       const min = (slot % HOUR_SLOTS) * 15;
       d.setHours(hour, min, 0, 0);

@@ -5,9 +5,12 @@ const TOKEN_TTL_SECONDS = 3 * 60 * 60; // a lesson plus buffer, not LiveKit's 6h
 
 /**
  * The one file in the whole codebase allowed to import livekit-server-sdk —
- * every other module reaches the lab only through LabProvider.
- * Room name is the session id directly: a session and its room are the same
- * concept, so there's no separate mapping table to keep in sync.
+ * every other module reaches the Lab only through LabProvider. Room name is
+ * the session id directly: a session and its room are the same concept, so
+ * there's no separate mapping table to keep in sync. Grants publish+subscribe
+ * to every participant equally — Mojo doesn't distinguish "presenter" vs
+ * "viewer" permissions at the token level, only at the UI layer (see
+ * LabRoom's focus/carousel split for how one-to-many actually renders).
  */
 export class LiveKitLabProvider implements LabProvider {
   constructor(
@@ -21,7 +24,7 @@ export class LiveKitLabProvider implements LabProvider {
     participantId: string;
     participantName: string;
   }): Promise<LabAccess> {
-    const roomName = `mojo-session-${input.sessionId}`;
+    const roomName = `mojo-lab-${input.sessionId}`;
 
     const at = new AccessToken(this.apiKey, this.apiSecret, {
       identity: input.participantId,
@@ -29,7 +32,13 @@ export class LiveKitLabProvider implements LabProvider {
       ttl: TOKEN_TTL_SECONDS,
     });
 
-    const grant: VideoGrant = { room: roomName, roomJoin: true, canPublish: true, canSubscribe: true };
+    const grant: VideoGrant = {
+      room: roomName,
+      roomJoin: true,
+      canPublish: true,
+      canPublishData: true, // required for chat + whiteboard + file-share signaling
+      canSubscribe: true,
+    };
     at.addGrant(grant);
 
     const participantToken = await at.toJwt();

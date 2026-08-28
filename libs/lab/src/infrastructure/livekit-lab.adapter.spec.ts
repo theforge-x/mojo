@@ -11,19 +11,24 @@ describe('LiveKitLabProvider', () => {
       participantName: 'Ifeoma A.',
     });
 
-    expect(access.roomName).toBe('mojo-session-s_123');
+    expect(access.roomName).toBe('mojo-lab-s_123');
     expect(access.serverUrl).toBe('wss://mojo.livekit.cloud');
-    expect(typeof access.participantToken).toBe('string');
     expect(access.participantToken.length).toBeGreaterThan(0);
   });
 
-  it('two different participants for the same session get the same room name', async () => {
+  it('every participant in the same session shares one room, regardless of headcount', async () => {
     const provider = new LiveKitLabProvider('key', 'secret', 'wss://mojo.livekit.cloud');
 
-    const tutorAccess = await provider.createAccess({ sessionId: 's_123', participantId: 'tutor_1', participantName: 'Tutor' });
-    const studentAccess = await provider.createAccess({ sessionId: 's_123', participantId: 'student_1', participantName: 'Student' });
+    const names = ['Tutor', 'Student A', 'Student B', 'Student C'];
+    const accesses = await Promise.all(
+      names.map((name, i) =>
+        provider.createAccess({ sessionId: 's_group', participantId: `p_${i}`, participantName: name }),
+      ),
+    );
 
-    expect(tutorAccess.roomName).toBe(studentAccess.roomName);
-    expect(tutorAccess.participantToken).not.toBe(studentAccess.participantToken);
+    const roomNames = new Set(accesses.map((a) => a.roomName));
+    expect(roomNames.size).toBe(1);
+    const tokens = new Set(accesses.map((a) => a.participantToken));
+    expect(tokens.size).toBe(accesses.length); // every participant still gets a distinct token
   });
 });
