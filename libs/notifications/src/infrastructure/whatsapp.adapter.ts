@@ -13,7 +13,12 @@ export class WhatsAppDispatcher implements Pick<NotificationDispatcher, 'send'> 
     private readonly accessToken: string,
   ) {}
 
-  async send(_channel: 'whatsapp', to: string, templateId: string, data: Record<string, unknown>): Promise<void> {
+  async send(
+    _channel: 'whatsapp',
+    to: string,
+    templateId: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
     const response = await fetch(`${WHATSAPP_API_BASE}/${this.phoneNumberId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
@@ -29,5 +34,10 @@ export class WhatsAppDispatcher implements Pick<NotificationDispatcher, 'send'> 
 }
 
 function toComponents(data: Record<string, unknown>) {
-  return [{ type: 'body', parameters: Object.values(data).map((value) => ({ type: 'text', text: String(value) })) }];
+  return [
+    {
+      type: 'body',
+      parameters: Object.values(data).map((value) => ({ type: 'text', text: String(value) })),
+    },
+  ];
 }

@@ -1,11 +1,8 @@
-import { describe, expect, it } from 'vitest';
 import { eventBus } from '@mojo/shared/events';
+import { describe, expect, it } from 'vitest';
 import type { ApplicationRepository } from '../domain/tutor-profile.ports';
 import type { TutorApplication } from '../domain/tutor-profile.types';
-import {
-  ApplicationSubmittedError,
-  makeSubmitApplication,
-} from './submit-application.use-case';
+import { ApplicationSubmittedError, makeSubmitApplication } from './submit-application.use-case';
 
 function fakeApplications(initial: TutorApplication | null = null) {
   let store = initial;

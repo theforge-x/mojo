@@ -24,6 +24,19 @@ Modules depend **downward only**, through another module's public API (its
 importing another module's `domain` or `infrastructure` layers directly, and never
 sideways within the same tier except via events.
 
+> **Enforced in code (as built).** This is the *intent*; the enforced rules are
+> stricter and gate the build (`npm run lint:boundaries`):
+> - `domain/` layers are **fully isolated** — they import only `@mojo/shared/*`
+>   and their own module, never another module (not even its `domain`).
+> - Only `application`/`infrastructure` may import another module's `domain`
+>   contract types (e.g. `discovery` → `@mojo/pricing/domain` for the rate
+>   contract). Other modules' `application`/`infrastructure`/`feature` may never
+>   be imported across a boundary; inter-module behaviour flows through
+>   `@mojo/shared/events`.
+> - The dependency tables below are the planning view. The actual code-level
+>   module graph is much smaller — see `docs/uml/01-structural.md` and
+>   `docs/uml/05-spec.md` for what is real in the tree.
+
 ```
 Platform        notifications · admin-config · analytics
                           ↓ (mostly via events)
@@ -124,6 +137,12 @@ stay decoupled from everything they observe.
 | `ReviewSubmitted` | `reviews` | `tutor-performance`, `notifications` |
 | `DisputeFiled/Resolved` | `trust-safety` | `notifications`, `payments` (holds/releases funds) |
 | `ReferralConverted` | `referrals` | `billing`, `payments`, `notifications` |
+
+> **[divergence]** The events actually defined in code are a subset of this table
+> (and `TutorApplicationSubmitted` / `ReferralConverted` are typed and published).
+> The 15-event catalog that exists is in `docs/uml/04-behavioral.md §11`;
+> `SessionRescheduled`, `TutorApplicationApproved/Rejected`, and a few others above
+> remain roadmap events.
 
 Notice `tutor-performance` never gets written to directly by anything — it's built
 entirely from `SessionCompleted`, `SessionCancelled`, `SessionNoShow`, and

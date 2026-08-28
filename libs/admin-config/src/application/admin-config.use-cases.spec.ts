@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import type { FeatureFlagRepository, SubjectTaxonomyRepository, AuditLogRepository } from '../domain/admin-config.ports';
-import type { AuditLogEntry, FeatureFlag, SubjectTaxonomyEntry } from '../domain/admin-config.types';
-import { makeSetFeatureFlag, InvalidRolloutPercentError } from './set-feature-flag.use-case';
+import type {
+  AuditLogRepository,
+  FeatureFlagRepository,
+  SubjectTaxonomyRepository,
+} from '../domain/admin-config.ports';
+import type {
+  AuditLogEntry,
+  FeatureFlag,
+  SubjectTaxonomyEntry,
+} from '../domain/admin-config.types';
 import { makeAppendAuditLog } from './append-audit-log.use-case';
 import { makeListSubjects } from './list-subjects.use-case';
+import { InvalidRolloutPercentError, makeSetFeatureFlag } from './set-feature-flag.use-case';
 
 describe('setFeatureFlag', () => {
   it('persists a valid flag', async () => {
@@ -50,9 +58,7 @@ describe('appendAuditLog', () => {
 
 describe('listSubjects', () => {
   it('returns subjects from the taxonomy repository', async () => {
-    const rows: SubjectTaxonomyEntry[] = [
-      { id: 'maths', name: 'Mathematics', parentId: null },
-    ];
+    const rows: SubjectTaxonomyEntry[] = [{ id: 'maths', name: 'Mathematics', parentId: null }];
     const taxonomy: SubjectTaxonomyRepository = {
       list: async () => rows,
       save: async () => {},

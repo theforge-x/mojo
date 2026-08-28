@@ -1,5 +1,5 @@
-import { LabRoom } from 'libs/lab/src/feature';
-import { LiveKitLabProvider } from 'libs/lab/src/infrastructure';
+import { LabRoom } from '@mojo/lab/feature';
+import { LiveKitLabProvider } from '@mojo/lab/infrastructure';
 
 /**
  * Server Component fetches a fresh LiveKit access token per page load —

@@ -93,12 +93,19 @@ libs/scheduling/
 The dependency rule that makes this "clean" rather than just a folder convention:
 **domain imports nothing from this module's other layers; application imports only
 domain; infrastructure implements domain's ports; feature imports application and
-shared/ui.** Enforce it with Nx's module boundary rule (`@nx/enforce-module-
-boundaries`), tagging each project (`type:domain`, `type:application`,
-`type:infrastructure`, `type:feature`, `scope:scheduling`, etc.) and configuring
-`depConstraints` in `.eslintrc` so a `type:domain` project physically cannot import
-a `type:infrastructure` one — this is what turns the modular monolith from a
-convention people can forget into something the build fails on.
+shared/ui.**
+
+**Enforcement (as built).** These rules no longer rely on convention —
+`eslint.config.mjs` configures `@nx/enforce-module-boundaries` (each module tagged
+`scope:*` may depend only on `@mojo/shared/*` plus its declared peers) and a custom
+`@mojo/clean-architecture` layer rule (`tools/eslint/mojo-clean-architecture.mjs`)
+that enforces domain isolation, the inward layer direction, cross-module access
+through `domain` contract types and the event bus, and Prisma confined to
+`infrastructure`. `npm run lint:boundaries` runs both; `npm run build` runs it
+first, so a boundary violation fails the build. Modules use the code layout
+`libs/<module>/src/{domain,application,infrastructure,feature}/` (not sub-libraries
+with separate tsconfigs) — the layering is enforced by these lint rules, not by
+project separation.
 
 Every other module in `libs/` gets the same four sub-libraries. Some are thinner
 than `scheduling` — `lab` is mostly `infrastructure` (a wrapper around a
@@ -113,14 +120,9 @@ What "clean TypeScript domain contracts" actually looks like, using `pricing` �
 the module the roadmap flagged as needing to be pure, I/O-free logic:
 
 ```typescript
-// libs/pricing/domain/src/pricing.types.ts — pure domain, zero dependencies
-
-export type TutorLevel = 'entry' | 'established' | 'expert';
-
-export interface Money {
-  readonly amountKobo: number;   // store the smallest unit, never a float
-  readonly currency: 'NGN' | 'USD';
-}
+// libs/pricing/src/domain/pricing.types.ts — pure domain, zero dependencies
+// (as built: `TutorLevel` and `Money` now live in `@mojo/shared/domain` so that
+//  several modules share them without importing each other's domain.)
 
 export interface SegmentRate {
   readonly level: TutorLevel;
@@ -139,6 +141,7 @@ export interface CommissionSplit {
 export interface TutorLevelReader {
   getLevel(tutorId: string): Promise<TutorLevel>;
   hasMojoPlus(tutorId: string): Promise<boolean>;
+  getCustomRateMinor(tutorId: string): Promise<number | null>;
 }
 
 // Pure function — no I/O, fully unit-testable with plain objects.
@@ -147,13 +150,13 @@ export function calculateLessonCharge(
   rate: SegmentRate,
   takeHomePercent: number,
 ): CommissionSplit {
-  const totalKobo = segments * rate.perSegment.amountKobo;
-  const tutorKobo = Math.round(totalKobo * (takeHomePercent / 100));
+  const totalMinor = segments * rate.perSegment.amountMinor;
+  const tutorMinor = Math.round(totalMinor * (takeHomePercent / 100));
   return {
-    total: { amountKobo: totalKobo, currency: rate.perSegment.currency },
-    tutorTakeHome: { amountKobo: tutorKobo, currency: rate.perSegment.currency },
+    total: { amountMinor: totalMinor, currency: rate.perSegment.currency },
+    tutorTakeHome: { amountMinor: tutorMinor, currency: rate.perSegment.currency },
     platformCommission: {
-      amountKobo: totalKobo - tutorKobo,
+      amountMinor: totalMinor - tutorMinor,
       currency: rate.perSegment.currency,
     },
   };
@@ -161,7 +164,7 @@ export function calculateLessonCharge(
 ```
 
 ```typescript
-// libs/pricing/application/src/record-session-completion.use-case.ts
+// libs/pricing/src/application/record-session-completion.use-case.ts
 // Orchestrates domain logic via ports — still no Prisma import here.
 
 import { calculateLessonCharge, TutorLevelReader } from '@mojo/pricing/domain';

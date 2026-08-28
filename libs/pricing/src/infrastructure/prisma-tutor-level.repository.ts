@@ -11,7 +11,9 @@ export class PrismaTutorLevelReader implements TutorLevelReader {
   }
 
   async hasMojoPlus(tutorId: string): Promise<boolean> {
-    const sub = await this.prisma.mojoPlusSubscription.findUnique({ where: { tutorId, status: 'active' } });
+    const sub = await this.prisma.mojoPlusSubscription.findUnique({
+      where: { tutorId, status: 'active' },
+    });
     return sub !== null;
   }
 

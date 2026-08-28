@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { eventBus } from '@mojo/shared/events';
+import { describe, expect, it } from 'vitest';
 import type { DisputeRepository } from '../domain/trust-safety.ports';
 import type { Dispute } from '../domain/trust-safety.types';
 import { makeFileDispute } from './file-dispute.use-case';

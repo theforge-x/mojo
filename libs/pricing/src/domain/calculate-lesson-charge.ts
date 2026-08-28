@@ -1,4 +1,4 @@
-import { money, percentOf, subtractMoney, type Money } from '@mojo/shared/domain';
+import { type Money, money, percentOf, subtractMoney } from '@mojo/shared/domain';
 import type { CommissionSplit, SegmentRate } from './pricing.types';
 
 /**

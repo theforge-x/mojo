@@ -46,7 +46,11 @@ describe('EventBus', () => {
     const unsubscribe = bus.subscribe('MojoPlusSubscribed', handler);
     unsubscribe();
 
-    await bus.publish({ name: 'MojoPlusSubscribed', occurredAt: new Date().toISOString(), payload: { tutorId: 't_1' } });
+    await bus.publish({
+      name: 'MojoPlusSubscribed',
+      occurredAt: new Date().toISOString(),
+      payload: { tutorId: 't_1' },
+    });
 
     expect(handler).not.toHaveBeenCalled();
   });

@@ -1,1 +1,6 @@
-{ "name": "booking", "sourceRoot": "libs/booking/src", "projectType": "library", "tags": ["scope:booking"] }
+{
+  "name": "booking",
+  "sourceRoot": "libs/booking/src",
+  "projectType": "library",
+  "tags": ["scope:booking"]
+}

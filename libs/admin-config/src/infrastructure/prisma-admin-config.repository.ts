@@ -4,7 +4,11 @@ import type {
   FeatureFlagRepository,
   SubjectTaxonomyRepository,
 } from '../domain/admin-config.ports';
-import type { AuditLogEntry, FeatureFlag, SubjectTaxonomyEntry } from '../domain/admin-config.types';
+import type {
+  AuditLogEntry,
+  FeatureFlag,
+  SubjectTaxonomyEntry,
+} from '../domain/admin-config.types';
 
 export class PrismaFeatureFlagRepository implements FeatureFlagRepository {
   constructor(private readonly prisma: PrismaClient) {}

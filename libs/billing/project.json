@@ -1,1 +1,6 @@
-{ "name": "billing", "sourceRoot": "libs/billing/src", "projectType": "library", "tags": ["scope:billing"] }
+{
+  "name": "billing",
+  "sourceRoot": "libs/billing/src",
+  "projectType": "library",
+  "tags": ["scope:billing"]
+}

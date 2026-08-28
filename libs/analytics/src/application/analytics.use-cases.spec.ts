@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AnalyticsRepository, LeaderboardCandidate } from '../domain/analytics.ports';
-import { makeComputePlatformMetrics } from './compute-platform-metrics.use-case';
 import { makeBuildLeaderboard } from './build-leaderboard.use-case';
+import { makeComputePlatformMetrics } from './compute-platform-metrics.use-case';
 
 function fakeAnalytics(candidates: LeaderboardCandidate[] = []): AnalyticsRepository {
   return {

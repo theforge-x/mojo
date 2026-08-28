@@ -1,1 +1,6 @@
-{ "name": "admin-config", "sourceRoot": "libs/admin-config/src", "projectType": "library", "tags": ["scope:admin-config"] }
+{
+  "name": "admin-config",
+  "sourceRoot": "libs/admin-config/src",
+  "projectType": "library",
+  "tags": ["scope:admin-config"]
+}

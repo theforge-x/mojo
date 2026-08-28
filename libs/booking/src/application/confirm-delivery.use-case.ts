@@ -1,5 +1,5 @@
-import { segmentsBetween } from '@mojo/shared/util';
 import { eventBus } from '@mojo/shared/events';
+import { segmentsBetween } from '@mojo/shared/util';
 import type { BookingRepository } from '../domain/booking.ports';
 
 export interface ConfirmDeliveryInput {

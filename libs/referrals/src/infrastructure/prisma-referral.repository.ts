@@ -8,7 +8,11 @@ export class PrismaReferralRepository implements ReferralRepository {
   async findLink(code: string): Promise<ReferralLink | null> {
     const row = await this.prisma.referralLink.findUnique({ where: { code } });
     if (!row) return null;
-    return { code: row.code, ownerId: row.ownerId, ownerRole: row.ownerRole as ReferralLink['ownerRole'] };
+    return {
+      code: row.code,
+      ownerId: row.ownerId,
+      ownerRole: row.ownerRole as ReferralLink['ownerRole'],
+    };
   }
 
   async saveLink(link: ReferralLink): Promise<void> {

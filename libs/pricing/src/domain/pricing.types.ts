@@ -1,6 +1,6 @@
-import type { Money } from '@mojo/shared/domain';
+import type { Money, TutorLevel } from '@mojo/shared/domain';
 
-export type TutorLevel = 'entry' | 'established' | 'expert';
+export type { TutorLevel };
 
 export interface SegmentRate {
   readonly level: TutorLevel;
