@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { eventBus } from '@mojo/shared/events';
+import { describe, expect, it } from 'vitest';
 import type { ReviewRepository } from '../domain/reviews.ports';
 import type { Review } from '../domain/reviews.types';
 import { makeSubmitReview } from './submit-review.use-case';

@@ -1,4 +1,4 @@
-import type { TutorLevel } from '@mojo/pricing/domain';
+import type { TutorLevel } from '@mojo/shared/domain';
 
 export interface TutorPerformance {
   readonly tutorId: string;
@@ -11,7 +11,10 @@ export interface TutorPerformance {
 }
 
 /** Illustrative starting thresholds from the roadmap — not final. */
-export const LEVEL_THRESHOLDS: Record<Exclude<TutorLevel, 'entry'>, { hours: number; minRating: number }> = {
+export const LEVEL_THRESHOLDS: Record<
+  Exclude<TutorLevel, 'entry'>,
+  { hours: number; minRating: number }
+> = {
   established: { hours: 50, minRating: 4.5 },
   expert: { hours: 200, minRating: 4.7 },
 };

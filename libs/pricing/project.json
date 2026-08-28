@@ -1,1 +1,6 @@
-{ "name": "pricing", "sourceRoot": "libs/pricing/src", "projectType": "library", "tags": ["scope:pricing"] }
+{
+  "name": "pricing",
+  "sourceRoot": "libs/pricing/src",
+  "projectType": "library",
+  "tags": ["scope:pricing"]
+}

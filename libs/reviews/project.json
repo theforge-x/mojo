@@ -1,1 +1,6 @@
-{ "name": "reviews", "sourceRoot": "libs/reviews/src", "projectType": "library", "tags": ["scope:reviews"] }
+{
+  "name": "reviews",
+  "sourceRoot": "libs/reviews/src",
+  "projectType": "library",
+  "tags": ["scope:reviews"]
+}

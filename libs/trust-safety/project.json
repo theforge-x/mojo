@@ -1,1 +1,6 @@
-{ "name": "trust-safety", "sourceRoot": "libs/trust-safety/src", "projectType": "library", "tags": ["scope:trust-safety"] }
+{
+  "name": "trust-safety",
+  "sourceRoot": "libs/trust-safety/src",
+  "projectType": "library",
+  "tags": ["scope:trust-safety"]
+}

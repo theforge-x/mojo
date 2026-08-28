@@ -1,4 +1,4 @@
-import type { TutorLevel } from '@mojo/pricing/domain';
+import type { TutorLevel } from '@mojo/shared/domain';
 
 export interface TutorSearchFilters {
   readonly subject?: string;

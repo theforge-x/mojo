@@ -1,16 +1,21 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { NotificationChannel, NotificationDispatcher } from '../domain/notifications.types';
-import { makeDispatchNotification, UnsupportedChannelError } from './dispatch-notification.use-case';
+import type { NotificationDispatcher } from '../domain/notifications.types';
+import {
+  UnsupportedChannelError,
+  makeDispatchNotification,
+} from './dispatch-notification.use-case';
 
-function makeSpyDispatcher(channel: NotificationChannel) {
+function makeSpyDispatcher() {
   const send = vi.fn<NotificationDispatcher['send']>(async () => {});
   return { dispatcher: { send } as NotificationDispatcher, send };
 }
 
 describe('dispatchNotification', () => {
   it('routes to the dispatcher registered for the channel', async () => {
-    const email = makeSpyDispatcher('email');
-    const dispatchNotification = makeDispatchNotification({ dispatchers: { email: email.dispatcher } });
+    const email = makeSpyDispatcher();
+    const dispatchNotification = makeDispatchNotification({
+      dispatchers: { email: email.dispatcher },
+    });
     await dispatchNotification({
       channel: 'email',
       to: 'a@b.com',

@@ -1,5 +1,5 @@
-import type { PrismaClient } from '@prisma/client';
 import { DEFAULT_SEGMENT_RATE_NGN } from '@mojo/pricing/domain';
+import type { PrismaClient } from '@prisma/client';
 import type { TutorSearchIndex } from '../domain/discovery.ports';
 import type { TutorSearchFilters, TutorSearchResult } from '../domain/discovery.types';
 
@@ -35,7 +35,10 @@ export class PrismaTutorSearchIndex implements TutorSearchIndex {
         };
       })
       .filter((r) => {
-        if (filters.subject && !profiles.find((p) => p.tutorId === r.tutorId)?.subjects.includes(filters.subject)) {
+        if (
+          filters.subject &&
+          !profiles.find((p) => p.tutorId === r.tutorId)?.subjects.includes(filters.subject)
+        ) {
           return false;
         }
         if (filters.level && r.level !== filters.level) return false;

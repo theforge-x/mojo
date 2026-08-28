@@ -21,7 +21,11 @@ export class PrismaRecapRepository implements RecapRepository {
         generatedAt: new Date(recap.generatedAt),
         reviewedByTutor: recap.reviewedByTutor,
       },
-      update: { summary: recap.summary, focusAreas: [...recap.focusAreas], reviewedByTutor: recap.reviewedByTutor },
+      update: {
+        summary: recap.summary,
+        focusAreas: [...recap.focusAreas],
+        reviewedByTutor: recap.reviewedByTutor,
+      },
     });
   }
 

@@ -1,8 +1,11 @@
-import { describe, expect, it } from 'vitest';
 import { eventBus } from '@mojo/shared/events';
-import type { ReferralConversion, ReferralLink } from '../domain/referrals.types';
+import { describe, expect, it } from 'vitest';
 import type { ReferralRepository } from '../domain/referrals.ports';
-import { makeTrackReferralConversion, ReferralAlreadyTrackedError } from './track-referral.use-case';
+import type { ReferralConversion, ReferralLink } from '../domain/referrals.types';
+import {
+  ReferralAlreadyTrackedError,
+  makeTrackReferralConversion,
+} from './track-referral.use-case';
 
 function fakeReferrals() {
   const links: ReferralLink[] = [];

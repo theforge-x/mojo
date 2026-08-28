@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import type { SessionCompleted } from '@mojo/shared/events';
+import { describe, expect, it } from 'vitest';
 import type { TutorLevelReader } from '../domain/pricing.ports';
 import { makeRecordSessionCompletion } from './record-session-completion.use-case';
 
@@ -36,7 +36,9 @@ describe('recordSessionCompletion', () => {
   });
 
   it('applies the Mojo+ bonus when the tutor is subscribed', async () => {
-    const recordSessionCompletion = makeRecordSessionCompletion(fakeLevels({ hasMojoPlus: async () => true }));
+    const recordSessionCompletion = makeRecordSessionCompletion(
+      fakeLevels({ hasMojoPlus: async () => true }),
+    );
     const result = await recordSessionCompletion(completedEvent(4));
 
     expect(result.tutorTakeHome.amountMinor).toBe(1_680_000);
@@ -52,7 +54,9 @@ describe('recordSessionCompletion', () => {
   });
 
   it('pays the tutor ₦0 for a trial lesson regardless of level or Mojo+', async () => {
-    const recordSessionCompletion = makeRecordSessionCompletion(fakeLevels({ hasMojoPlus: async () => true }));
+    const recordSessionCompletion = makeRecordSessionCompletion(
+      fakeLevels({ hasMojoPlus: async () => true }),
+    );
     const result = await recordSessionCompletion(completedEvent(4, 0));
 
     expect(result.tutorTakeHome.amountMinor).toBe(0);
