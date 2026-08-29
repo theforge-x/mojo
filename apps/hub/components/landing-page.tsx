@@ -42,7 +42,7 @@ export function LandingPage() {
   return (
     <main className="bg-background">
       <section className="relative overflow-hidden border-b border-border">
-        <div className="mx-auto grid max-w-6xl gap-12 px-4 py-20 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:py-28">
+        <div className="mx-auto grid max-w-7xl gap-12 px-4 py-20 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:py-28">
           <div>
             <Badge variant="primary" className="mb-5 gap-1.5">
               <Sparkles className="size-3.5" />
@@ -60,7 +60,7 @@ export function LandingPage() {
               real-time video, shared whiteboards and flexible scheduling.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link href="/login">
+              <Link href="/signup">
                 <Button size="lg">Start learning</Button>
               </Link>
               <Link href="/apply">
@@ -120,7 +120,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section id="why-mojo" className="mx-auto max-w-6xl px-4 py-20">
+      <section id="why-mojo" className="mx-auto max-w-7xl px-4 py-20">
         <h2 className="font-display text-center text-3xl font-extrabold text-headline">
           Tutoring for real life
         </h2>
@@ -143,7 +143,7 @@ export function LandingPage() {
       </section>
 
       <section id="how-it-works" className="border-y border-border bg-muted/40 py-20">
-        <div className="mx-auto max-w-6xl px-4">
+        <div className="mx-auto max-w-7xl px-4">
           <h2 className="font-display text-center text-3xl font-extrabold text-headline">
             How it works
           </h2>
@@ -165,7 +165,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-20">
+      <section className="mx-auto max-w-7xl px-4 py-20">
         <div className="rounded-2xl bg-gradient-to-br from-primary/15 via-background to-secondary/15 p-10 text-center sm:p-14">
           <h2 className="font-display text-3xl font-extrabold text-headline sm:text-4xl">
             Your next lesson is one click away
@@ -174,7 +174,7 @@ export function LandingPage() {
             Sign up free as a student, or apply to teach and start earning on your schedule.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/login">
+            <Link href="/signup">
               <Button size="lg">Start learning</Button>
             </Link>
             <Link href="/apply">

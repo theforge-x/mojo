@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
-  const headerUser = user ? { email: user.email, role: user.role } : null;
+  const headerUser = user ? { name: user.name, email: user.email, role: user.role } : null;
 
   return (
     <html lang="en" className={`${manrope.variable} ${dmSans.variable} ${dmMono.variable}`}>

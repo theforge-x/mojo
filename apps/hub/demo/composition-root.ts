@@ -1,31 +1,43 @@
-import { PrismaClient } from '@prisma/client';
-import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
 import { makeGenerateRecap } from '@mojo/ai-learning/application';
+import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
+import { type ConfirmDeliveryInput, makeConfirmDelivery } from '@mojo/booking/application';
 import type { BookingRepository } from '@mojo/booking/domain';
-import { makeConfirmDelivery, type ConfirmDeliveryInput } from '@mojo/booking/application';
-import type { TutorSearchIndex, TutorSearchFilters, TutorSearchResult } from '@mojo/discovery/domain';
 import { makeSearchTutors } from '@mojo/discovery/application';
+import type {
+  TutorSearchFilters,
+  TutorSearchIndex,
+  TutorSearchResult,
+} from '@mojo/discovery/domain';
+import { makeAuthenticateUser, makeRegisterUser } from '@mojo/identity/application';
 import type { TokenIssuer, User, UserRepository } from '@mojo/identity/domain';
 import { bcryptPasswordHasher } from '@mojo/identity/infrastructure';
-import { makeAuthenticateUser } from '@mojo/identity/application';
 import type { MessageRepository } from '@mojo/messaging/domain';
 import type { MojoPlusRepository } from '@mojo/mojo-plus/domain';
-import type { NotificationDispatcher } from '@mojo/notifications/domain';
 import { makeDispatchNotification } from '@mojo/notifications/application';
-import type { PayoutRail, WalletRepository } from '@mojo/payments/domain';
+import type { NotificationDispatcher } from '@mojo/notifications/domain';
 import { makeReleasePayout, type ReleasePayoutInput } from '@mojo/payments/application';
-import type { TutorLevelReader } from '@mojo/pricing/domain';
+import type { PayoutRail, WalletRepository } from '@mojo/payments/domain';
 import { makeRecordSessionCompletion } from '@mojo/pricing/application';
+import type { TutorLevelReader } from '@mojo/pricing/domain';
 import type { ReferralRepository } from '@mojo/referrals/domain';
 import type { ReviewRepository } from '@mojo/reviews/domain';
-import type { AvailabilityRepository, AvailabilityRule, ScheduledSession, SchedulingSettings, SessionRepository } from '@mojo/scheduling/domain';
-import { makeBookSession, makeCancelSession, makeConfirmSession, makeSetAvailability, type BookSessionInput, type CancelSessionInput, type ConfirmSessionInput } from '@mojo/scheduling/application';
-import type { TutorPerformance, TutorPerformanceRepository } from '@mojo/tutor-performance/domain';
-import { makeRecomputeLevel } from '@mojo/tutor-performance/application';
-import type { ApplicationRepository, TutorProfileRepository } from '@mojo/tutor-profile/domain';
-import type { TutorApplication } from '@mojo/tutor-profile/domain';
-import { makeSubmitApplication } from '@mojo/tutor-profile/application';
-import type { DisputeRepository } from '@mojo/trust-safety/domain';
+import {
+  type BookSessionInput,
+  type CancelSessionInput,
+  type ConfirmSessionInput,
+  makeBookSession,
+  makeCancelSession,
+  makeConfirmSession,
+  makeSetAvailability,
+} from '@mojo/scheduling/application';
+import type {
+  AvailabilityRepository,
+  AvailabilityRule,
+  ScheduledSession,
+  SchedulingSettings,
+  SessionRepository,
+} from '@mojo/scheduling/domain';
+import type { Money } from '@mojo/shared/domain';
 import {
   eventBus,
   type ReviewSubmitted,
@@ -34,30 +46,16 @@ import {
   type SessionCompleted,
   type SessionDeliveryConfirmed,
 } from '@mojo/shared/events';
-import type { Money } from '@mojo/shared/domain';
-import { demoId, DemoState, type SentNotification } from './state';
-import {
-  MemTokenIssuer,
-  InMemoryApplicationRepository,
-  InMemoryAvailabilityRepository,
-  InMemoryBookingRepository,
-  InMemoryDisputeRepository,
-  InMemoryMessageRepository,
-  InMemoryMojoPlusRepository,
-  InMemoryPayoutRail,
-  InMemoryRecapRepository,
-  InMemoryReferralRepository,
-  InMemoryReviewRepository,
-  InMemorySessionRepository,
-  InMemoryTutorLevelReader,
-  InMemoryTutorPerformanceRepository,
-  InMemoryTutorProfileRepository,
-  InMemoryTutorSearchIndex,
-  InMemoryUserRepository,
-  InMemoryWalletRepository,
-  demoTranscriptSummarizer,
-} from './repos';
-import { seedDemo } from './seed';
+import type { DisputeRepository } from '@mojo/trust-safety/domain';
+import { makeRecomputeLevel } from '@mojo/tutor-performance/application';
+import type { TutorPerformance, TutorPerformanceRepository } from '@mojo/tutor-performance/domain';
+import { makeSubmitApplication } from '@mojo/tutor-profile/application';
+import type {
+  ApplicationRepository,
+  TutorApplication,
+  TutorProfileRepository,
+} from '@mojo/tutor-profile/domain';
+import { PrismaClient } from '@prisma/client';
 import {
   EmailDispatcher,
   PaystackPayoutRail,
@@ -78,6 +76,29 @@ import {
   PrismaWalletRepository,
   WhatsAppDispatcher,
 } from './prisma-repos';
+import {
+  demoTranscriptSummarizer,
+  InMemoryApplicationRepository,
+  InMemoryAvailabilityRepository,
+  InMemoryBookingRepository,
+  InMemoryDisputeRepository,
+  InMemoryMessageRepository,
+  InMemoryMojoPlusRepository,
+  InMemoryPayoutRail,
+  InMemoryRecapRepository,
+  InMemoryReferralRepository,
+  InMemoryReviewRepository,
+  InMemorySessionRepository,
+  InMemoryTutorLevelReader,
+  InMemoryTutorPerformanceRepository,
+  InMemoryTutorProfileRepository,
+  InMemoryTutorSearchIndex,
+  InMemoryUserRepository,
+  InMemoryWalletRepository,
+  MemTokenIssuer,
+} from './repos';
+import { seedDemo } from './seed';
+import { DemoState, demoId, type SentNotification } from './state';
 
 interface Repositories {
   users: UserRepository;
@@ -111,7 +132,18 @@ export interface HubApp {
   identity: {
     userById(id: string): Promise<User | null>;
     userByToken(token: string): Promise<User | null>;
-    authenticate(email: string, password: string): Promise<{ token: string; expiresAt: string; role: string; user: User }>;
+    authenticate(
+      email: string,
+      password: string,
+    ): Promise<{ token: string; expiresAt: string; role: string; user: User }>;
+    register(input: {
+      name: string;
+      email: string;
+      password: string;
+      timezone: string;
+      locale: string;
+      role?: 'student' | 'tutor';
+    }): Promise<User>;
   };
   scheduling: {
     sessionsByTutor(tutorId: string): Promise<ScheduledSession[]>;
@@ -138,7 +170,12 @@ export interface HubApp {
   };
   profile: {
     submitApplication(app: TutorApplication, nowIso: string): Promise<void>;
-    byTutor(tutorId: string): Promise<{ displayName: string } | null>;
+    byTutor(tutorId: string): Promise<{
+      displayName: string;
+      photoUrl: string;
+      subjects: readonly string[];
+      bio: string;
+    } | null>;
   };
   recaps: {
     latestFor(sessionId: string): Promise<LessonRecap | null>;
@@ -158,7 +195,7 @@ export function getHub(): HubApp {
   const isDemoMode = process.env.USE_PRISMA !== 'true';
   const state = new DemoState();
   const repos = isDemoMode ? buildInMemoryRepositories(state) : buildPrismaRepositories(state);
-  if (isDemoMode) void seedDemo(state);
+  if (isDemoMode) state.seedReady = seedDemo(state);
 
   hubInstance = buildApp(repos, isDemoMode, state);
   return hubInstance;
@@ -228,8 +265,11 @@ function buildPrismaRepositories(state: DemoState): Repositories {
           await prisma.availabilityRule.upsert({
             where: { id: rule.id },
             create: {
-              id: rule.id, tutorId: rule.tutorId, weekday: rule.weekday,
-              startMinute: rule.startMinute, endMinute: rule.endMinute,
+              id: rule.id,
+              tutorId: rule.tutorId,
+              weekday: rule.weekday,
+              startMinute: rule.startMinute,
+              endMinute: rule.endMinute,
             },
             update: { startMinute: rule.startMinute, endMinute: rule.endMinute },
           });
@@ -280,7 +320,10 @@ async function listSessions(
     endIso: row.endAt.toISOString(),
     status: row.status,
     isTrial: row.isTrial,
-    statusHistory: (row.statusHistory ?? []).map((h) => ({ status: h.status, at: h.at.toISOString() })),
+    statusHistory: (row.statusHistory ?? []).map((h) => ({
+      status: h.status,
+      at: h.at.toISOString(),
+    })),
   }));
 }
 
@@ -288,7 +331,10 @@ function externalDispatchers(): Record<'email' | 'whatsapp', NotificationDispatc
   const email = process.env.RESEND_API_KEY ? new EmailDispatcher(process.env.RESEND_API_KEY) : null;
   const whatsapp =
     process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_ACCESS_TOKEN
-      ? new WhatsAppDispatcher(process.env.WHATSAPP_PHONE_NUMBER_ID, process.env.WHATSAPP_ACCESS_TOKEN)
+      ? new WhatsAppDispatcher(
+          process.env.WHATSAPP_PHONE_NUMBER_ID,
+          process.env.WHATSAPP_ACCESS_TOKEN,
+        )
       : null;
   return {
     email: (email ?? inMemoryChannel('email')) as NotificationDispatcher,
@@ -304,14 +350,21 @@ function inMemoryChannel(channel: 'email' | 'whatsapp'): NotificationDispatcher 
   };
 }
 
-function inMemoryDispatchers(state: DemoState): Record<'email' | 'whatsapp', NotificationDispatcher> {
-  const push = (channel: 'email' | 'whatsapp') => (
-    to: string,
-    templateId: string,
-    data: Record<string, unknown>,
-  ) => {
-    state.notifications.push({ id: demoId('n'), channel, to, templateId, data, sentAt: new Date().toISOString() });
-  };
+function inMemoryDispatchers(
+  state: DemoState,
+): Record<'email' | 'whatsapp', NotificationDispatcher> {
+  const push =
+    (channel: 'email' | 'whatsapp') =>
+    (to: string, templateId: string, data: Record<string, unknown>) => {
+      state.notifications.push({
+        id: demoId('n'),
+        channel,
+        to,
+        templateId,
+        data,
+        sentAt: new Date().toISOString(),
+      });
+    };
   return {
     email: { send: async (_c, to, templateId, data) => push('email')(to, templateId, data) },
     whatsapp: { send: async (_c, to, templateId, data) => push('whatsapp')(to, templateId, data) },
@@ -330,11 +383,21 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     },
   };
 
-  const authenticateUser = makeAuthenticateUser({ users: repos.users, hasher: bcryptPasswordHasher, tokens });
-  const bookSession = makeBookSession({ availability: repos.availability, sessions: repos.sessions });
+  const authenticateUser = makeAuthenticateUser({
+    users: repos.users,
+    hasher: bcryptPasswordHasher,
+    tokens,
+  });
+  const registerUser = makeRegisterUser({ users: repos.users, hasher: bcryptPasswordHasher });
+  const bookSession = makeBookSession({
+    availability: repos.availability,
+    sessions: repos.sessions,
+  });
   const cancelSession = makeCancelSession({ sessions: repos.sessions });
   const confirmSession = makeConfirmSession({ sessions: repos.sessions });
-  const setAvailability = makeSetAvailability({ save: (rules) => repos.availability.saveRules(rules) });
+  const setAvailability = makeSetAvailability({
+    save: (rules) => repos.availability.saveRules(rules),
+  });
   const confirmDelivery = makeConfirmDelivery({ bookings: repos.bookings });
   const searchTutors = makeSearchTutors({ index: repos.searchIndex });
   const submitApplication = makeSubmitApplication({ applications: repos.applications });
@@ -348,7 +411,12 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     eventCounts.set(name, (eventCounts.get(name) ?? 0) + 1);
   };
 
-  const safeNotify = (channel: 'email' | 'whatsapp', to: string, templateId: string, data: Record<string, unknown>) => {
+  const safeNotify = (
+    channel: 'email' | 'whatsapp',
+    to: string,
+    templateId: string,
+    data: Record<string, unknown>,
+  ) => {
     dispatchNotification({ channel, to, templateId, data }).catch((error) => {
       console.error(`[hub] ${channel} notification failed`, error);
     });
@@ -381,10 +449,19 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     void (async () => {
       try {
         const split = await recordSessionCompletion(event);
-        await repos.wallets.credit(event.payload.tutorId, split.tutorTakeHome, event.payload.sessionId);
-        const perf = (await repos.performances.findByTutorId(event.payload.tutorId)) ?? emptyPerformance(event.payload.tutorId);
+        await repos.wallets.credit(
+          event.payload.tutorId,
+          split.tutorTakeHome,
+          event.payload.sessionId,
+        );
+        const perf =
+          (await repos.performances.findByTutorId(event.payload.tutorId)) ??
+          emptyPerformance(event.payload.tutorId);
         const hours = (event.payload.segmentCount * 15) / 60;
-        await recomputeLevel({ ...perf, cumulativeHoursTaught: perf.cumulativeHoursTaught + hours }, event.occurredAt);
+        await recomputeLevel(
+          { ...perf, cumulativeHoursTaught: perf.cumulativeHoursTaught + hours },
+          event.occurredAt,
+        );
         await generateRecap(event.payload.sessionId, demoTranscript(event), event.occurredAt);
       } catch (error) {
         console.error('[hub] SessionCompleted reaction failed', error);
@@ -395,9 +472,14 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     count('ReviewSubmitted');
     void (async () => {
       try {
-        const perf = (await repos.performances.findByTutorId(event.payload.tutorId)) ?? emptyPerformance(event.payload.tutorId);
+        const perf =
+          (await repos.performances.findByTutorId(event.payload.tutorId)) ??
+          emptyPerformance(event.payload.tutorId);
         const merged = (perf.averageRating + event.payload.rating) / 2;
-        await recomputeLevel({ ...perf, averageRating: Number(merged.toFixed(2)) }, event.occurredAt);
+        await recomputeLevel(
+          { ...perf, averageRating: Number(merged.toFixed(2)) },
+          event.occurredAt,
+        );
       } catch (error) {
         console.error('[hub] ReviewSubmitted reaction failed', error);
       }
@@ -430,10 +512,31 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
         return null;
       },
       authenticate: async (email, password) => {
+        if (state.seedReady) await state.seedReady;
         const result = await authenticateUser({ email, password });
         const user = await repos.users.findByEmail(email);
         if (!user) throw new Error('Authenticated user missing from repository.');
         return { ...result, user };
+      },
+      register: async ({ name, email, password, timezone, locale, role = 'student' }) => {
+        if (state.seedReady) await state.seedReady;
+        const prefix = role === 'tutor' ? 't_' : 'st_';
+        let max = 0;
+        for (const id of state.users.keys()) {
+          if (id.startsWith(prefix)) {
+            const n = Number(id.slice(prefix.length));
+            if (Number.isInteger(n) && n > max) max = n;
+          }
+        }
+        return registerUser({
+          id: `${prefix}${max + 1}`,
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+          role,
+          timezone,
+          locale,
+        });
       },
     },
     scheduling: {
@@ -466,7 +569,14 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       submitApplication: (app, nowIso) => submitApplication(app, nowIso),
       byTutor: async (tutorId) => {
         const profile = await repos.profiles.findByTutorId(tutorId);
-        return profile ? { displayName: profile.displayName } : null;
+        return profile
+          ? {
+              displayName: profile.displayName,
+              photoUrl: profile.photoUrl,
+              subjects: profile.subjects,
+              bio: profile.bio,
+            }
+          : null;
       },
     },
     recaps: {

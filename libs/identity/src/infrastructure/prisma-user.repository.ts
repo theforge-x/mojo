@@ -28,6 +28,7 @@ export class PrismaUserRepository implements UserRepository {
 function toDomain(row: any): User {
   return {
     id: row.id,
+    name: row.name,
     email: row.email,
     role: row.role,
     passwordHash: row.passwordHash,

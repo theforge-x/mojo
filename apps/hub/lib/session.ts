@@ -3,6 +3,7 @@ import { getHub } from '../demo/composition-root';
 
 export interface CurrentUser {
   readonly id: string;
+  readonly name: string;
   readonly email: string;
   readonly role: 'admin' | 'tutor' | 'student';
 }
@@ -21,5 +22,5 @@ export async function currentUser(): Promise<CurrentUser | null> {
   if (!user) return null;
 
   const role = (store.get('mojo_role')?.value as CurrentUser['role'] | undefined) ?? user.role;
-  return { id: user.id, email: user.email, role };
+  return { id: user.id, name: user.name, email: user.email, role };
 }

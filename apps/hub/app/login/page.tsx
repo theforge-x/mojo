@@ -22,6 +22,12 @@ export default function LoginPage() {
             </span>
           ))}
         </p>
+        <p className="text-center text-sm text-muted-foreground">
+          New here?{' '}
+          <a href="/signup" className="font-medium text-primary hover:underline">
+            Create an account
+          </a>
+        </p>
       </div>
     </main>
   );

@@ -2,6 +2,7 @@ import { Badge, Button, Card, CardContent, Empty, EmptyDescription } from '@mojo
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { BookButton } from '../../../../components/book-button';
+import { SaveTutorButton } from '../../../../components/save-tutor-button';
 import { getHub } from '../../../../demo/composition-root';
 import { formatMinor, formatWhen } from '../../../../lib/format';
 import { currentUser } from '../../../../lib/session';
@@ -19,10 +20,11 @@ export default async function TutorDetailPage({
   const { tutorId } = await params;
   const hub = getHub();
 
-  const [tutors, rules, settings] = await Promise.all([
+  const [tutors, rules, settings, profile] = await Promise.all([
     hub.discovery.search({}),
     hub.scheduling.availabilityRules(tutorId),
     hub.scheduling.settings(tutorId),
+    hub.profile.byTutor(tutorId),
   ]);
   const tutor = tutors.find((t) => t.tutorId === tutorId);
   if (!tutor) notFound();
@@ -30,14 +32,26 @@ export default async function TutorDetailPage({
   const slots = bookableSlots(rules, settings);
 
   return (
-    <main className="mx-auto max-w-4xl p-6">
+    <main className="mx-auto max-w-6xl p-6">
       <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-headline">{tutor.displayName}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-display text-2xl font-bold text-headline">{tutor.displayName}</h1>
+          <SaveTutorButton
+            tutor={{
+              tutorId,
+              displayName: tutor.displayName,
+              subjects: profile?.subjects ?? [],
+              perSegmentMinor: tutor.perSegmentMinor,
+              level: tutor.level,
+            }}
+          />
+        </div>
         <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
           <Badge variant="primary">{tutor.level}</Badge>
           <span>{formatMinor(tutor.perSegmentMinor)}/segment</span>
           {tutor.rating > 0 && <span>{tutor.rating.toFixed(1)}★</span>}
         </div>
+        {profile?.bio && <p className="mt-3 max-w-prose text-sm text-muted-foreground">{profile.bio}</p>}
       </div>
 
       <h2 className="mb-3 font-display text-lg font-bold text-headline">Available slots</h2>

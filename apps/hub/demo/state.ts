@@ -1,19 +1,21 @@
-import type { User } from '@mojo/identity/domain';
-import type { ScheduledSession } from '@mojo/scheduling/domain';
-import type { AvailabilityException, AvailabilityRule, SchedulingSettings } from '@mojo/scheduling/domain';
-import type { DeliveryConfirmation } from '@mojo/booking/domain';
-import type { Money } from '@mojo/shared/domain';
-import type { WalletTransaction } from '@mojo/payments/domain';
-import type { PayoutRequest } from '@mojo/payments/domain';
-import type { TutorPerformance } from '@mojo/tutor-performance/domain';
-import type { MojoPlusSubscription } from '@mojo/mojo-plus/domain';
 import type { LessonRecap } from '@mojo/ai-learning/domain';
-import type { Review } from '@mojo/reviews/domain';
-import type { ReferralConversion, ReferralLink } from '@mojo/referrals/domain';
-import type { Dispute } from '@mojo/trust-safety/domain';
+import type { DeliveryConfirmation } from '@mojo/booking/domain';
+import type { User } from '@mojo/identity/domain';
 import type { Message } from '@mojo/messaging/domain';
-import type { TutorProfile } from '@mojo/tutor-profile/domain';
-import type { TutorApplication } from '@mojo/tutor-profile/domain';
+import type { MojoPlusSubscription } from '@mojo/mojo-plus/domain';
+import type { PayoutRequest, WalletTransaction } from '@mojo/payments/domain';
+import type { ReferralConversion, ReferralLink } from '@mojo/referrals/domain';
+import type { Review } from '@mojo/reviews/domain';
+import type {
+  AvailabilityException,
+  AvailabilityRule,
+  ScheduledSession,
+  SchedulingSettings,
+} from '@mojo/scheduling/domain';
+import type { Money } from '@mojo/shared/domain';
+import type { Dispute } from '@mojo/trust-safety/domain';
+import type { TutorPerformance } from '@mojo/tutor-performance/domain';
+import type { TutorApplication, TutorProfile } from '@mojo/tutor-profile/domain';
 
 export interface SentNotification {
   readonly id: string;
@@ -58,9 +60,12 @@ export class DemoState {
   readonly messages = new Map<string, Message>();
   readonly notifications: SentNotification[] = [];
 
+  /** Filled by `getHub()`; awaited by identity ops that race demo seeding. */
+  seedReady: Promise<void> | null = null;
+
   creditsMinor = 0;
 }
 
 export type MoneyState = Money;
 
-export type { ScheduledSession, DeliveryConfirmation, TutorProfile, TutorApplication };
+export type { DeliveryConfirmation, ScheduledSession, TutorApplication, TutorProfile };

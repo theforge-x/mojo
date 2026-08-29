@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { PasswordHasher, TokenIssuer, User, UserRepository } from '../domain';
-import { AccountSuspendedError, InvalidCredentialsError, makeAuthenticateUser } from './authenticate-user.use-case';
+import {
+  AccountSuspendedError,
+  InvalidCredentialsError,
+  makeAuthenticateUser,
+} from './authenticate-user.use-case';
 
 /**
  * Integration test: exercises the real use-case against fake, in-memory
@@ -25,6 +29,7 @@ function buildFakes(user: User | null) {
 
 const baseUser: User = {
   id: 'u_1',
+  name: 'Kelechi O.',
   email: 'kelechi@example.com',
   role: 'tutor',
   passwordHash: 'hashed:Correct9Horse',
@@ -49,18 +54,18 @@ describe('authenticateUser', () => {
     const deps = buildFakes(null);
     const authenticateUser = makeAuthenticateUser(deps);
 
-    await expect(authenticateUser({ email: 'nobody@example.com', password: 'whatever' })).rejects.toThrow(
-      InvalidCredentialsError,
-    );
+    await expect(
+      authenticateUser({ email: 'nobody@example.com', password: 'whatever' }),
+    ).rejects.toThrow(InvalidCredentialsError);
   });
 
   it('rejects a wrong password', async () => {
     const deps = buildFakes(baseUser);
     const authenticateUser = makeAuthenticateUser(deps);
 
-    await expect(authenticateUser({ email: baseUser.email, password: 'WrongPassword1' })).rejects.toThrow(
-      InvalidCredentialsError,
-    );
+    await expect(
+      authenticateUser({ email: baseUser.email, password: 'WrongPassword1' }),
+    ).rejects.toThrow(InvalidCredentialsError);
   });
 
   it('rejects a suspended account even with correct credentials', async () => {
@@ -68,8 +73,8 @@ describe('authenticateUser', () => {
     const deps = buildFakes(suspended);
     const authenticateUser = makeAuthenticateUser(deps);
 
-    await expect(authenticateUser({ email: suspended.email, password: 'Correct9Horse' })).rejects.toThrow(
-      AccountSuspendedError,
-    );
+    await expect(
+      authenticateUser({ email: suspended.email, password: 'Correct9Horse' }),
+    ).rejects.toThrow(AccountSuspendedError);
   });
 });

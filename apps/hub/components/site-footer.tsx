@@ -69,11 +69,11 @@ const LINK_COLUMNS = [
     ],
   },
   {
-    heading: 'For tutors',
+    heading: 'Teach',
     links: [
       { label: 'Become a tutor', href: '/apply' },
       { label: 'Availability', href: '/tutor/availability' },
-      { label: 'Earnings', href: '/' },
+      { label: 'Tutor help', href: '/' },
     ],
   },
   {
@@ -91,7 +91,7 @@ export function SiteFooter({ user }: { user: SiteHeaderUser }) {
   if (!user) {
     return (
       <footer className="border-t border-border bg-background">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <div className="flex items-center gap-2">
               <MojoMark className="size-6" />
@@ -154,7 +154,7 @@ export function SiteFooter({ user }: { user: SiteHeaderUser }) {
           </div>
         </div>
         <div className="border-t border-border">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 sm:flex-row">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 sm:flex-row">
             <p className="text-xs text-muted-foreground">
               &copy; {new Date().getFullYear()} mojo · Made in Lagos
             </p>
@@ -169,7 +169,7 @@ export function SiteFooter({ user }: { user: SiteHeaderUser }) {
 
   return (
     <footer className="border-t border-border bg-background">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-6 sm:flex-row">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-6 sm:flex-row">
         <div className="flex items-center gap-2 text-muted-foreground">
           <MojoMark className="size-5" />
           <span className="font-display text-sm font-semibold text-headline">

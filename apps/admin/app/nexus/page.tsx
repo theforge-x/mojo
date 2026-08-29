@@ -20,7 +20,7 @@ export default async function AdminNexus() {
   const pendingApplications = admin.applications.list().filter((a) => a.status === 'pending');
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
+    <main className="mx-auto max-w-7xl p-6">
       <h1 className="mb-6 font-display text-2xl font-bold text-headline">Morning rundown</h1>
 
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">

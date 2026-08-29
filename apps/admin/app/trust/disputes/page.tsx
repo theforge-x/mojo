@@ -6,7 +6,7 @@ export default async function DisputesPage() {
   const disputes = getAdmin().disputes.list();
 
   return (
-    <main className="mx-auto max-w-4xl p-6">
+    <main className="mx-auto max-w-6xl p-6">
       <h1 className="mb-2 font-display text-2xl font-bold text-headline">Disputes</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         Filed against sessions, reviewed by trust &amp; safety. Filing here goes through the trust-safety use case and

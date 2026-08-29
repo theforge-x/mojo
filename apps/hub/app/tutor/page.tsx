@@ -27,10 +27,10 @@ export default async function TutorHome() {
   const upcoming = sessions.filter((s) => s.status === 'booked' || s.status === 'confirmed');
 
   return (
-    <main className="mx-auto max-w-4xl p-6">
+    <main className="mx-auto max-w-6xl p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold text-headline">
-          Hi {user.email.split('@')[0]}
+          Hi {user.name.split(' ')[0] || user.email.split('@')[0]}
         </h1>
         <div className="flex items-center gap-2">
           <Link href="/tutor/availability">

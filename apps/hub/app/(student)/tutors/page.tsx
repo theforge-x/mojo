@@ -27,7 +27,7 @@ export default async function TutorsPage({
   });
 
   return (
-    <main className="mx-auto max-w-4xl p-6">
+    <main className="mx-auto max-w-6xl p-6">
       <h1 className="mb-2 font-display text-2xl font-bold text-headline">Find your tutor</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         {tutors.length} tutor{tutors.length === 1 ? '' : 's'} available. Pick one and book a slot.

@@ -1,9 +1,10 @@
-import { checkPasswordPolicy } from '../domain/password-policy';
 import type { PasswordHasher, UserRepository } from '../domain/identity.ports';
+import { checkPasswordPolicy } from '../domain/password-policy';
 import type { Role, User } from '../domain/user.types';
 
 export interface RegisterUserInput {
   id: string;
+  name: string;
   email: string;
   password: string;
   role: Role;
@@ -33,6 +34,7 @@ export function makeRegisterUser(deps: { users: UserRepository; hasher: Password
 
     const user: User = {
       id: input.id,
+      name: input.name,
       email: input.email,
       role: input.role,
       passwordHash: await deps.hasher.hash(input.password),

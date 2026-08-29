@@ -14,7 +14,7 @@ export default async function ApplicationQueuePage() {
   const displayNameFor = new Map(names.map((n) => [n.id, n.displayName]));
 
   return (
-    <main className="mx-auto max-w-4xl p-6">
+    <main className="mx-auto max-w-6xl p-6">
       <h1 className="mb-6 font-display text-2xl font-bold text-headline">Application queue</h1>
       {applications.length === 0 ? (
         <p className="text-sm text-muted-foreground">No applications.</p>

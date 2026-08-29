@@ -32,10 +32,10 @@ export async function StudentHome() {
   const next = upcoming[0] ?? null;
 
   return (
-    <main className="mx-auto max-w-4xl p-6">
+    <main className="mx-auto max-w-6xl p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold text-headline">
-          Hi {user.email.split('@')[0]}
+          Hi {user.name.split(' ')[0] || user.email.split('@')[0]}
         </h1>
         <Link href="/tutors">
           <Button>Find a tutor</Button>

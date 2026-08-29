@@ -13,7 +13,7 @@ export default async function AvailabilityPage() {
   ]);
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
+    <main className="mx-auto max-w-4xl p-6">
       <h1 className="mb-2 font-display text-2xl font-bold text-headline">Availability</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         Books must be at least {settings.minimumNoticeMinutes} minutes ahead, and get a{' '}
