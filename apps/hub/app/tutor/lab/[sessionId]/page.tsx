@@ -1,9 +1,8 @@
-import { LabRoom } from '@mojo/lab/feature';
 import { LiveKitLabProvider } from '@mojo/lab/infrastructure';
 import { Badge } from '@mojo/shared/ui';
 import { redirect } from 'next/navigation';
+import { LabRoomClient } from '../../../../components/lab-room-client';
 import { getHub } from '../../../../demo/composition-root';
-import { fileStorage } from '../../../../lib/lab';
 import { currentUser } from '../../../../lib/session';
 
 /**
@@ -19,7 +18,7 @@ export default async function TutorLabPage({ params }: { params: Promise<{ sessi
 
   const hub = getHub();
   const mine = await hub.scheduling.sessionsByTutor(user.id);
-  if (!mine.some((s) => s.id === sessionId)) redirect('/tutor/home');
+  if (!mine.some((s) => s.id === sessionId)) redirect('/tutor');
 
   const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } = process.env;
   if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
@@ -50,12 +49,7 @@ export default async function TutorLabPage({ params }: { params: Promise<{ sessi
 
   return (
     <main className="h-screen p-4">
-      <LabRoom
-        sessionId={sessionId}
-        access={access}
-        fileStorage={fileStorage()}
-        onDisconnected={() => redirect('/tutor/home')}
-      />
+      <LabRoomClient sessionId={sessionId} access={access} homePath="/tutor" />
     </main>
   );
 }

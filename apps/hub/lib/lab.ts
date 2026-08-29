@@ -1,12 +1,8 @@
 import type { FileStorageProvider } from '@mojo/lab/domain';
-import { SupabaseFileStorageProvider } from '@mojo/lab/infrastructure';
 
-// Demo fallback: files stay in the browser as object URLs (client-only use).
-export function fileStorage(): FileStorageProvider {
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
-  if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-    return new SupabaseFileStorageProvider(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  }
+/** Only runs in the browser: object URLs keep the demo working with no infra. */
+
+export function createClientFileStorage(): FileStorageProvider {
   return {
     async upload(input) {
       const url = URL.createObjectURL(input.file);

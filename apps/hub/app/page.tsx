@@ -1,7 +1,13 @@
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
+import { LandingPage } from '../components/landing-page';
+import { currentUser } from '../lib/session';
+import { StudentHome } from './(student)/student-home';
 
+/** Root hand-off: landing for guests, the student home (also `/`) when signed in. */
 export default async function HomePage() {
-  const role = (await cookies()).get('mojo_role')?.value;
-  redirect(role === 'tutor' ? '/tutor/home' : '/student/home');
+  const user = await currentUser();
+  if (!user) return <LandingPage />;
+  if (user.role === 'tutor') redirect('/tutor');
+  if (user.role !== 'student') redirect('/login');
+  return <StudentHome />;
 }

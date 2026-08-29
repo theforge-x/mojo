@@ -413,8 +413,21 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     identity: {
       userById: (id) => repos.users.findById(id),
       userByToken: async (token) => {
-        const userId = issuedTokens.get(token);
-        return userId ? repos.users.findById(userId) : null;
+        // MemTokenIssuer mints `demo-<userId>-<nonce>`; the issued-tokens map
+        // below is a per-module-instance cache, so it can't be the only way to
+        // resolve a cookie (Next compiles pages/route-handlers into separate
+        // bundles, and the map resets on restart). Parse the embedded user id
+        // deterministically as the resilient fallback.
+        const mapped = issuedTokens.get(token);
+        if (mapped) return repos.users.findById(mapped);
+        if (token.startsWith('demo-')) {
+          const embedded = token.slice('demo-'.length).split('-')[0];
+          if (embedded) {
+            const user = await repos.users.findById(embedded);
+            if (user) return user;
+          }
+        }
+        return null;
       },
       authenticate: async (email, password) => {
         const result = await authenticateUser({ email, password });

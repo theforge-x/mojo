@@ -1,11 +1,11 @@
 import { CalendarView } from '@mojo/scheduling/feature';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import Link from 'next/link';
-import { RequestPayoutButton } from '../../../components/request-payout-button';
-import { CancelSessionButton, StartSessionButton } from '../../../components/session-actions';
-import { getHub } from '../../../demo/composition-root';
-import { formatMinor, formatWhen } from '../../../lib/format';
-import { currentUser } from '../../../lib/session';
+import { RequestPayoutButton } from '../../components/request-payout-button';
+import { CancelSessionButton, StartSessionButton } from '../../components/session-actions';
+import { getHub } from '../../demo/composition-root';
+import { formatMinor, formatWhen } from '../../lib/format';
+import { currentUser } from '../../lib/session';
 
 const LEVEL_BADGE: Record<string, 'muted' | 'primary' | 'tertiary'> = {
   entry: 'muted',

@@ -52,8 +52,8 @@ npm run build               # lint:boundaries + nx run-many --target=build --all
 
 | Role | Email | Starts at |
 |---|---|---|
-| Tutor | `tutor@mojo.dev` | `/tutor/home` |
-| Student | `student@mojo.dev` | `/student/home` |
+| Tutor | `tutor@mojo.dev` | `/tutor` |
+| Student | `student@mojo.dev` | `/` |
 | Admin | `admin@mojo.dev` | admin app `/nexus` |
 
 The `admin@mojo.dev` account belongs to the **admin app**; the hub's
@@ -66,12 +66,12 @@ wired end to end through the composition roots. Walk it step by step in
 `docs/mojo-flow.md`; in short:
 
 1. **Sign in** via server action `loginWithDemo`; httpOnly cookies
-   (`mojo_user` token + `mojo_role`) gate `/tutor/*` and `/student/*`.
-2. **Find a tutor** (`/student/tutors`) via `makeSearchTutors`.
+   (`mojo_user` token + `mojo_role`) gate `/tutor/*`, `/tutors/*`, `/lab/*`.
+2. **Find a tutor** (`/tutors`) via `makeSearchTutors`.
 3. **Book** a slot (`POST /api/sessions`) via `makeBookSession` → status `booked`.
 4. **Start the lab** — tutor taps **Start live lab** (`makeConfirmSession`,
    `booked → confirmed`) then opens `/tutor/lab/[sessionId]`; the student joins
-   the same LiveKit room from `/student/lab/[sessionId]`.
+   the same LiveKit room from `/lab/[sessionId]`.
 5. **Charge** — student confirms delivery (`makeConfirmDelivery` →
    `SessionCompleted`): the hub credits the tutor wallet, recomputes level,
    generates an AI recap, and marks the payout eligible; the tutor withdraws

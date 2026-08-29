@@ -19,7 +19,7 @@ const dmMono = DM_Mono({ subsets: ['latin'], variable: '--font-dm-mono', weight:
 
 export const metadata: Metadata = {
   title: {
-    default: 'Mojo',
+    default: 'mojo',
     template: '%s — mojo',
   },
   description: 'Find your tutor. Book a lesson. Learn live with mojo.',
@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <div className="flex min-h-svh flex-col">
           <SiteHeader user={headerUser} />
           <div className="flex-1">{children}</div>
-          <SiteFooter />
+          <SiteFooter user={headerUser} />
         </div>
       </body>
     </html>

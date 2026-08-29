@@ -30,7 +30,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar variant="inset">
+      <Sidebar variant='inset' collapsible='icon'>
         <SidebarHeader>
           <SiteLogo />
         </SidebarHeader>

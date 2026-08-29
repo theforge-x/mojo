@@ -1,9 +1,8 @@
-import { LabRoom } from '@mojo/lab/feature';
 import { LiveKitLabProvider } from '@mojo/lab/infrastructure';
 import { Badge } from '@mojo/shared/ui';
 import { redirect } from 'next/navigation';
+import { LabRoomClient } from '../../../../components/lab-room-client';
 import { getHub } from '../../../../demo/composition-root';
-import { fileStorage } from '../../../../lib/lab';
 import { currentUser } from '../../../../lib/session';
 
 /**
@@ -12,15 +11,18 @@ import { currentUser } from '../../../../lib/session';
  */
 export default async function StudentLabPage({
   params,
-}: { params: Promise<{ sessionId: string }> }) {
+}: {
+  params: Promise<{ sessionId: string }>;
+}) {
   const { sessionId } = await params;
 
   const user = await currentUser();
-  if (!user || user.role !== 'student') redirect('/login');
+  if (!user) redirect('/');
+  if (user.role !== 'student') redirect('/tutor');
 
   const hub = getHub();
   const mine = await hub.scheduling.sessionsByStudent(user.id);
-  if (!mine.some((s) => s.id === sessionId)) redirect('/student/home');
+  if (!mine.some((s) => s.id === sessionId)) redirect('/');
 
   const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } = process.env;
   if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
@@ -51,12 +53,7 @@ export default async function StudentLabPage({
 
   return (
     <main className="h-screen p-4">
-      <LabRoom
-        sessionId={sessionId}
-        access={access}
-        fileStorage={fileStorage()}
-        onDisconnected={() => redirect('/student/home')}
-      />
+      <LabRoomClient sessionId={sessionId} access={access} homePath="/" />
     </main>
   );
 }

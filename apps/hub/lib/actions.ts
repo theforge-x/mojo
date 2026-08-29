@@ -1,6 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { getHub } from '../demo/composition-root';
 
 export async function loginWithDemo(input: {
@@ -13,5 +14,12 @@ export async function loginWithDemo(input: {
   store.set('mojo_user', token, { httpOnly: true, sameSite: 'lax', path: '/' });
   store.set('mojo_role', role, { httpOnly: true, sameSite: 'lax', path: '/' });
 
-  return { redirectTo: user.role === 'tutor' ? '/tutor/home' : '/student/home' };
+  return { redirectTo: user.role === 'tutor' ? '/tutor' : '/' };
+}
+
+export async function logout(): Promise<void> {
+  const store = await cookies();
+  store.delete('mojo_user');
+  store.delete('mojo_role');
+  redirect('/');
 }

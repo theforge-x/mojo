@@ -159,8 +159,9 @@ flowchart LR
     SCHEDF --> EVTF
 ```
 
-`apps/hub`'s `proxy.ts` (`middleware.ts`-style route gate) enforces the
-`/tutor/:path*` and `/student/:path*` prefixes by reading a `mojo_role` cookie —
+`apps/hub`'s `proxy.ts` (`middleware.ts`-style route gate) enforces the first
+path segments `tutor`, `tutors`, `lab` (role → `/tutor/:path*` for tutors,
+`/tutors/:path*` + `/lab/:path*` for students) by reading a `mojo_role` cookie —
 it does **not** parse sessions itself; that belongs to `@mojo/identity`'s
 application layer (per its own comment, `apps/hub/proxy.ts:15`).
 

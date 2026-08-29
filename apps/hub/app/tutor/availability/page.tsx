@@ -1,7 +1,6 @@
-import { AvailabilityEditor } from '@mojo/scheduling/feature';
-import type { AvailabilityRule } from '@mojo/scheduling/domain';
-import { currentUser } from '../../../lib/session';
+import { AvailabilityEditorClient } from '../../../components/availability-editor-client';
 import { getHub } from '../../../demo/composition-root';
+import { currentUser } from '../../../lib/session';
 
 export default async function AvailabilityPage() {
   const user = await currentUser();
@@ -17,23 +16,10 @@ export default async function AvailabilityPage() {
     <main className="mx-auto max-w-2xl p-6">
       <h1 className="mb-2 font-display text-2xl font-bold text-headline">Availability</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Books must be at least {settings.minimumNoticeMinutes} minutes ahead, and get a {settings.bufferMinutes}-minute
-        buffer on either side.
+        Books must be at least {settings.minimumNoticeMinutes} minutes ahead, and get a{' '}
+        {settings.bufferMinutes}-minute buffer on either side.
       </p>
-      <AvailabilityEditor
-        initialRules={rules}
-        onSave={async (updated: AvailabilityRule[]) => {
-          const response = await fetch('/api/availability', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rules: updated }),
-          });
-          if (!response.ok) {
-            const body = await response.json().catch(() => null);
-            throw new Error(body?.error ?? 'Could not save availability.');
-          }
-        }}
-      />
+      <AvailabilityEditorClient initialRules={rules} />
     </main>
   );
 }

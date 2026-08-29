@@ -11,12 +11,14 @@ import {
   EmptyTitle,
 } from '@mojo/shared/ui';
 import Link from 'next/link';
-import { CancelSessionButton, ConfirmDeliveryButton } from '../../../components/session-actions';
-import { getHub } from '../../../demo/composition-root';
-import { formatWhen } from '../../../lib/format';
-import { currentUser } from '../../../lib/session';
+import { CancelSessionButton, ConfirmDeliveryButton } from '../../components/session-actions';
+import { getHub } from '../../demo/composition-root';
+import { formatWhen } from '../../lib/format';
+import { currentUser } from '../../lib/session';
 
-export default async function StudentHome() {
+/** The student home lives in the `(student)` route group but resolves to `/`. */
+
+export async function StudentHome() {
   const user = await currentUser();
   if (!user || user.role !== 'student') return null;
 
@@ -35,7 +37,7 @@ export default async function StudentHome() {
         <h1 className="font-display text-2xl font-bold text-headline">
           Hi {user.email.split('@')[0]}
         </h1>
-        <Link href="/student/tutors">
+        <Link href="/tutors">
           <Button>Find a tutor</Button>
         </Link>
       </div>
@@ -102,7 +104,7 @@ export default async function StudentHome() {
                     {session.status.replace('_', ' ')}
                   </Badge>
                   {session.status === 'confirmed' && (
-                    <Link href={`/student/lab/${session.id}`}>
+                    <Link href={`/lab/${session.id}`}>
                       <Button size="sm" variant="outline">
                         Join lab
                       </Button>

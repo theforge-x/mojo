@@ -1,8 +1,9 @@
-import Link from 'next/link';
 import { Badge, Card, CardContent } from '@mojo/shared/ui';
-import { currentUser } from '../../../lib/session';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getHub } from '../../../demo/composition-root';
 import { formatMinor } from '../../../lib/format';
+import { currentUser } from '../../../lib/session';
 
 const LEVEL_BADGE: Record<string, 'muted' | 'primary' | 'tertiary'> = {
   entry: 'muted',
@@ -16,7 +17,8 @@ export default async function TutorsPage({
   searchParams: Promise<{ subject?: string; level?: string }>;
 }) {
   const user = await currentUser();
-  if (!user || user.role !== 'student') return null;
+  if (!user) redirect('/');
+  if (user.role !== 'student') redirect('/tutor');
 
   const { subject, level } = await searchParams;
   const tutors = await getHub().discovery.search({
@@ -34,15 +36,18 @@ export default async function TutorsPage({
         {tutors.map((tutor) => (
           <Link
             key={tutor.tutorId}
-            href={`/student/tutors/${tutor.tutorId}`}
+            href={`/tutors/${tutor.tutorId}`}
             className="transition-opacity hover:opacity-90"
           >
             <Card>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
                 <div>
-                  <div className="font-display text-base font-bold text-headline">{tutor.displayName}</div>
+                  <div className="font-display text-base font-bold text-headline">
+                    {tutor.displayName}
+                  </div>
                   <div className="text-sm text-muted-foreground">
-                    {formatMinor(tutor.perSegmentMinor)}/segment · responds in ~{tutor.responseTimeMinutesAvg} min
+                    {formatMinor(tutor.perSegmentMinor)}/segment · responds in ~
+                    {tutor.responseTimeMinutesAvg} min
                     {tutor.rating > 0 && <> · {tutor.rating.toFixed(1)}★</>}
                   </div>
                 </div>

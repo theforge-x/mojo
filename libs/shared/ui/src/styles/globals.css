@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Next.js scopes Tailwind v4 auto source detection to the app project root
+   (apps/hub), so utilities used only inside workspace packages (libs/**) were
+   being tree-shaken out. Pin the scan paths explicitly relative to this file.
+   Keep in sync with the content globs in apps/<app>/tailwind.config.ts. */
+@source "../../../../../apps/hub/app/**/*.{ts,tsx}";
+@source "../../../../../apps/hub/components/**/*.{ts,tsx}";
+@source "../../../../../apps/admin/app/**/*.{ts,tsx}";
+@source "../../../../../apps/admin/components/**/*.{ts,tsx}";
+@source "../../../../../libs/shared/ui/src/**/*.{ts,tsx}";
+@source "../../../../*/src/feature/**/*.{ts,tsx}";
+
 :root, .light {
   --background: #fffffe;
   --foreground: #1b2d45;

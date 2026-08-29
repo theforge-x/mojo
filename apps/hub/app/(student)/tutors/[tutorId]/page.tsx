@@ -1,22 +1,20 @@
-import { notFound } from 'next/navigation';
+import { Badge, Button, Card, CardContent, Empty, EmptyDescription } from '@mojo/shared/ui';
 import Link from 'next/link';
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  Empty,
-  EmptyDescription,
-} from '@mojo/shared/ui';
-import { currentUser } from '../../../../lib/session';
-import { getHub } from '../../../../demo/composition-root';
-import { bookableSlots } from '../../../../lib/slots';
-import { formatMinor, formatWhen } from '../../../../lib/format';
+import { notFound, redirect } from 'next/navigation';
 import { BookButton } from '../../../../components/book-button';
+import { getHub } from '../../../../demo/composition-root';
+import { formatMinor, formatWhen } from '../../../../lib/format';
+import { currentUser } from '../../../../lib/session';
+import { bookableSlots } from '../../../../lib/slots';
 
-export default async function TutorDetailPage({ params }: { params: Promise<{ tutorId: string }> }) {
+export default async function TutorDetailPage({
+  params,
+}: {
+  params: Promise<{ tutorId: string }>;
+}) {
   const user = await currentUser();
-  if (!user || user.role !== 'student') return null;
+  if (!user) redirect('/');
+  if (user.role !== 'student') redirect('/tutor');
 
   const { tutorId } = await params;
   const hub = getHub();
@@ -57,7 +55,12 @@ export default async function TutorDetailPage({ params }: { params: Promise<{ tu
             <Card key={slot.startIso}>
               <CardContent className="flex items-center justify-between py-4">
                 <span className="text-sm">{formatWhen(slot.startIso, slot.endIso)}</span>
-                <BookButton tutorId={tutorId} studentId={user.id} startIso={slot.startIso} endIso={slot.endIso} />
+                <BookButton
+                  tutorId={tutorId}
+                  studentId={user.id}
+                  startIso={slot.startIso}
+                  endIso={slot.endIso}
+                />
               </CardContent>
             </Card>
           ))}
@@ -65,10 +68,10 @@ export default async function TutorDetailPage({ params }: { params: Promise<{ tu
       )}
 
       <p className="mt-6 text-xs text-muted-foreground">
-        Slots shown respect this tutor&apos;s weekly availability and minimum-notice window. Booking is verified again by
-        the scheduling domain before it&apos;s confirmed.
+        Slots shown respect this tutor&apos;s weekly availability and minimum-notice window. Booking
+        is verified again by the scheduling domain before it&apos;s confirmed.
       </p>
-      <Link href="/student/tutors" className="mt-2 inline-block">
+      <Link href="/tutors" className="mt-2 inline-block">
         <Button variant="outline" size="sm">
           Back to tutors
         </Button>

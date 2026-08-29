@@ -1,9 +1,11 @@
-import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-const ROLE_PREFIXES: Record<string, string> = {
-  '/tutor': 'tutor',
-  '/student': 'student',
+/** First path segment -> role that may access it (students own the root-level routes). */
+const SEGMENT_ROLES: Record<string, string> = {
+  tutor: 'tutor',
+  tutors: 'student',
+  lab: 'student',
 };
 
 /**
@@ -13,15 +15,19 @@ const ROLE_PREFIXES: Record<string, string> = {
  * roles), it doesn't decide who's who.
  */
 export function proxy(request: NextRequest) {
-  const path = request.nextUrl.pathname;
-  const requiredRole = Object.entries(ROLE_PREFIXES).find(([prefix]) => path.startsWith(prefix))?.[1];
+  const first = request.nextUrl.pathname.split('/')[1];
+  const requiredRole = first ? SEGMENT_ROLES[first] : undefined;
   if (!requiredRole) return NextResponse.next();
 
   const sessionRole = request.cookies.get('mojo_role')?.value;
   if (sessionRole !== requiredRole) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    // Authenticated wrong role -> their home; guests -> the landing page.
+    const destination = sessionRole === 'tutor' ? '/tutor' : '/';
+    return NextResponse.redirect(new URL(destination, request.url));
   }
   return NextResponse.next();
 }
 
-export const config = { matcher: ['/tutor/:path*', '/student/:path*'] };
+export const config = {
+  matcher: ['/tutor/:path*', '/tutors/:path*', '/lab/:path*'],
+};

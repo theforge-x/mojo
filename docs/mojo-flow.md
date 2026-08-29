@@ -17,19 +17,21 @@ httpOnly cookies:
 | `mojo_user` | opaque session token | `currentUser()` resolves it back to a user via `identity.userByToken` |
 | `mojo_role` | `tutor` / `student` (admin on the admin app) | route-level gate `apps/hub/proxy.ts` + role-aware UIs |
 
-Role routing: `/` redirects tutors to `/tutor/home` and everyone else to
-`/student/home`. Demo accounts (password `Password123`): `tutor@mojo.dev`,
+Role routing: `/` is the landing page for guests and the student home for
+students; it redirects tutors to `/tutor` and everyone else to `/`. Student
+routes live at the root (`/tutors`, `/lab/[sessionId]`); tutor routes are
+under `/tutor`. Demo accounts (password `Password123`): `tutor@mojo.dev`,
 `student@mojo.dev`.
 
 ## 2. Find a tutor
 
-A student on `/student/home` clicks **Find a tutor** → `/student/tutors`.
+A student on `/` clicks **Find a tutor** → `/tutors`.
 That page runs `makeSearchTutors` against the discovery index (`InMemoryTutorSearchIndex`
 in the demo; `PrismaTutorSearchIndex` in prod) via `hub.discovery.search(filters)`.
 
 ## 3. Book a session
 
-`/student/tutors/[tutorId]` renders the tutor's bookable slots (slots derived
+`/tutors/[tutorId]` renders the tutor's bookable slots (slots derived
 from availability rules + booked sessions). **Book** posts to
 `POST /api/sessions`, which runs `makeBookSession`:
 
@@ -41,27 +43,28 @@ from availability rules + booked sessions). **Book** posts to
 
 The tutor owns the start:
 
-- **Tutor**: on `/tutor/home` a booked session shows **Start live lab** →
+- **Tutor**: on `/tutor` a booked session shows **Start live lab** →
   `POST /api/sessions/[id]/start` → `makeConfirmSession` moves the session
   **booked → confirmed** (timestamped into `statusHistory`), then the tutor is
   routed into `/tutor/lab/[sessionId]`.
 - **Open lab** appears for confirmed sessions. The tutor lab page
   (`apps/hub/app/tutor/lab/[sessionId]`) mints a per-request LiveKit access
   token scoped to the tutor participant.
-- **Student**: once the session is **confirmed**, `/student/home` shows
-  **Join lab** → `/student/lab/[sessionId]` mints a scoped token for the
+- **Student**: once the session is **confirmed**, `/` shows
+  **Join lab** → `/lab/[sessionId]` mints a scoped token for the
   student. Both participants land in the same LiveKit room keyed by session id
   (`@mojo/lab`) — live audio/video, realtime chat, a shared whiteboard, and
   file sharing (Supabase Storage, or in-browser in the demo).
 
 Both lab pages verify the participant is the tutor/student of record and
-redirect to `/login` otherwise.
+redirect to `/tutor` (tutor) or `/` (student/guest) otherwise. The UI is
+guarded in-app with `currentUser()` from `apps/hub/lib/session.ts`.
 
 ## 5. Charge on session completion
 
 After the lesson, the student confirms delivery:
 
-- `/student/home` → **Confirm delivery** → `POST /api/sessions/[id]/confirm`
+- `/` → **Confirm delivery** → `POST /api/sessions/[id]/confirm`
   → `makeConfirmDelivery` (`@mojo/booking`):
   1. marks the session **completed** and saves the delivery confirmation
   2. publishes `SessionCompleted` (segment count derived from the session's
