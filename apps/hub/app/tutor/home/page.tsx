@@ -1,11 +1,11 @@
-import Link from 'next/link';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import { CalendarView } from '@mojo/scheduling/feature';
-import { currentUser } from '../../../lib/session';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import Link from 'next/link';
+import { RequestPayoutButton } from '../../../components/request-payout-button';
+import { CancelSessionButton, StartSessionButton } from '../../../components/session-actions';
 import { getHub } from '../../../demo/composition-root';
 import { formatMinor, formatWhen } from '../../../lib/format';
-import { RequestPayoutButton } from '../../../components/request-payout-button';
-import { CancelSessionButton } from '../../../components/session-actions';
+import { currentUser } from '../../../lib/session';
 
 const LEVEL_BADGE: Record<string, 'muted' | 'primary' | 'tertiary'> = {
   entry: 'muted',
@@ -13,7 +13,7 @@ const LEVEL_BADGE: Record<string, 'muted' | 'primary' | 'tertiary'> = {
   expert: 'tertiary',
 };
 
-export default async function TutorDashboardPage() {
+export default async function TutorHome() {
   const user = await currentUser();
   if (!user || user.role !== 'tutor') return null;
 
@@ -29,14 +29,19 @@ export default async function TutorDashboardPage() {
   return (
     <main className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold text-headline">Hi {user.email.split('@')[0]}</h1>
+        <h1 className="font-display text-2xl font-bold text-headline">
+          Hi {user.email.split('@')[0]}
+        </h1>
         <div className="flex items-center gap-2">
           <Link href="/tutor/availability">
             <Button variant="outline" size="sm">
               Edit availability
             </Button>
           </Link>
-          <RequestPayoutButton balanceMinor={wallet.balance.amountMinor} currency={wallet.balance.currency} />
+          <RequestPayoutButton
+            balanceMinor={wallet.balance.amountMinor}
+            currency={wallet.balance.currency}
+          />
         </div>
       </div>
 
@@ -46,7 +51,9 @@ export default async function TutorDashboardPage() {
             <CardTitle>Upcoming sessions</CardTitle>
           </CardHeader>
           <CardContent>
-            <span className="font-display text-3xl font-extrabold text-headline">{upcoming.length}</span>
+            <span className="font-display text-3xl font-extrabold text-headline">
+              {upcoming.length}
+            </span>
           </CardContent>
         </Card>
         <Card>
@@ -59,7 +66,8 @@ export default async function TutorDashboardPage() {
             )}
             {performance && (
               <p className="mt-2 text-xs text-muted-foreground">
-                {formatHours(performance.cumulativeHoursTaught)} taught · {performance.averageRating.toFixed(1)}★
+                {formatHours(performance.cumulativeHoursTaught)} taught ·{' '}
+                {performance.averageRating.toFixed(1)}★
               </p>
             )}
           </CardContent>
@@ -84,12 +92,19 @@ export default async function TutorDashboardPage() {
             <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
               <div>
                 <div className="text-sm">
-                  {formatWhen(session.startIso, session.endIso)} · student {session.studentId.at(-1)}
+                  {formatWhen(session.startIso, session.endIso)} · student{' '}
+                  {session.studentId.at(-1)}
                   {session.isTrial ? ' · trial' : ''}
                 </div>
                 <div className="mt-1 flex items-center gap-2">
                   <Badge
-                    variant={session.status === 'confirmed' ? 'primary' : session.status === 'completed' ? 'muted' : 'tertiary'}
+                    variant={
+                      session.status === 'confirmed'
+                        ? 'primary'
+                        : session.status === 'completed'
+                          ? 'muted'
+                          : 'tertiary'
+                    }
                   >
                     {session.status.replace('_', ' ')}
                   </Badge>
@@ -99,6 +114,7 @@ export default async function TutorDashboardPage() {
                 {(session.status === 'booked' || session.status === 'confirmed') && (
                   <CancelSessionButton sessionId={session.id} />
                 )}
+                {session.status === 'booked' && <StartSessionButton sessionId={session.id} />}
                 {session.status === 'confirmed' && (
                   <Link href={`/tutor/lab/${session.id}`}>
                     <Button size="sm">Open lab</Button>
@@ -111,7 +127,9 @@ export default async function TutorDashboardPage() {
       </div>
 
       <h2 className="mb-3 font-display text-lg font-bold text-headline">This week</h2>
-      <CalendarView sessions={sessions.filter((s) => s.status !== 'cancelled' && s.status !== 'no_show')} />
+      <CalendarView
+        sessions={sessions.filter((s) => s.status !== 'cancelled' && s.status !== 'no_show')}
+      />
     </main>
   );
 }

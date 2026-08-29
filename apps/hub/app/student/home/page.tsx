@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { CalendarView } from '@mojo/scheduling/feature';
 import {
   Badge,
   Button,
@@ -10,19 +10,20 @@ import {
   EmptyDescription,
   EmptyTitle,
 } from '@mojo/shared/ui';
-import { CalendarView } from '@mojo/scheduling/feature';
-import { currentUser } from '../../../lib/session';
+import Link from 'next/link';
+import { CancelSessionButton, ConfirmDeliveryButton } from '../../../components/session-actions';
 import { getHub } from '../../../demo/composition-root';
 import { formatWhen } from '../../../lib/format';
-import { ConfirmDeliveryButton, CancelSessionButton } from '../../../components/session-actions';
+import { currentUser } from '../../../lib/session';
 
-export default async function StudentDashboardPage() {
+export default async function StudentHome() {
   const user = await currentUser();
   if (!user || user.role !== 'student') return null;
 
   const hub = getHub();
   const sessions = await hub.scheduling.sessionsByStudent(user.id);
-  const label = async (tutorId: string) => (await hub.profile.byTutor(tutorId))?.displayName ?? 'Your tutor';
+  const label = async (tutorId: string) =>
+    (await hub.profile.byTutor(tutorId))?.displayName ?? 'Your tutor';
   const upcoming = sessions
     .filter((s) => s.status === 'booked' || s.status === 'confirmed')
     .sort((a, b) => a.startIso.localeCompare(b.startIso));
@@ -31,7 +32,9 @@ export default async function StudentDashboardPage() {
   return (
     <main className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold text-headline">Hi {user.email.split('@')[0]}</h1>
+        <h1 className="font-display text-2xl font-bold text-headline">
+          Hi {user.email.split('@')[0]}
+        </h1>
         <Link href="/student/tutors">
           <Button>Find a tutor</Button>
         </Link>
@@ -46,7 +49,9 @@ export default async function StudentDashboardPage() {
             <span>
               {await label(next.tutorId)} — {formatWhen(next.startIso, next.endIso)}
             </span>
-            <Badge variant={next.status === 'confirmed' ? 'primary' : 'tertiary'}>{next.status}</Badge>
+            <Badge variant={next.status === 'confirmed' ? 'primary' : 'tertiary'}>
+              {next.status}
+            </Badge>
             <CancelSessionButton sessionId={next.id} />
           </CardContent>
         </Card>
@@ -80,14 +85,35 @@ export default async function StudentDashboardPage() {
                   <div className="text-sm">
                     {tutor} · {formatWhen(session.startIso, session.endIso)}
                   </div>
-                  {session.status === 'completed' && <p className="text-xs text-muted-foreground">Done — deliver the review.</p>}
+                  {session.status === 'completed' && (
+                    <p className="text-xs text-muted-foreground">Done — deliver the review.</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={session.status === 'confirmed' ? 'primary' : session.status === 'completed' ? 'muted' : 'tertiary'}>
+                  <Badge
+                    variant={
+                      session.status === 'confirmed'
+                        ? 'primary'
+                        : session.status === 'completed'
+                          ? 'muted'
+                          : 'tertiary'
+                    }
+                  >
                     {session.status.replace('_', ' ')}
                   </Badge>
-                  {session.status === 'confirmed' && <ConfirmDeliveryButton sessionId={session.id} />}
-                  {(session.status === 'booked' || session.status === 'confirmed') && <CancelSessionButton sessionId={session.id} />}
+                  {session.status === 'confirmed' && (
+                    <Link href={`/student/lab/${session.id}`}>
+                      <Button size="sm" variant="outline">
+                        Join lab
+                      </Button>
+                    </Link>
+                  )}
+                  {session.status === 'confirmed' && (
+                    <ConfirmDeliveryButton sessionId={session.id} />
+                  )}
+                  {(session.status === 'booked' || session.status === 'confirmed') && (
+                    <CancelSessionButton sessionId={session.id} />
+                  )}
                 </div>
               </CardContent>
             </Card>

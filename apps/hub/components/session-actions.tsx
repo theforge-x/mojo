@@ -1,8 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { Alert, Button } from '@mojo/shared/ui';
 import { useRouter } from 'next/navigation';
-import { Button, Alert } from '@mojo/shared/ui';
+import { useState } from 'react';
+
+export function StartSessionButton({ sessionId }: { sessionId: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleClick() {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/start`, { method: 'POST' });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? 'Could not start session.');
+      router.push(`/tutor/lab/${sessionId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start session.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Button size="sm" onClick={handleClick} disabled={busy}>
+        {busy ? 'Starting…' : 'Start live lab'}
+      </Button>
+      {error && <Alert variant="danger">{error}</Alert>}
+    </div>
+  );
+}
 
 export function ConfirmDeliveryButton({ sessionId }: { sessionId: string }) {
   const router = useRouter();

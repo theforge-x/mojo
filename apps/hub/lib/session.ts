@@ -17,7 +17,7 @@ export async function currentUser(): Promise<CurrentUser | null> {
   const token = store.get('mojo_user')?.value;
   if (!token) return null;
 
-  const user = await getHub().identity.userById(token);
+  const user = await getHub().identity.userByToken(token);
   if (!user) return null;
 
   const role = (store.get('mojo_role')?.value as CurrentUser['role'] | undefined) ?? user.role;

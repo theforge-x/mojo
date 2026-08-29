@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import Link from 'next/link';
+import { FlagToggle } from '../../components/flag-toggle';
 import { getAdmin } from '../../demo/composition-root';
 import { formatMinor } from '../../lib/format';
-import { FlagToggle } from '../../components/flag-toggle';
 
-export default async function AdminDashboardPage() {
+export default async function AdminNexus() {
   const admin = getAdmin();
   const [metrics, leaderboard, flags, disputes, reviews, log] = await Promise.all([
     admin.analytics.metrics(),
@@ -29,7 +29,9 @@ export default async function AdminDashboardPage() {
             <CardTitle>GMV</CardTitle>
           </CardHeader>
           <CardContent>
-            <span className="font-display text-2xl font-extrabold text-headline">{formatMinor(metrics.gmvMinor)}</span>
+            <span className="font-display text-2xl font-extrabold text-headline">
+              {formatMinor(metrics.gmvMinor)}
+            </span>
           </CardContent>
         </Card>
         <Card>
@@ -37,7 +39,9 @@ export default async function AdminDashboardPage() {
             <CardTitle>Active tutors</CardTitle>
           </CardHeader>
           <CardContent>
-            <span className="font-display text-3xl font-extrabold text-headline">{metrics.activeTutors}</span>
+            <span className="font-display text-3xl font-extrabold text-headline">
+              {metrics.activeTutors}
+            </span>
           </CardContent>
         </Card>
         <Card>
@@ -45,7 +49,9 @@ export default async function AdminDashboardPage() {
             <CardTitle>Active students</CardTitle>
           </CardHeader>
           <CardContent>
-            <span className="font-display text-3xl font-extrabold text-headline">{metrics.activeStudents}</span>
+            <span className="font-display text-3xl font-extrabold text-headline">
+              {metrics.activeStudents}
+            </span>
           </CardContent>
         </Card>
         <Card>
@@ -53,7 +59,9 @@ export default async function AdminDashboardPage() {
             <CardTitle>Pending applications</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
-            <span className="font-display text-3xl font-extrabold text-headline">{pendingApplications.length}</span>
+            <span className="font-display text-3xl font-extrabold text-headline">
+              {pendingApplications.length}
+            </span>
             <Link href="/tutors/applications">
               <Badge variant="tertiary">review</Badge>
             </Link>
@@ -70,7 +78,8 @@ export default async function AdminDashboardPage() {
             {leaderboard.map((entry) => (
               <div key={entry.tutorId} className="flex items-center justify-between text-sm">
                 <span>
-                  <span className="font-mono text-muted-foreground">#{entry.rank}</span> {entry.displayName}
+                  <span className="font-mono text-muted-foreground">#{entry.rank}</span>{' '}
+                  {entry.displayName}
                 </span>
                 <span className="text-muted-foreground">
                   {(entry.cancellationRate * 100).toFixed(0)}% cancelled
@@ -105,7 +114,9 @@ export default async function AdminDashboardPage() {
               <CardTitle>Open disputes</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-between">
-              <span className="font-display text-3xl font-extrabold text-headline">{openDisputes.length}</span>
+              <span className="font-display text-3xl font-extrabold text-headline">
+                {openDisputes.length}
+              </span>
               <Badge variant="destructive">{flaggedReviews.length} flagged review</Badge>
             </CardContent>
           </Card>

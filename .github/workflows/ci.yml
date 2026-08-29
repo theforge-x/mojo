@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Module & clean-architecture boundaries
+        run: npm run lint:boundaries
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Typecheck — hub
+        run: npx tsc --noEmit -p apps/hub/tsconfig.json
+
+      - name: Typecheck — admin
+        run: npx tsc --noEmit -p apps/admin/tsconfig.json
+
+      - name: Production builds (hub + admin)
+        run: npm run build
+
+  deploy:
+    name: Deploy (free Vercel Hobby)
+    # Checks must pass before anything ships; deploys only on main pushes.
+    # Requires: `vercel link` once per app, and the repo secrets below
+    # (see docs/deployment.md#deploy-from-github-actions).
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Deploy hub
+        working-directory: apps/hub
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_HUB_PROJECT_ID }}
+        run: |
+          npx vercel pull --yes --environment=production --token $VERCEL_TOKEN
+          npx vercel build --prod --token $VERCEL_TOKEN
+          npx vercel deploy --prebuilt --prod --token $VERCEL_TOKEN
+
+      - name: Deploy admin
+        working-directory: apps/admin
+        env:
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
+        run: |
+          npx vercel pull --yes --environment=production --token $VERCEL_TOKEN
+          npx vercel build --prod --token $VERCEL_TOKEN
+          npx vercel deploy --prebuilt --prod --token $VERCEL_TOKEN

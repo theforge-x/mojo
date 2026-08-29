@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "description": "mojo — tutoring marketplace. Nx monorepo, Next.js apps, clean-architecture domain modules.",
   "scripts": {
-    "dev:web": "nx dev web",
+    "dev:hub": "nx dev hub",
     "dev:admin": "nx dev admin",
     "build": "npm run lint:boundaries && nx run-many --target=build --all",
     "test": "nx run-many --target=test --all",

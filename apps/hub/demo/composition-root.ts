@@ -19,7 +19,7 @@ import { makeRecordSessionCompletion } from '@mojo/pricing/application';
 import type { ReferralRepository } from '@mojo/referrals/domain';
 import type { ReviewRepository } from '@mojo/reviews/domain';
 import type { AvailabilityRepository, AvailabilityRule, ScheduledSession, SchedulingSettings, SessionRepository } from '@mojo/scheduling/domain';
-import { makeBookSession, makeCancelSession, makeSetAvailability, type BookSessionInput, type CancelSessionInput } from '@mojo/scheduling/application';
+import { makeBookSession, makeCancelSession, makeConfirmSession, makeSetAvailability, type BookSessionInput, type CancelSessionInput, type ConfirmSessionInput } from '@mojo/scheduling/application';
 import type { TutorPerformance, TutorPerformanceRepository } from '@mojo/tutor-performance/domain';
 import { makeRecomputeLevel } from '@mojo/tutor-performance/application';
 import type { ApplicationRepository, TutorProfileRepository } from '@mojo/tutor-profile/domain';
@@ -110,6 +110,7 @@ export interface HubApp {
   readonly demoAccounts: readonly { id: string; email: string; role: string }[];
   identity: {
     userById(id: string): Promise<User | null>;
+    userByToken(token: string): Promise<User | null>;
     authenticate(email: string, password: string): Promise<{ token: string; expiresAt: string; role: string; user: User }>;
   };
   scheduling: {
@@ -119,6 +120,7 @@ export interface HubApp {
     settings(tutorId: string): Promise<SchedulingSettings>;
     book(input: BookSessionInput): Promise<ScheduledSession>;
     cancel(input: CancelSessionInput): Promise<void>;
+    confirmSession(input: ConfirmSessionInput): Promise<void>;
     saveAvailability(tutorId: string, rules: Omit<AvailabilityRule, 'tutorId'>[]): Promise<void>;
   };
   booking: {
@@ -317,9 +319,21 @@ function inMemoryDispatchers(state: DemoState): Record<'email' | 'whatsapp', Not
 }
 
 function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): HubApp {
-  const authenticateUser = makeAuthenticateUser({ users: repos.users, hasher: bcryptPasswordHasher, tokens: repos.tokens });
+  // Demo client records issued tokens so a session cookie can be resolved
+  // back to its user without trusting an opaque token as a primary key.
+  const issuedTokens = new Map<string, string>();
+  const tokens: TokenIssuer = {
+    issue: async (userId: string) => {
+      const issued = await repos.tokens.issue(userId);
+      issuedTokens.set(issued.token, userId);
+      return issued;
+    },
+  };
+
+  const authenticateUser = makeAuthenticateUser({ users: repos.users, hasher: bcryptPasswordHasher, tokens });
   const bookSession = makeBookSession({ availability: repos.availability, sessions: repos.sessions });
   const cancelSession = makeCancelSession({ sessions: repos.sessions });
+  const confirmSession = makeConfirmSession({ sessions: repos.sessions });
   const setAvailability = makeSetAvailability({ save: (rules) => repos.availability.saveRules(rules) });
   const confirmDelivery = makeConfirmDelivery({ bookings: repos.bookings });
   const searchTutors = makeSearchTutors({ index: repos.searchIndex });
@@ -398,6 +412,10 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     ] as const,
     identity: {
       userById: (id) => repos.users.findById(id),
+      userByToken: async (token) => {
+        const userId = issuedTokens.get(token);
+        return userId ? repos.users.findById(userId) : null;
+      },
       authenticate: async (email, password) => {
         const result = await authenticateUser({ email, password });
         const user = await repos.users.findByEmail(email);
@@ -412,6 +430,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       settings: (tutorId) => repos.availability.getSettings(tutorId),
       book: (input) => bookSession(input),
       cancel: (input) => cancelSession(input),
+      confirmSession: (input) => confirmSession(input),
       saveAvailability: (tutorId, rules) => setAvailability(tutorId, rules),
     },
     booking: {
