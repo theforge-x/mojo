@@ -18,6 +18,7 @@
       "@mojo/shared/util": ["libs/shared/util/src/index.ts"],
       "@mojo/shared/domain": ["libs/shared/domain/src/index.ts"],
       "@mojo/shared/events": ["libs/shared/events/src/index.ts"],
+      "@mojo/demo-state": ["libs/demo-state/src/index.ts"],
       "@mojo/identity/domain": ["libs/identity/src/domain/index.ts"],
       "@mojo/identity/application": ["libs/identity/src/application/index.ts"],
       "@mojo/identity/infrastructure": ["libs/identity/src/infrastructure/index.ts"],

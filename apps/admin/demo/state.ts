@@ -2,7 +2,7 @@ import type { AuditLogEntry, FeatureFlag, SubjectTaxonomyEntry } from '@mojo/adm
 import type { Review } from '@mojo/reviews/domain';
 import type { ScheduledSession } from '@mojo/scheduling/domain';
 import type { Dispute } from '@mojo/trust-safety/domain';
-import type { TutorApplication, TutorProfile } from '@mojo/tutor-profile/domain';
+import type { TutorProfile } from '@mojo/tutor-profile/domain';
 
 export interface AdminUser {
   readonly id: string;
@@ -19,7 +19,6 @@ export interface AdminUser {
 export class AdminState {
   readonly users = new Map<string, AdminUser>();
   readonly profiles = new Map<string, TutorProfile>();
-  readonly applications = new Map<string, TutorApplication>();
   readonly disputes = new Map<string, Dispute>();
   readonly featureFlags = new Map<string, FeatureFlag>();
   readonly auditLog: AuditLogEntry[] = [];

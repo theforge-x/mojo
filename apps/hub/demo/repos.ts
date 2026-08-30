@@ -1,5 +1,6 @@
 import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
 import type { BookingRepository, BookingSession, DeliveryConfirmation } from '@mojo/booking/domain';
+import { type DemoState, demoId } from '@mojo/demo-state';
 import type {
   TutorSearchFilters,
   TutorSearchIndex,
@@ -35,7 +36,6 @@ import type {
   TutorProfile,
   TutorProfileRepository,
 } from '@mojo/tutor-profile/domain';
-import { type DemoState, demoId } from './state';
 
 export const DEFAULT_RATE_MINOR: Record<TutorLevel, number> = {
   entry: 400_000,

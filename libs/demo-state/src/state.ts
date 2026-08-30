@@ -35,14 +35,17 @@ export function demoId(prefix: string): string {
 const STATE_SYMBOL = Symbol.for('mojo.demo.state');
 
 /**
- * Process-global in-memory demo data, shared by every repository in the hub
- * app's composition root so mutations are visible across pages and API
- * routes. Next.js dev evaluates each route in its own module scope, so a
- * plain module-level singleton would give every page its own freshly-seeded
- * copy — the browser demo loop would never see submissions. Stashing the
- * state on `globalThis` makes all chunks share one store. Not durable — the
- * whole point is to run with zero infra; the `USE_PRISMA` env switch swaps
- * these for real Prisma repositories.
+ * Process-global in-memory demo data, the single `DemoState` for the demo.
+ * The hub app's repositories read and write these maps so mutations are
+ * visible across its pages and API routes, and the admin app's
+ * application/profile repositories bind against the same store so an approve
+ * or reject decision lands on the exact application the hub submitted.
+ * Next.js dev evaluates each route in its own module scope, so a plain
+ * module-level singleton would give every page its own freshly-seeded copy —
+ * the browser demo loop would never see submissions. Stashing the state on
+ * `globalThis` makes all chunks share one store. Not durable — the whole
+ * point is to run with zero infra; the `USE_PRISMA` env switch swaps these
+ * for real Prisma repositories.
  */
 export class DemoState {
   readonly users = new Map<string, User>();

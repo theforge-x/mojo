@@ -17,8 +17,19 @@ import type {
 } from '@mojo/tutor-profile/domain';
 import type { AdminState } from './state';
 
+/**
+ * The smallest slice one of the admin's application/profile repositories needs
+ * from a backing store. Both the admin's own `AdminState` and the hub's
+ * `DemoState` satisfy it — in the demo, the hub is the single system of record
+ * for applications, so the admin binds against `sharedDemoState()`.
+ */
+export interface ApplicationProfileStore {
+  readonly applications: Map<string, TutorApplication>;
+  readonly profiles: Map<string, TutorProfile>;
+}
+
 export class InMemoryApplicationRepository implements ApplicationRepository {
-  constructor(private readonly state: AdminState) {}
+  constructor(private readonly state: ApplicationProfileStore) {}
 
   async findById(applicationId: string): Promise<TutorApplication | null> {
     return this.state.applications.get(applicationId) ?? null;
@@ -36,7 +47,7 @@ export class InMemoryApplicationRepository implements ApplicationRepository {
 }
 
 export class InMemoryTutorProfileRepository implements TutorProfileRepository {
-  constructor(private readonly state: AdminState) {}
+  constructor(private readonly state: ApplicationProfileStore) {}
 
   async findByTutorId(tutorId: string): Promise<TutorProfile | null> {
     return this.state.profiles.get(tutorId) ?? null;

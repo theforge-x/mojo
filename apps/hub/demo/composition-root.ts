@@ -2,6 +2,13 @@ import { makeGenerateRecap } from '@mojo/ai-learning/application';
 import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
 import { type ConfirmDeliveryInput, makeConfirmDelivery } from '@mojo/booking/application';
 import type { BookingRepository } from '@mojo/booking/domain';
+import {
+  clearSharedDemoState,
+  type DemoState,
+  demoId,
+  type SentNotification,
+  sharedDemoState,
+} from '@mojo/demo-state';
 import { makeSearchTutors } from '@mojo/discovery/application';
 import type {
   TutorSearchFilters,
@@ -99,13 +106,6 @@ import {
   MemTokenIssuer,
 } from './repos';
 import { seedDemo } from './seed';
-import {
-  clearSharedDemoState,
-  type DemoState,
-  demoId,
-  type SentNotification,
-  sharedDemoState,
-} from './state';
 
 interface Repositories {
   users: UserRepository;

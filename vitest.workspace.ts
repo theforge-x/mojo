@@ -5,6 +5,7 @@ import { defineWorkspace } from 'vitest/config';
 // vitest.config.ts (the scaffold-depth modules) is one that hasn't earned
 // a test suite yet, not one silently skipped by a misconfigured glob.
 export default defineWorkspace([
+  'apps/admin/vitest.config.ts',
   'libs/shared/events/vitest.config.ts',
   'libs/identity/vitest.config.ts',
   'libs/scheduling/vitest.config.ts',

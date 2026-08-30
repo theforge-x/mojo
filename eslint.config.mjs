@@ -72,6 +72,10 @@ export default [
           depConstraints: [
             // Shared libs may only depend on other shared libs (never on a domain module).
             { sourceTag: 'scope:shared', onlyDependOnLibsWithTags: SHARED },
+            // The demo-state lib aggregates the in-memory stores for both demo apps.
+            // Sits apart from the bounded modules because only the apps consume it;
+            // its layer discipline is guarded by @mojo/clean-architecture instead.
+            { sourceTag: 'scope:demo-state', onlyDependOnLibsWithTags: ['*'] },
             // Applications (hub, admin) may consume any module.
             { sourceTag: 'type:app', onlyDependOnLibsWithTags: ['*'] },
             // Each bounded module depends on the shared libs plus its explicit peers only.

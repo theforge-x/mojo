@@ -13,6 +13,7 @@ export const mojoAliases: Record<string, string> = {
   '@mojo/shared/util': path.resolve(repoRoot, 'libs/shared/util/src/index.ts'),
   '@mojo/shared/domain': path.resolve(repoRoot, 'libs/shared/domain/src/index.ts'),
   '@mojo/shared/events': path.resolve(repoRoot, 'libs/shared/events/src/index.ts'),
+  '@mojo/demo-state': path.resolve(repoRoot, 'libs/demo-state/src/index.ts'),
   '@mojo/identity/domain': path.resolve(repoRoot, 'libs/identity/src/domain/index.ts'),
   '@mojo/identity/application': path.resolve(repoRoot, 'libs/identity/src/application/index.ts'),
   '@mojo/identity/infrastructure': path.resolve(

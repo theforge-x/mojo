@@ -1,11 +1,13 @@
+import { seedDemoApplications } from '@mojo/demo-state';
 import type { ScheduledSession } from '@mojo/scheduling/domain';
+import type { ApplicationProfileStore } from './repos';
 import type { AdminState } from './state';
 
-export function seedAdmin(state: AdminState): void {
+export function seedAdmin(state: AdminState, shared: ApplicationProfileStore): void {
   state.users.set('u_admin', { id: 'u_admin', email: 'admin@mojo.dev', role: 'admin' });
 
   for (const tutorId of ['t_1', 't_2', 't_3']) {
-    state.profiles.set(tutorId, {
+    const profile = {
       tutorId,
       displayName: tutorId === 't_1' ? 'Kelechi O.' : tutorId === 't_2' ? 'Ifeoma A.' : 'Tunde M.',
       photoUrl: '',
@@ -22,38 +24,20 @@ export function seedAdmin(state: AdminState): void {
       bio: '',
       timezone: 'Africa/Lagos',
       moderationFlagged: false,
-    });
+    };
+    // The admin analytics dashboard reads its own store...
+    state.profiles.set(tutorId, profile);
+    // ...while the review surfaces read the hub's shared store. Add-if-absent
+    // so the hub's richer seed (populated by `seedDemo`) is never clobbered.
+    if (!shared.profiles.has(tutorId)) shared.profiles.set(tutorId, profile);
   }
 
+  // The review queue lives on the hub's shared `DemoState` — the demo's single
+  // system of record — so an approve/reject decision lands on the same
+  // application the hub holds. Add-if-absent keeps this idempotent.
+  seedDemoApplications(shared);
+
   const now = Date.now();
-  [hour(now, 2), hour(now, 5), hour(now, 9)].forEach((iso, index) => {
-    state.applications.set(`app_${index + 1}`, {
-      id: `app_${index + 1}`,
-      tutorId: `t_new_${index + 1}`,
-      displayName: index === 0 ? 'Amara Eze' : index === 1 ? 'Bola Adeyemi' : 'Chidi Nwosu',
-      photoUrl: '',
-      education:
-        index === 0
-          ? 'B.Sc. Spanish — UNILAG'
-          : index === 1
-            ? 'Diploma in Guitar — FAAN Academy'
-            : 'M.Sc. Mathematics — OAU',
-      subjects: index === 0 ? ['Spanish'] : index === 1 ? ['Guitar'] : ['Maths'],
-      bio:
-        index === 0
-          ? 'Native speaker with 6 years of online teaching.'
-          : 'Patient classroom teacher making the jump to live tutoring.',
-      introVideoUrl: '',
-      certifications: [],
-      timezone: 'Africa/Lagos',
-      availability: [
-        { id: `app_${index + 1}_w1`, weekday: 2, startMinute: 540, endMinute: 780 },
-        { id: `app_${index + 1}_w2`, weekday: 4, startMinute: 960, endMinute: 1140 },
-      ],
-      status: 'pending',
-      submittedAt: iso,
-    });
-  });
 
   state.disputes.set('d_1', {
     id: 'd_1',

@@ -1,3 +1,4 @@
+import { type DemoState, seedDemoApplications } from '@mojo/demo-state';
 import type { User } from '@mojo/identity/domain';
 import { bcryptPasswordHasher } from '@mojo/identity/infrastructure';
 import type { ReferralLink } from '@mojo/referrals/domain';
@@ -8,7 +9,6 @@ import type {
 } from '@mojo/scheduling/domain';
 import type { TutorPerformance } from '@mojo/tutor-performance/domain';
 import type { TutorProfile } from '@mojo/tutor-profile/domain';
-import type { DemoState } from './state';
 
 const DEFAULT_PASSWORD = 'Password123';
 
@@ -29,6 +29,8 @@ function daysAgoIso(days: number): string {
  */
 export async function seedDemo(state: DemoState): Promise<void> {
   const passwordHash = await bcryptPasswordHasher.hash(DEFAULT_PASSWORD);
+
+  seedDemoApplications(state);
 
   const users: User[] = [
     {
