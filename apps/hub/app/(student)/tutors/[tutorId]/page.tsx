@@ -1,3 +1,4 @@
+import { tutorLocalTime } from '@mojo/scheduling/domain';
 import { Badge, Button, Card, CardContent, Empty, EmptyDescription } from '@mojo/shared/ui';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
@@ -19,17 +20,24 @@ export default async function TutorDetailPage({
 
   const { tutorId } = await params;
   const hub = getHub();
+  const settings = await hub.scheduling.settings(tutorId);
+  const todayKey = tutorLocalTime(new Date().toISOString(), settings.timezone).dateKey;
+  const weekEndKey = dateKeyPlus(todayKey, 7);
 
-  const [tutors, rules, settings, profile] = await Promise.all([
+  const [tutors, rules, sessions, exceptions, profile] = await Promise.all([
     hub.discovery.search({}),
     hub.scheduling.availabilityRules(tutorId),
-    hub.scheduling.settings(tutorId),
+    hub.scheduling.sessionsByTutor(tutorId),
+    hub.scheduling.exceptions(tutorId, todayKey, weekEndKey),
     hub.profile.byTutor(tutorId),
   ]);
   const tutor = tutors.find((t) => t.tutorId === tutorId);
   if (!tutor) notFound();
 
-  const slots = bookableSlots(rules, settings);
+  const slots = bookableSlots(rules, settings, {
+    exceptions,
+    existingSessions: sessions,
+  });
 
   return (
     <main className="mx-auto max-w-6xl p-6">
@@ -94,4 +102,10 @@ export default async function TutorDetailPage({
       </Link>
     </main>
   );
+}
+
+function dateKeyPlus(key: string, offset: number): string {
+  const d = new Date(`${key}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + offset);
+  return d.toISOString().slice(0, 10);
 }

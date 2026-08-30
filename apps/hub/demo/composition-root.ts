@@ -21,7 +21,12 @@ import { bcryptPasswordHasher } from '@mojo/identity/infrastructure';
 import type { MessageRepository } from '@mojo/messaging/domain';
 import type { MojoPlusRepository } from '@mojo/mojo-plus/domain';
 import { makeDispatchNotification } from '@mojo/notifications/application';
-import type { NotificationDispatcher } from '@mojo/notifications/domain';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  dueSessionReminders,
+  type NotificationDispatcher,
+  type NotificationPreferences,
+} from '@mojo/notifications/domain';
 import { makeReleasePayout, type ReleasePayoutInput } from '@mojo/payments/application';
 import type { PayoutRail, WalletRepository } from '@mojo/payments/domain';
 import { makeRecordSessionCompletion } from '@mojo/pricing/application';
@@ -36,9 +41,12 @@ import {
   makeCancelSession,
   makeConfirmSession,
   makeSetAvailability,
+  makeSetExceptions,
   makeUpdateSchedulingSettings,
+  type UpdateSchedulingSettingsInput,
 } from '@mojo/scheduling/application';
 import type {
+  AvailabilityException,
   AvailabilityRepository,
   AvailabilityRule,
   ScheduledSession,
@@ -161,7 +169,13 @@ export interface HubApp {
     cancel(input: CancelSessionInput): Promise<void>;
     confirmSession(input: ConfirmSessionInput): Promise<void>;
     saveAvailability(tutorId: string, rules: Omit<AvailabilityRule, 'tutorId'>[]): Promise<void>;
-    updateSettings(input: { tutorId: string; timezone: string }): Promise<void>;
+    updateSettings(input: UpdateSchedulingSettingsInput): Promise<void>;
+    exceptions(tutorId: string, fromDate: string, toDate: string): Promise<AvailabilityException[]>;
+    saveExceptions(
+      tutorId: string,
+      date: string,
+      exceptions: Omit<AvailabilityException, 'tutorId' | 'date' | 'id'>[],
+    ): Promise<void>;
   };
   booking: {
     confirmDelivery(input: ConfirmDeliveryInput): Promise<void>;
@@ -199,6 +213,9 @@ export interface HubApp {
   };
   notifications: {
     log(): readonly SentNotification[];
+    preferences(userId: string): Promise<NotificationPreferences>;
+    savePreferences(userId: string, prefs: NotificationPreferences): Promise<void>;
+    fireDueReminders(userId: string, nowIso: string): Promise<{ sent: number; due: number }>;
   };
   eventCount(name: string): number;
 }
@@ -392,6 +409,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const cancelSession = makeCancelSession({ sessions: repos.sessions });
   const confirmSession = makeConfirmSession({ sessions: repos.sessions });
   const setAvailability = makeSetAvailability({ availability: repos.availability });
+  const setExceptions = makeSetExceptions({ availability: repos.availability });
   const updateSchedulingSettings = makeUpdateSchedulingSettings({
     availability: repos.availability,
   });
@@ -544,6 +562,9 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       confirmSession: (input) => confirmSession(input),
       saveAvailability: (tutorId, rules) => setAvailability(tutorId, rules),
       updateSettings: (input) => updateSchedulingSettings(input),
+      exceptions: (tutorId, fromDate, toDate) =>
+        repos.availability.listExceptions(tutorId, fromDate, toDate),
+      saveExceptions: (tutorId, date, exceptions) => setExceptions({ tutorId, date, exceptions }),
     },
     booking: {
       confirmDelivery: (input) => confirmDelivery(input),
@@ -589,6 +610,44 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     },
     notifications: {
       log: () => state.notifications,
+      preferences: async (userId) =>
+        state.notificationPreferences.get(userId) ?? DEFAULT_NOTIFICATION_PREFERENCES,
+      savePreferences: async (userId, prefs) => {
+        state.notificationPreferences.set(userId, prefs);
+      },
+      fireDueReminders: async (userId, nowIso) => {
+        const prefs = state.notificationPreferences.get(userId) ?? DEFAULT_NOTIFICATION_PREFERENCES;
+        const upcoming = await repos.sessions.listByStudent(userId);
+        const due = dueSessionReminders(
+          upcoming.map((session) => ({
+            sessionId: session.id,
+            tutorId: session.tutorId,
+            studentId: session.studentId,
+            startIso: session.startIso,
+            isTrial: session.isTrial,
+          })),
+          nowIso,
+          prefs,
+        );
+        let sent = 0;
+        for (const signal of due) {
+          const key = `${signal.sessionId}:${signal.templateId}`;
+          if (state.reminderJournal.has(key)) continue;
+          state.reminderJournal.set(key, nowIso);
+          for (const channel of prefs.channels) {
+            state.notifications.push({
+              id: demoId('n'),
+              channel,
+              to: `${userId}@mojo.dev`,
+              templateId: signal.templateId,
+              data: { sessionId: signal.sessionId, leadMinutes: signal.leadMinutes },
+              sentAt: nowIso,
+            });
+          }
+          sent += 1;
+        }
+        return { sent, due: due.length };
+      },
     },
     eventCount: (name) => eventCounts.get(name) ?? 0,
   };

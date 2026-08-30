@@ -1,4 +1,5 @@
 import { eventBus } from '@mojo/shared/events';
+import { fitsAvailability, tutorLocalTime } from '../domain/availability-validation';
 import { hasConflict, respectsBuffer, withinNoticeWindow } from '../domain/conflict-detection';
 import type { AvailabilityRepository, SessionRepository } from '../domain/scheduling.ports';
 import type { ScheduledSession } from '../domain/session.types';
@@ -35,12 +36,27 @@ export function makeBookSession(deps: {
       );
     }
 
+    // The candidate must sit inside the tutor's recurring availability (or an
+    // "extra" exception) and must not collide with a "blocked" exception —
+    // both are expressed in the tutor's wall-clock, so convert the UTC candidate
+    // into the tutor's local weekday/minute before checking.
+    const localStart = tutorLocalTime(input.startIso, settings.timezone);
+    const [rules, exceptions] = await Promise.all([
+      deps.availability.getRules(input.tutorId),
+      deps.availability.getExceptions(input.tutorId, localStart.dateKey),
+    ]);
+    const candidate = { startIso: input.startIso, endIso: input.endIso };
+    if (!fitsAvailability(candidate, settings.timezone, rules, exceptions)) {
+      throw new SchedulingConflictError(
+        "falls outside the tutor's availability or is blocked by an exception.",
+      );
+    }
+
     const existing = await deps.sessions.getBookedSessions(
       input.tutorId,
       input.startIso,
       input.endIso,
     );
-    const candidate = { startIso: input.startIso, endIso: input.endIso };
 
     if (hasConflict(candidate, existing)) {
       throw new SchedulingConflictError('overlaps an existing session.');

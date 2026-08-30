@@ -36,6 +36,30 @@ export class PrismaAvailabilityRepository implements AvailabilityRepository {
     return rows.map((r) => ({ ...r }));
   }
 
+  async listExceptions(
+    tutorId: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<AvailabilityException[]> {
+    const rows = await this.prisma.availabilityException.findMany({
+      where: { tutorId, date: { gte: fromDate, lte: toDate } },
+      orderBy: { date: 'asc' },
+    });
+    return rows.map((r) => ({ ...r }));
+  }
+
+  async saveExceptions(
+    tutorId: string,
+    date: string,
+    exceptions: Omit<AvailabilityException, 'tutorId' | 'date'>[],
+  ): Promise<void> {
+    const rows = exceptions.map((e) => ({ ...e, id: e.id, tutorId, date }));
+    await this.prisma.$transaction([
+      this.prisma.availabilityException.deleteMany({ where: { tutorId, date } }),
+      ...rows.map((row) => this.prisma.availabilityException.create({ data: row })),
+    ]);
+  }
+
   async getSettings(tutorId: string): Promise<SchedulingSettings> {
     const row = await this.prisma.schedulingSettings.findUniqueOrThrow({ where: { tutorId } });
     return { ...row };

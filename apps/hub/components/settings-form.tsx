@@ -1,14 +1,75 @@
 'use client';
 
+import type { NotificationPreferences } from '@mojo/notifications/domain';
 import { Alert, Button, Card, CardContent, CardHeader, CardTitle, Checkbox } from '@mojo/shared/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { SiteHeaderUser } from './site-header';
 
+interface PreferencesResponse {
+  ok: boolean;
+  preferences: NotificationPreferences;
+}
+
 export function SettingsForm({ user }: { user: SiteHeaderUser }) {
-  const [lessonReminders, setLessonReminders] = useState(true);
-  const [recapEmails, setRecapEmails] = useState(true);
-  const [marketing, setMarketing] = useState(false);
+  const [preferences, setPreferences] = useState<NotificationPreferences>({
+    lessonReminders: true,
+    recapEmails: true,
+    marketing: false,
+    channels: ['email'],
+  });
+  const [emailChannel, setEmailChannel] = useState(true);
+  const [whatsappChannel, setWhatsappChannel] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reminderInfo, setReminderInfo] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const response = await fetch('/api/notifications/preferences');
+      if (!response.ok) return;
+      const body = (await response.json()) as PreferencesResponse;
+      setPreferences(body.preferences);
+      setEmailChannel(body.preferences.channels.includes('email'));
+      setWhatsappChannel(body.preferences.channels.includes('whatsapp'));
+    })();
+  }, []);
+
+  const save = async (next: NotificationPreferences) => {
+    setSaved(false);
+    setError(null);
+    const response = await fetch('/api/notifications/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(next),
+    });
+    if (!response.ok) {
+      setError('Could not save preferences.');
+      return;
+    }
+    const body = (await response.json()) as PreferencesResponse;
+    setPreferences(body.preferences);
+    setSaved(true);
+  };
+
+  const toggleChannel = (channel: 'email' | 'whatsapp', enabled: boolean) => {
+    const nextChannels = enabled
+      ? [...new Set([...preferences.channels, channel])]
+      : preferences.channels.filter((c) => c !== channel);
+    void save({ ...preferences, channels: nextChannels });
+  };
+
+  const fireReminders = async () => {
+    setReminderInfo(null);
+    const response = await fetch('/api/notifications/reminders', { method: 'POST' });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body) {
+      setReminderInfo('Could not check reminders.');
+      return;
+    }
+    setReminderInfo(
+      `${body.sent > 0 ? `${body.sent} reminder(s) waiting on you. ` : ''}${body.due} due lead(s) checked now.`,
+    );
+  };
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -37,34 +98,53 @@ export function SettingsForm({ user }: { user: SiteHeaderUser }) {
         <CardContent className="space-y-4">
           <Checkbox
             label="Lesson reminders"
-            description="A heads-up before each booked lesson."
-            checked={lessonReminders}
-            onChange={(e) => setLessonReminders(e.target.checked)}
+            description="A day-before and a 30-minute heads-up before each booked lesson."
+            checked={preferences.lessonReminders}
+            onChange={(e) => void save({ ...preferences, lessonReminders: e.target.checked })}
           />
           <Checkbox
             label="Session recap emails"
             description="Your tutor's AI recap after each lesson."
-            checked={recapEmails}
-            onChange={(e) => setRecapEmails(e.target.checked)}
+            checked={preferences.recapEmails}
+            onChange={(e) => void save({ ...preferences, recapEmails: e.target.checked })}
           />
           <Checkbox
             label="Occasional updates"
             description="New subjects, tutor highlights, learning tips."
-            checked={marketing}
-            onChange={(e) => setMarketing(e.target.checked)}
+            checked={preferences.marketing}
+            onChange={(e) => void save({ ...preferences, marketing: e.target.checked })}
           />
+          <fieldset className="space-y-2 border-t border-border pt-4">
+            <legend className="text-xs font-medium text-muted-foreground">Channels</legend>
+            <Checkbox
+              label="Email"
+              description="Send reminders to your inbox."
+              checked={emailChannel}
+              onChange={(e) => toggleChannel('email', e.target.checked)}
+            />
+            <Checkbox
+              label="WhatsApp"
+              description="Send reminders to WhatsApp."
+              checked={whatsappChannel}
+              onChange={(e) => toggleChannel('whatsapp', e.target.checked)}
+            />
+          </fieldset>
         </CardContent>
       </Card>
 
       <div className="lg:col-span-2">
         {saved && (
           <Alert className="mb-3">
-            Preferences saved — nothing leaves this browser in the demo.
+            Preferences saved — reminders fire on your booked lessons&apos; lead windows.
           </Alert>
         )}
-        <Button onClick={() => setSaved(true)} disabled={saved}>
-          Save preferences
-        </Button>
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {reminderInfo && <Alert className="mb-3">{reminderInfo}</Alert>}
+        <div className="flex gap-3">
+          <Button onClick={fireReminders} variant="secondary">
+            Check reminders now
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -82,6 +82,32 @@ export class InMemoryAvailabilityRepository implements AvailabilityRepository {
     return (this.state.availabilityExceptions.get(tutorId) ?? []).filter((e) => e.date === date);
   }
 
+  async listExceptions(
+    tutorId: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<AvailabilityException[]> {
+    return (this.state.availabilityExceptions.get(tutorId) ?? [])
+      .filter((e) => e.date >= fromDate && e.date <= toDate)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.startMinute - b.startMinute);
+  }
+
+  async saveExceptions(
+    tutorId: string,
+    date: string,
+    exceptions: Omit<AvailabilityException, 'tutorId' | 'date'>[],
+  ): Promise<void> {
+    const others = (this.state.availabilityExceptions.get(tutorId) ?? []).filter(
+      (e) => e.date !== date,
+    );
+    this.state.availabilityExceptions.set(
+      tutorId,
+      [...others, ...exceptions.map((e) => ({ ...e, tutorId, date }))].sort(
+        (a, b) => a.date.localeCompare(b.date) || a.startMinute - b.startMinute,
+      ),
+    );
+  }
+
   async getSettings(tutorId: string): Promise<SchedulingSettings> {
     return (
       this.state.schedulingSettings.get(tutorId) ?? {

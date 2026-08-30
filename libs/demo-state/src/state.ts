@@ -3,6 +3,7 @@ import type { DeliveryConfirmation } from '@mojo/booking/domain';
 import type { User } from '@mojo/identity/domain';
 import type { Message } from '@mojo/messaging/domain';
 import type { MojoPlusSubscription } from '@mojo/mojo-plus/domain';
+import type { NotificationPreferences } from '@mojo/notifications/domain';
 import type { PayoutRequest, WalletTransaction } from '@mojo/payments/domain';
 import type { ReferralConversion, ReferralLink } from '@mojo/referrals/domain';
 import type { Review } from '@mojo/reviews/domain';
@@ -68,6 +69,10 @@ export class DemoState {
   readonly disputes = new Map<string, Dispute>();
   readonly messages = new Map<string, Message>();
   readonly notifications: SentNotification[] = [];
+  readonly notificationPreferences = new Map<string, NotificationPreferences>();
+
+  /** sessionId:templateId -> firedAt (dedupes scheduled reminder leads). */
+  readonly reminderJournal = new Map<string, string>();
 
   /** Filled by `getHub()`; awaited by identity ops that race demo seeding. */
   seedReady: Promise<void> | null = null;
