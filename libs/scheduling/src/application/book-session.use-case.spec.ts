@@ -1,10 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest';
 import { eventBus } from '@mojo/shared/events';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { AvailabilityRepository, SchedulingSettings, SessionRepository } from '../domain';
-import { makeBookSession, SchedulingConflictError } from './book-session.use-case';
 import type { ScheduledSession } from '../domain/session.types';
+import { makeBookSession, SchedulingConflictError } from './book-session.use-case';
 
-function buildFakes(existing: ScheduledSession[], settingsOverride: Partial<SchedulingSettings> = {}) {
+function buildFakes(
+  existing: ScheduledSession[],
+  settingsOverride: Partial<SchedulingSettings> = {},
+) {
   const saved: ScheduledSession[] = [];
   const settings: SchedulingSettings = {
     tutorId: 't_1',

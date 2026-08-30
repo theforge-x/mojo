@@ -4,7 +4,7 @@ import { currentUser } from '../../../lib/session';
 
 export default async function AvailabilityPage() {
   const user = await currentUser();
-  if (!user || user.role !== 'tutor') return null;
+  if (user?.role !== 'tutor') return null;
 
   const hub = getHub();
   const [rules, settings] = await Promise.all([

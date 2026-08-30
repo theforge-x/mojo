@@ -3,7 +3,10 @@
 import { Badge } from '@mojo/shared/ui';
 import type { ScheduledSession, SessionStatus } from '../domain/session.types';
 
-const STATUS_BADGE: Record<SessionStatus, 'primary' | 'secondary' | 'tertiary' | 'destructive' | 'muted'> = {
+const STATUS_BADGE: Record<
+  SessionStatus,
+  'primary' | 'secondary' | 'tertiary' | 'destructive' | 'muted'
+> = {
   booked: 'tertiary',
   confirmed: 'primary',
   completed: 'muted',

@@ -19,7 +19,10 @@ export class SchedulingConflictError extends Error {
   }
 }
 
-export function makeBookSession(deps: { availability: AvailabilityRepository; sessions: SessionRepository }) {
+export function makeBookSession(deps: {
+  availability: AvailabilityRepository;
+  sessions: SessionRepository;
+}) {
   return async function bookSession(input: BookSessionInput): Promise<ScheduledSession> {
     const settings = await deps.availability.getSettings(input.tutorId);
     if (settings.pausedForNewBookings) {
@@ -27,17 +30,25 @@ export function makeBookSession(deps: { availability: AvailabilityRepository; se
     }
 
     if (!withinNoticeWindow(input.startIso, input.nowIso, settings.minimumNoticeMinutes)) {
-      throw new SchedulingConflictError(`must be booked at least ${settings.minimumNoticeMinutes} minutes ahead.`);
+      throw new SchedulingConflictError(
+        `must be booked at least ${settings.minimumNoticeMinutes} minutes ahead.`,
+      );
     }
 
-    const existing = await deps.sessions.getBookedSessions(input.tutorId, input.startIso, input.endIso);
+    const existing = await deps.sessions.getBookedSessions(
+      input.tutorId,
+      input.startIso,
+      input.endIso,
+    );
     const candidate = { startIso: input.startIso, endIso: input.endIso };
 
     if (hasConflict(candidate, existing)) {
       throw new SchedulingConflictError('overlaps an existing session.');
     }
     if (!respectsBuffer(candidate, existing, settings.bufferMinutes)) {
-      throw new SchedulingConflictError(`does not respect the ${settings.bufferMinutes}-minute buffer.`);
+      throw new SchedulingConflictError(
+        `does not respect the ${settings.bufferMinutes}-minute buffer.`,
+      );
     }
 
     const session: ScheduledSession = {
@@ -55,7 +66,12 @@ export function makeBookSession(deps: { availability: AvailabilityRepository; se
     await eventBus.publish({
       name: 'SessionBooked',
       occurredAt: input.nowIso,
-      payload: { sessionId: session.id, tutorId: session.tutorId, studentId: session.studentId, isTrial: session.isTrial },
+      payload: {
+        sessionId: session.id,
+        tutorId: session.tutorId,
+        studentId: session.studentId,
+        isTrial: session.isTrial,
+      },
     });
 
     return session;

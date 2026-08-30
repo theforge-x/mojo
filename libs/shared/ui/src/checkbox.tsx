@@ -5,13 +5,13 @@ export function Checkbox({
   label,
   description,
   ...props
-}: React.ComponentProps<"input"> & { label?: string; description?: string }) {
+}: React.ComponentProps<'input'> & { label?: string; description?: string }) {
   return (
     <label
       className={cn(
-        "flex items-start gap-3",
-        props.disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
-        className
+        'flex items-start gap-3',
+        props.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+        className,
       )}
     >
       <input

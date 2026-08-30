@@ -11,7 +11,8 @@
 @source "../../../../../libs/shared/ui/src/**/*.{ts,tsx}";
 @source "../../../../*/src/feature/**/*.{ts,tsx}";
 
-:root, .light {
+:root,
+.light {
   --background: #fffffe;
   --foreground: #1b2d45;
   --headline: #00214d;
@@ -115,6 +116,18 @@
   --font-mono: var(--font-dm-mono);
 }
 @layer base {
-  body { background: var(--background); color: var(--foreground); font-family: var(--font-sans); }
-  h1, h2, h3, h4, h5, h6 { color: var(--headline); font-family: var(--font-display); }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--headline);
+    font-family: var(--font-display);
+  }
 }

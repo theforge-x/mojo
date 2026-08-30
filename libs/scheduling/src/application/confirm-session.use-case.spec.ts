@@ -3,8 +3,8 @@ import type { SessionRepository } from '../domain/scheduling.ports';
 import {
   type ConfirmSessionInput,
   ConfirmSessionNotFoundError,
-  SessionNotBookedError,
   makeConfirmSession,
+  SessionNotBookedError,
 } from './confirm-session.use-case';
 
 function fakeSessions(initial: { status: string; tutorId: string }): SessionRepository {

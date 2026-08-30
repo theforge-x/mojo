@@ -14,7 +14,7 @@ export default async function TutorLabPage({ params }: { params: Promise<{ sessi
   const { sessionId } = await params;
 
   const user = await currentUser();
-  if (!user || user.role !== 'tutor') redirect('/login');
+  if (user?.role !== 'tutor') redirect('/login');
 
   const hub = getHub();
   const mine = await hub.scheduling.sessionsByTutor(user.id);

@@ -5,8 +5,8 @@ import {
   calculateTrialLessonCharge,
   effectiveTakeHomePercent,
 } from './calculate-lesson-charge';
-import { BASE_TAKE_HOME_PERCENT, DEFAULT_SEGMENT_RATE_NGN } from './pricing.types';
 import type { SegmentRate } from './pricing.types';
+import { BASE_TAKE_HOME_PERCENT, DEFAULT_SEGMENT_RATE_NGN } from './pricing.types';
 
 const establishedRate: SegmentRate = {
   level: 'established',

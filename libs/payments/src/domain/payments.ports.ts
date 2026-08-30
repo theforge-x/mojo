@@ -3,7 +3,11 @@ import type { PayoutRequest, Wallet, WalletTransaction } from './wallet.types';
 
 export interface WalletRepository {
   getWallet(tutorId: string): Promise<Wallet>;
-  credit(tutorId: string, amount: Money, relatedSessionId: string | null): Promise<WalletTransaction>;
+  credit(
+    tutorId: string,
+    amount: Money,
+    relatedSessionId: string | null,
+  ): Promise<WalletTransaction>;
   savePayoutRequest(request: PayoutRequest): Promise<void>;
 }
 

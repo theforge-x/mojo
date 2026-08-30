@@ -13,13 +13,13 @@ import {
   useParticipants,
   useTracks,
 } from '@livekit/components-react';
-import { Track } from 'livekit-client';
 import { Badge } from '@mojo/shared/ui';
+import { Track } from 'livekit-client';
 import type { FileStorageProvider, LabAccess } from '../domain/lab.types';
-import { LabControlBar } from './lab-control-bar';
 import { LabChatPanel } from './lab-chat-panel';
-import { LabWhiteboard } from './lab-whiteboard';
+import { LabControlBar } from './lab-control-bar';
 import { LabFilePanel } from './lab-file-panel';
+import { LabWhiteboard } from './lab-whiteboard';
 
 export interface LabRoomProps {
   sessionId: string;
@@ -34,7 +34,10 @@ export function LabRoom({ sessionId, access, fileStorage, onDisconnected }: LabR
   const [panel, setPanel] = useState<Panel>(null);
 
   return (
-    <div data-lk-theme="mojo" className="flex h-full flex-col rounded-lg border border-border bg-background">
+    <div
+      data-lk-theme="mojo"
+      className="flex h-full flex-col rounded-lg border border-border bg-background"
+    >
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <span className="font-display text-sm font-bold text-headline">Mojo Lab</span>
         <Badge variant="primary">live</Badge>
@@ -77,13 +80,19 @@ export function LabRoom({ sessionId, access, fileStorage, onDisconnected }: LabR
  * defaults.
  */
 function RoomStage() {
-  const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare], { onlySubscribed: false });
+  const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare], {
+    onlySubscribed: false,
+  });
   const screenShare = tracks.find((t) => t.source === Track.Source.ScreenShare);
   const focusTrack = screenShare ?? tracks[0];
   const carouselTracks = tracks.filter((t) => t !== focusTrack);
 
   if (!focusTrack) {
-    return <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Waiting for video…</div>;
+    return (
+      <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+        Waiting for video…
+      </div>
+    );
   }
 
   return (

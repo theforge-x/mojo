@@ -15,7 +15,7 @@ const LEVEL_BADGE: Record<string, 'muted' | 'primary' | 'tertiary'> = {
 
 export default async function TutorHome() {
   const user = await currentUser();
-  if (!user || user.role !== 'tutor') return null;
+  if (user?.role !== 'tutor') return null;
 
   const hub = getHub();
   const [sessions, performance, wallet] = await Promise.all([

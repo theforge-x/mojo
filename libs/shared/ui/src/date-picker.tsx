@@ -1,11 +1,11 @@
 'use client';
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import type { DateRange } from "react-day-picker";
-import { Button } from "./button";
-import { Calendar } from "./calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { cn } from '@mojo/shared/util';
+import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import type { DateRange } from 'react-day-picker';
+import { Button } from './button';
+import { Calendar } from './calendar';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 interface DatePickerProps {
   value?: Date;
@@ -15,7 +15,13 @@ interface DatePickerProps {
   className?: string;
 }
 
-export function DatePicker({ value, onChange, placeholder = "Pick a date", disabled, className }: DatePickerProps) {
+export function DatePicker({
+  value,
+  onChange,
+  placeholder = 'Pick a date',
+  disabled,
+  className,
+}: DatePickerProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -23,13 +29,13 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", disab
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-start text-left font-normal",
-            !value && "text-muted-foreground",
-            className
+            'w-full justify-start text-left font-normal',
+            !value && 'text-muted-foreground',
+            className,
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(value, "PPP") : <span>{placeholder}</span>}
+          {value ? format(value, 'PPP') : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -47,7 +53,13 @@ interface DateRangePickerProps {
   className?: string;
 }
 
-export function DateRangePicker({ value, onChange, placeholder = "Pick a date range", disabled, className }: DateRangePickerProps) {
+export function DateRangePicker({
+  value,
+  onChange,
+  placeholder = 'Pick a date range',
+  disabled,
+  className,
+}: DateRangePickerProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -55,17 +67,19 @@ export function DateRangePicker({ value, onChange, placeholder = "Pick a date ra
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-start text-left font-normal",
-            !value && "text-muted-foreground",
-            className
+            'w-full justify-start text-left font-normal',
+            !value && 'text-muted-foreground',
+            className,
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {value?.from ? (
             value.to ? (
-              <>{format(value.from, "LLL dd, y")} - {format(value.to, "LLL dd, y")}</>
+              <>
+                {format(value.from, 'LLL dd, y')} - {format(value.to, 'LLL dd, y')}
+              </>
             ) : (
-              format(value.from, "LLL dd, y")
+              format(value.from, 'LLL dd, y')
             )
           ) : (
             <span>{placeholder}</span>

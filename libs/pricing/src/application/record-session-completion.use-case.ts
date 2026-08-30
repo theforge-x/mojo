@@ -6,8 +6,8 @@ import {
   effectiveTakeHomePercent,
 } from '../domain/calculate-lesson-charge';
 import type { TutorLevelReader } from '../domain/pricing.ports';
-import { BASE_TAKE_HOME_PERCENT, DEFAULT_SEGMENT_RATE_NGN } from '../domain/pricing.types';
 import type { CommissionSplit } from '../domain/pricing.types';
+import { BASE_TAKE_HOME_PERCENT, DEFAULT_SEGMENT_RATE_NGN } from '../domain/pricing.types';
 
 /**
  * Subscribes (conceptually — wiring to eventBus.subscribe happens at the

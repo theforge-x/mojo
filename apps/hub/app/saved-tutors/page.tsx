@@ -5,7 +5,7 @@ import { currentUser } from '../../lib/session';
 export default async function SavedTutorsPage() {
   const user = await currentUser();
   const home = user?.role === 'tutor' ? '/tutor' : '/';
-  if (!user || user.role !== 'student') redirect(home);
+  if (user?.role !== 'student') redirect(home);
 
   return (
     <main className="mx-auto max-w-6xl p-6">

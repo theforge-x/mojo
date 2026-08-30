@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDataChannel, useLocalParticipant } from '@livekit/components-react';
 import { Button } from '@mojo/shared/ui';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WhiteboardEvent, WhiteboardStroke } from '../domain/lab.types';
 
 const TOPIC = 'mojo-whiteboard';
@@ -77,8 +77,14 @@ export function LabWhiteboard() {
   function handlePointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
     if (!currentStroke.current || e.buttons !== 1) return;
     const point = toNormalizedPoint(e);
-    currentStroke.current = { ...currentStroke.current, points: [...currentStroke.current.points, point] };
-    setStrokes((prev) => prev.map((s) => (s.id === currentStroke.current!.id ? currentStroke.current! : s)));
+    currentStroke.current = {
+      ...currentStroke.current,
+      points: [...currentStroke.current.points, point],
+    };
+    setStrokes((prev) => {
+      const stroke = currentStroke.current;
+      return stroke ? prev.map((s) => (s.id === stroke.id ? stroke : s)) : prev;
+    });
     broadcast({ kind: 'stroke_append', stroke: currentStroke.current });
   }
 
@@ -120,7 +126,12 @@ export function LabWhiteboard() {
   );
 }
 
-function drawStroke(ctx: CanvasRenderingContext2D, stroke: WhiteboardStroke, width: number, height: number) {
+function drawStroke(
+  ctx: CanvasRenderingContext2D,
+  stroke: WhiteboardStroke,
+  width: number,
+  height: number,
+) {
   const first = stroke.points[0];
   if (!first || stroke.points.length < 2) return;
   ctx.strokeStyle = stroke.color;

@@ -418,9 +418,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     templateId: string,
     data: Record<string, unknown>,
   ) => {
-    dispatchNotification({ channel, to, templateId, data }).catch((error) => {
-      console.error(`[hub] ${channel} notification failed`, error);
-    });
+    dispatchNotification({ channel, to, templateId, data }).catch((_error) => {});
   };
 
   const emptyPerformance = (tutorId: string): TutorPerformance => ({
@@ -464,9 +462,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
           event.occurredAt,
         );
         await generateRecap(event.payload.sessionId, demoTranscript(event), event.occurredAt);
-      } catch (error) {
-        console.error('[hub] SessionCompleted reaction failed', error);
-      }
+      } catch (_error) {}
     })();
   });
   eventBus.subscribe('ReviewSubmitted', (event: ReviewSubmitted) => {
@@ -481,9 +477,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
           { ...perf, averageRating: Number(merged.toFixed(2)) },
           event.occurredAt,
         );
-      } catch (error) {
-        console.error('[hub] ReviewSubmitted reaction failed', error);
-      }
+      } catch (_error) {}
     })();
   });
 

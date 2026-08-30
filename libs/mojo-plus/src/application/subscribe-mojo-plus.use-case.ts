@@ -10,7 +10,11 @@ export function makeSubscribeMojoPlus(deps: { subscriptions: MojoPlusRepository 
       subscribedAt: nowIso,
       cancelledAt: null,
     });
-    await eventBus.publish({ name: 'MojoPlusSubscribed', occurredAt: nowIso, payload: { tutorId } });
+    await eventBus.publish({
+      name: 'MojoPlusSubscribed',
+      occurredAt: nowIso,
+      payload: { tutorId },
+    });
   };
 }
 
@@ -32,7 +36,7 @@ export class MojoPlusRequiredError extends Error {
 export function makeSetCustomRate(deps: { subscriptions: MojoPlusRepository }) {
   return async function setCustomRate(tutorId: string, rateMinor: number): Promise<void> {
     const existing = await deps.subscriptions.find(tutorId);
-    if (!existing || existing.status !== 'active') throw new MojoPlusRequiredError();
+    if (existing?.status !== 'active') throw new MojoPlusRequiredError();
     await deps.subscriptions.save({ ...existing, customSegmentRateMinor: rateMinor });
   };
 }

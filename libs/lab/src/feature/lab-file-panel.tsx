@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
 import { useDataChannel, useLocalParticipant } from '@livekit/components-react';
-import { FileText } from 'lucide-react';
 import { Button } from '@mojo/shared/ui';
+import { FileText } from 'lucide-react';
+import { useRef, useState } from 'react';
 import type { FileStorageProvider, SharedFile } from '../domain/lab.types';
 
 const TOPIC = 'mojo-files';
@@ -36,7 +36,11 @@ export function LabFilePanel({ sessionId, storage }: LabFilePanelProps) {
     if (!chosen) return;
     setUploading(true);
     try {
-      const { url, sizeBytes } = await storage.upload({ sessionId, file: chosen, fileName: chosen.name });
+      const { url, sizeBytes } = await storage.upload({
+        sessionId,
+        file: chosen,
+        fileName: chosen.name,
+      });
       const shared: SharedFile = {
         id: crypto.randomUUID(),
         name: chosen.name,
@@ -70,14 +74,24 @@ export function LabFilePanel({ sessionId, storage }: LabFilePanelProps) {
           >
             <FileText size={16} className="shrink-0 text-muted-foreground" />
             <span className="flex-1 truncate">{file.name}</span>
-            <span className="font-mono text-[10px] text-muted-foreground">{formatSize(file.sizeBytes)}</span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              {formatSize(file.sizeBytes)}
+            </span>
           </a>
         ))}
-        {files.length === 0 && <p className="text-xs text-muted-foreground">No files shared yet.</p>}
+        {files.length === 0 && (
+          <p className="text-xs text-muted-foreground">No files shared yet.</p>
+        )}
       </div>
       <div className="border-t border-border p-3">
         <input ref={inputRef} type="file" className="hidden" onChange={handleFileChosen} />
-        <Button size="sm" variant="outline" className="w-full" onClick={() => inputRef.current?.click()} disabled={uploading}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+        >
           {uploading ? 'Uploading…' : 'Share a file'}
         </Button>
       </div>

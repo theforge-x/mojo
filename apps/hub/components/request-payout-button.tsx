@@ -1,10 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { Alert, Button } from '@mojo/shared/ui';
 import { useRouter } from 'next/navigation';
-import { Button, Alert } from '@mojo/shared/ui';
+import { useState } from 'react';
 
-export function RequestPayoutButton({ balanceMinor, currency }: { balanceMinor: number; currency: string }) {
+export function RequestPayoutButton({
+  balanceMinor,
+  currency,
+}: {
+  balanceMinor: number;
+  currency: string;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

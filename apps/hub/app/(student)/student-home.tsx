@@ -20,7 +20,7 @@ import { currentUser } from '../../lib/session';
 
 export async function StudentHome() {
   const user = await currentUser();
-  if (!user || user.role !== 'student') return null;
+  if (user?.role !== 'student') return null;
 
   const hub = getHub();
   const sessions = await hub.scheduling.sessionsByStudent(user.id);

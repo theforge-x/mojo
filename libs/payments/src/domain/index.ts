@@ -1,2 +1,2 @@
-export * from './wallet.types';
 export * from './payments.ports';
+export * from './wallet.types';

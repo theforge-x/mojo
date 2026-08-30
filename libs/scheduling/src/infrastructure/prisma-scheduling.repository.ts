@@ -104,8 +104,8 @@ function toDomain(row: any): ScheduledSession {
     endIso: row.endAt.toISOString(),
     status: row.status,
     isTrial: row.isTrial,
-    statusHistory: (row.statusHistory ?? []).map((h: any) => ({
-      status: h.status,
+    statusHistory: (row.statusHistory ?? []).map((h: { status: string; at: Date }) => ({
+      status: h.status as ScheduledSession['status'],
       at: h.at.toISOString(),
     })),
   };

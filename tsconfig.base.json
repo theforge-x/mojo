@@ -45,7 +45,9 @@
       "@mojo/tutor-profile/infrastructure": ["libs/tutor-profile/src/infrastructure/index.ts"],
       "@mojo/tutor-performance/domain": ["libs/tutor-performance/src/domain/index.ts"],
       "@mojo/tutor-performance/application": ["libs/tutor-performance/src/application/index.ts"],
-      "@mojo/tutor-performance/infrastructure": ["libs/tutor-performance/src/infrastructure/index.ts"],
+      "@mojo/tutor-performance/infrastructure": [
+        "libs/tutor-performance/src/infrastructure/index.ts"
+      ],
       "@mojo/discovery/domain": ["libs/discovery/src/domain/index.ts"],
       "@mojo/discovery/application": ["libs/discovery/src/application/index.ts"],
       "@mojo/discovery/infrastructure": ["libs/discovery/src/infrastructure/index.ts"],

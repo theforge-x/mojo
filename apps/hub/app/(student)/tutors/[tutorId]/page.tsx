@@ -51,7 +51,9 @@ export default async function TutorDetailPage({
           <span>{formatMinor(tutor.perSegmentMinor)}/segment</span>
           {tutor.rating > 0 && <span>{tutor.rating.toFixed(1)}★</span>}
         </div>
-        {profile?.bio && <p className="mt-3 max-w-prose text-sm text-muted-foreground">{profile.bio}</p>}
+        {profile?.bio && (
+          <p className="mt-3 max-w-prose text-sm text-muted-foreground">{profile.bio}</p>
+        )}
       </div>
 
       <h2 className="mb-3 font-display text-lg font-bold text-headline">Available slots</h2>

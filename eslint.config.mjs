@@ -1,4 +1,5 @@
 import nxPlugin from '@nx/eslint-plugin';
+import tsEsLint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import mojoCleanArchitecture from './tools/eslint/mojo-clean-architecture.mjs';
 
@@ -31,14 +32,25 @@ const withPeers = (module, peers) => ({
   onlyDependOnLibsWithTags: [...SHARED, ...peers],
 });
 
+const IGNORES = [
+  '**/vitest.config.ts',
+  '**/vitest.aliases.ts',
+  '**/*.config.mjs',
+  '**/.next/**',
+  '**/dist/**',
+  '**/node_modules/**',
+  '**/coverage/**',
+  '**/*.gen.ts',
+  '**/docs/**',
+];
+
 export default [
   ...nxPlugin.configs['flat/base'],
-  {
-    ignores: ['**/vitest.config.ts', '**/vitest.aliases.ts', '**/*.config.mjs'],
-  },
+  { ignores: IGNORES },
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
+      '@typescript-eslint': tsEsLint,
       '@mojo': { rules: { 'clean-architecture': mojoCleanArchitecture } },
     },
     languageOptions: {

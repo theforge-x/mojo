@@ -3,10 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/hub",
   "projectType": "application",
-  "tags": [
-    "type:app",
-    "scope:hub"
-  ],
+  "tags": ["type:app", "scope:hub"],
   "// targets": "to see all targets run: nx show project hub --web",
   "targets": {}
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { Alert, Button } from '@mojo/shared/ui';
 import { useRouter } from 'next/navigation';
-import { Button, Alert } from '@mojo/shared/ui';
+import { useState } from 'react';
 
 export function ReviewButtons({ applicationId }: { applicationId: string }) {
   const router = useRouter();
@@ -31,7 +31,12 @@ export function ReviewButtons({ applicationId }: { applicationId: string }) {
   return (
     <>
       <div className="flex gap-2">
-        <Button size="sm" variant="outline" onClick={() => review('reject')} disabled={busy !== null}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => review('reject')}
+          disabled={busy !== null}
+        >
           {busy === 'reject' ? 'Rejecting…' : 'Reject'}
         </Button>
         <Button size="sm" onClick={() => review('approve')} disabled={busy !== null}>

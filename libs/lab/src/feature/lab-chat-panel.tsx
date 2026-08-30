@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { useChat } from '@livekit/components-react';
 import { Button, Input } from '@mojo/shared/ui';
+import { useState } from 'react';
 
 /**
  * Built on LiveKit's own useChat() hook rather than reimplementing chat over
@@ -31,9 +31,14 @@ export function LabChatPanel() {
         {chatMessages.map((msg) => (
           <div key={msg.id} className="text-sm">
             <div className="mb-0.5 flex items-baseline gap-2">
-              <span className="font-semibold text-headline">{msg.from?.name ?? msg.from?.identity ?? 'Someone'}</span>
+              <span className="font-semibold text-headline">
+                {msg.from?.name ?? msg.from?.identity ?? 'Someone'}
+              </span>
               <span className="font-mono text-[10px] text-muted-foreground">
-                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {new Date(msg.timestamp).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
               </span>
             </div>
             <p className="text-foreground">{msg.message}</p>

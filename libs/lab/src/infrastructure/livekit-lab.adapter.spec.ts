@@ -22,7 +22,11 @@ describe('LiveKitLabProvider', () => {
     const names = ['Tutor', 'Student A', 'Student B', 'Student C'];
     const accesses = await Promise.all(
       names.map((name, i) =>
-        provider.createAccess({ sessionId: 's_group', participantId: `p_${i}`, participantName: name }),
+        provider.createAccess({
+          sessionId: 's_group',
+          participantId: `p_${i}`,
+          participantName: name,
+        }),
       ),
     );
 

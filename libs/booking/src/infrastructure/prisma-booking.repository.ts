@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
-import type { BookingSession } from '../domain/booking-session.types';
 import type { BookingRepository } from '../domain/booking.ports';
+import type { BookingSession } from '../domain/booking-session.types';
 import type { DeliveryConfirmation } from '../domain/session-lifecycle.types';
 
 export class PrismaBookingRepository implements BookingRepository {

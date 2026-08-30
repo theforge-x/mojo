@@ -24,6 +24,7 @@
     "@nx/workspace": "^23.1.2",
     "@types/node": "^26.0.0",
     "@types/react": "^19.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.68.0",
     "@typescript-eslint/parser": "^8.68.0",
     "@vitejs/plugin-react": "^6.1.1",
     "nx": "^23.1.2",

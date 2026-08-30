@@ -10,7 +10,7 @@
  * so these overrides win.
  */
 
-[data-lk-theme='mojo'] {
+[data-lk-theme="mojo"] {
   --lk-bg: var(--background);
   --lk-bg2: var(--card);
   --lk-bg3: var(--muted);
@@ -31,7 +31,7 @@
   font-family: var(--font-sans);
 }
 
-[data-lk-theme='mojo'] .lk-participant-name {
+[data-lk-theme="mojo"] .lk-participant-name {
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.02em;
@@ -39,7 +39,7 @@
 
 /* Screen-share tiles get a mint outline so a presenting participant reads
    as "live" at a glance, consistent with badge-primary elsewhere in Mojo. */
-[data-lk-theme='mojo'] .lk-participant-tile[data-lk-source='screen_share'] {
+[data-lk-theme="mojo"] .lk-participant-tile[data-lk-source="screen_share"] {
   outline: 2px solid var(--primary);
   outline-offset: -2px;
 }

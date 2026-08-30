@@ -1,6 +1,6 @@
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
-import { getAdmin } from '../../../demo/composition-root';
 import { FileDisputeForm } from '../../../components/file-dispute-form';
+import { getAdmin } from '../../../demo/composition-root';
 
 export default async function DisputesPage() {
   const disputes = getAdmin().disputes.list();
@@ -9,8 +9,8 @@ export default async function DisputesPage() {
     <main className="mx-auto max-w-6xl p-6">
       <h1 className="mb-2 font-display text-2xl font-bold text-headline">Disputes</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Filed against sessions, reviewed by trust &amp; safety. Filing here goes through the trust-safety use case and
-        lands in the audit log.
+        Filed against sessions, reviewed by trust &amp; safety. Filing here goes through the
+        trust-safety use case and lands in the audit log.
       </p>
 
       <Card className="mb-6">
@@ -33,11 +33,19 @@ export default async function DisputesPage() {
                 <p className="text-sm text-muted-foreground">{dispute.reason}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {new Date(dispute.filedAt).toLocaleString()}
-                  {dispute.resolvedAt && <> · resolved {new Date(dispute.resolvedAt).toLocaleDateString()}</>}
+                  {dispute.resolvedAt && (
+                    <> · resolved {new Date(dispute.resolvedAt).toLocaleDateString()}</>
+                  )}
                 </p>
               </div>
               <Badge
-                variant={dispute.status === 'open' ? 'tertiary' : dispute.status === 'upheld' ? 'primary' : 'muted'}
+                variant={
+                  dispute.status === 'open'
+                    ? 'tertiary'
+                    : dispute.status === 'upheld'
+                      ? 'primary'
+                      : 'muted'
+                }
               >
                 {dispute.status}
               </Badge>

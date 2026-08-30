@@ -1,8 +1,8 @@
 import { eventBus } from '@mojo/shared/events';
 import { describe, expect, it } from 'vitest';
-import type { BookingSession } from '../domain/booking-session.types';
 import type { BookingRepository } from '../domain/booking.ports';
-import { SessionNotBookedError, makeConfirmDelivery } from './confirm-delivery.use-case';
+import type { BookingSession } from '../domain/booking-session.types';
+import { makeConfirmDelivery, SessionNotBookedError } from './confirm-delivery.use-case';
 
 function fakeSession(overrides: Partial<BookingSession> = {}): BookingSession {
   return {

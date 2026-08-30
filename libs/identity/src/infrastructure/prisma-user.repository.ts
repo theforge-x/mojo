@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
-import type { User } from '../domain/user.types';
 import type { UserRepository } from '../domain/identity.ports';
+import type { User } from '../domain/user.types';
 
 export class PrismaUserRepository implements UserRepository {
   constructor(private readonly prisma: PrismaClient) {}

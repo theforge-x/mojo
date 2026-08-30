@@ -1,2 +1,2 @@
-export * from './events.types';
 export * from './event-bus';
+export * from './events.types';

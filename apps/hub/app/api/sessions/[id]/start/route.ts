@@ -4,7 +4,7 @@ import { currentUser } from '../../../../../lib/session';
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await currentUser();
-  if (!user || user.role !== 'tutor') {
+  if (user?.role !== 'tutor') {
     return NextResponse.json({ ok: false, error: 'Tutor sign-in required.' }, { status: 401 });
   }
 

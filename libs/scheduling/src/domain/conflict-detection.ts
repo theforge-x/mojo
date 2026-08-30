@@ -7,11 +7,18 @@ import type { ScheduledSession } from './session.types';
  */
 export function hasConflict(candidate: TimeRange, existing: readonly ScheduledSession[]): boolean {
   const active = existing.filter((s) => s.status === 'booked' || s.status === 'confirmed');
-  return active.some((session) => overlaps(candidate, { startIso: session.startIso, endIso: session.endIso }));
+  return active.some((session) =>
+    overlaps(candidate, { startIso: session.startIso, endIso: session.endIso }),
+  );
 }
 
-export function withinNoticeWindow(candidateStartIso: string, nowIso: string, minimumNoticeMinutes: number): boolean {
-  const minutesUntilStart = (new Date(candidateStartIso).getTime() - new Date(nowIso).getTime()) / 60_000;
+export function withinNoticeWindow(
+  candidateStartIso: string,
+  nowIso: string,
+  minimumNoticeMinutes: number,
+): boolean {
+  const minutesUntilStart =
+    (new Date(candidateStartIso).getTime() - new Date(nowIso).getTime()) / 60_000;
   return minutesUntilStart >= minimumNoticeMinutes;
 }
 

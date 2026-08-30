@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { hasConflict, respectsBuffer, withinNoticeWindow } from './conflict-detection';
 import type { ScheduledSession } from './session.types';
 
-function session(startIso: string, endIso: string, status: ScheduledSession['status'] = 'confirmed'): ScheduledSession {
+function session(
+  startIso: string,
+  endIso: string,
+  status: ScheduledSession['status'] = 'confirmed',
+): ScheduledSession {
   return {
     id: 's_1',
     tutorId: 't_1',
@@ -48,7 +52,7 @@ describe('withinNoticeWindow', () => {
 });
 
 describe('respectsBuffer', () => {
-  it('rejects a candidate that starts inside another session\'s buffer', () => {
+  it("rejects a candidate that starts inside another session's buffer", () => {
     const existing = [session('2026-09-01T10:00:00.000Z', '2026-09-01T11:00:00.000Z')];
     // starts 5 minutes after the existing session ends, buffer requires 15
     const candidate = { startIso: '2026-09-01T11:05:00.000Z', endIso: '2026-09-01T12:00:00.000Z' };

@@ -1,5 +1,5 @@
-import { eventBus } from '@mojo/shared/events';
 import type { Money } from '@mojo/shared/domain';
+import { eventBus } from '@mojo/shared/events';
 import type { PayoutRail, WalletRepository } from '../domain/payments.ports';
 
 export interface ReleasePayoutInput {

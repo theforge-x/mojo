@@ -12,7 +12,11 @@ export class SupabaseFileStorageProvider implements FileStorageProvider {
     private readonly bucket = 'lab-shared-files',
   ) {}
 
-  async upload(input: { sessionId: string; file: Blob; fileName: string }): Promise<{ url: string; sizeBytes: number }> {
+  async upload(input: {
+    sessionId: string;
+    file: Blob;
+    fileName: string;
+  }): Promise<{ url: string; sizeBytes: number }> {
     const path = `${input.sessionId}/${Date.now()}-${input.fileName}`;
 
     const response = await fetch(`${this.supabaseUrl}/storage/v1/object/${this.bucket}/${path}`, {

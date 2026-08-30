@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { Alert, Badge, Button } from '@mojo/shared/ui';
 import { useRouter } from 'next/navigation';
-import { Button, Alert, Badge } from '@mojo/shared/ui';
+import { useState } from 'react';
 
-export function FlagToggle({ flag }: { flag: { key: string; enabled: boolean; rolloutPercent: number } }) {
+export function FlagToggle({
+  flag,
+}: {
+  flag: { key: string; enabled: boolean; rolloutPercent: number };
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +20,11 @@ export function FlagToggle({ flag }: { flag: { key: string; enabled: boolean; ro
       const response = await fetch('/api/flags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: flag.key, enabled: !flag.enabled, rolloutPercent: flag.rolloutPercent }),
+        body: JSON.stringify({
+          key: flag.key,
+          enabled: !flag.enabled,
+          rolloutPercent: flag.rolloutPercent,
+        }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? 'Could not update flag.');

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Alert, Button, Input, Textarea } from '@mojo/shared/ui';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export function FileDisputeForm() {
   const router = useRouter();
@@ -38,8 +38,18 @@ export function FileDisputeForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && <Alert variant="danger">{error}</Alert>}
-      <Input value={sessionId} onChange={(e) => setSessionId(e.target.value)} placeholder="Session id (e.g. s_5)" required />
-      <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="What happened?" required />
+      <Input
+        value={sessionId}
+        onChange={(e) => setSessionId(e.target.value)}
+        placeholder="Session id (e.g. s_5)"
+        required
+      />
+      <Textarea
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="What happened?"
+        required
+      />
       <Button type="submit" disabled={busy}>
         {busy ? 'Filing…' : 'File dispute'}
       </Button>

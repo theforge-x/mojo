@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '../../../lib/session';
 import { getHub } from '../../../demo/composition-root';
+import { currentUser } from '../../../lib/session';
 
 export async function PUT(request: Request) {
   const user = await currentUser();
-  if (!user || user.role !== 'tutor') {
+  if (user?.role !== 'tutor') {
     return NextResponse.json({ ok: false, error: 'Tutor sign-in required.' }, { status: 401 });
   }
 

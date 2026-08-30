@@ -1,7 +1,8 @@
 'use client';
 
-import { Track } from 'livekit-client';
 import { TrackToggle, useLocalParticipant } from '@livekit/components-react';
+import { cn } from '@mojo/shared/util';
+import { Track } from 'livekit-client';
 import {
   FileUp,
   MessageSquare,
@@ -15,7 +16,6 @@ import {
   Video,
   VideoOff,
 } from 'lucide-react';
-import { cn } from '@mojo/shared/util';
 
 export interface LabControlBarProps {
   participantCount: number;

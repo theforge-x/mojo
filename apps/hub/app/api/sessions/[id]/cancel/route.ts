@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 import { getHub } from '../../../../../demo/composition-root';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {

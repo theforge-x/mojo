@@ -15,7 +15,11 @@ export interface LabAccess {
 }
 
 export interface LabProvider {
-  createAccess(input: { sessionId: string; participantId: string; participantName: string }): Promise<LabAccess>;
+  createAccess(input: {
+    sessionId: string;
+    participantId: string;
+    participantName: string;
+  }): Promise<LabAccess>;
 }
 
 /** A chat message, as carried over LiveKit's reliable data channel. */
@@ -53,5 +57,9 @@ export interface SharedFile {
 }
 
 export interface FileStorageProvider {
-  upload(input: { sessionId: string; file: Blob; fileName: string }): Promise<{ url: string; sizeBytes: number }>;
+  upload(input: {
+    sessionId: string;
+    file: Blob;
+    fileName: string;
+  }): Promise<{ url: string; sizeBytes: number }>;
 }

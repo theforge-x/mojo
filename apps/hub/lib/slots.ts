@@ -18,7 +18,11 @@ export function bookableSlots(
   settings: SchedulingSettings,
   options: { days?: number; minutesStep?: number; fromIso?: string } = {},
 ): BookableSlot[] {
-  const { days = 7, minutesStep = SLOT_LENGTH_MINUTES, fromIso = new Date().toISOString() } = options;
+  const {
+    days = 7,
+    minutesStep = SLOT_LENGTH_MINUTES,
+    fromIso = new Date().toISOString(),
+  } = options;
   const from = new Date(fromIso);
   const earliestStartMs = from.getTime() + settings.minimumNoticeMinutes * 60_000;
   const todayKey = dayKey(from);
@@ -49,7 +53,11 @@ export function bookableSlots(
           pushSlot(slots, day, minute);
         }
       } else {
-        for (let minute = rule.startMinute; minute + SLOT_LENGTH_MINUTES <= rule.endMinute; minute += minutesStep) {
+        for (
+          let minute = rule.startMinute;
+          minute + SLOT_LENGTH_MINUTES <= rule.endMinute;
+          minute += minutesStep
+        ) {
           pushSlot(slots, day, minute);
         }
       }

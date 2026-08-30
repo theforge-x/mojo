@@ -1,8 +1,8 @@
-"use client";
-import { useCallback, useMemo, useRef, useState } from "react";
+'use client';
 import { cn } from '@mojo/shared/util';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
-export type CalendarEventKind = "availability" | "booking" | "blocked";
+export type CalendarEventKind = 'availability' | 'booking' | 'blocked';
 
 export interface CalendarEvent {
   id: string;
@@ -11,7 +11,7 @@ export interface CalendarEvent {
   start: string; // ISO
   end: string; // ISO
   participants?: string[];
-  color?: "green" | "blue" | "gray" | "red";
+  color?: 'green' | 'blue' | 'gray' | 'red';
 }
 
 export interface WeeklyCalendarProps {
@@ -37,11 +37,11 @@ export interface WeeklyCalendarProps {
 const SLOT_HEIGHT_PX = 12; // each 15-min slot
 const HOUR_SLOTS = 4;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function formatHour(h: number): string {
-  if (h === 0 || h === 24) return "12 AM";
-  if (h === 12) return "12 PM";
+  if (h === 0 || h === 24) return '12 AM';
+  if (h === 12) return '12 PM';
   return h < 12 ? `${h} AM` : `${h - 12} PM`;
 }
 
@@ -49,12 +49,12 @@ function formatTimeShort(iso: string): string {
   const d = new Date(iso);
   const h = d.getHours();
   const m = d.getMinutes();
-  const ampm = h >= 12 ? "PM" : "AM";
+  const ampm = h >= 12 ? 'PM' : 'AM';
   const hh = h % 12 || 12;
-  return `${hh}:${m.toString().padStart(2, "0")} ${ampm}`;
+  return `${hh}:${m.toString().padStart(2, '0')} ${ampm}`;
 }
 
-function startOfWeek(date: Date): Date {
+function _startOfWeek(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
@@ -64,7 +64,11 @@ function startOfWeek(date: Date): Date {
 }
 
 function sameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 function dayIndexForEvent(eventStart: string, weekStart: Date): number {
@@ -79,16 +83,16 @@ function dayIndexForEvent(eventStart: string, weekStart: Date): number {
 
 function colorClasses(color?: string): string {
   switch (color) {
-    case "green":
-      return "bg-emerald-500/20 border-emerald-500/40 text-emerald-700 dark:text-emerald-300";
-    case "blue":
-      return "bg-blue-500/20 border-blue-500/40 text-blue-700 dark:text-blue-300";
-    case "red":
-      return "bg-red-500/20 border-red-500/40 text-red-700 dark:text-red-300";
-    case "gray":
-      return "bg-muted/60 border-border text-muted-foreground";
+    case 'green':
+      return 'bg-emerald-500/20 border-emerald-500/40 text-emerald-700 dark:text-emerald-300';
+    case 'blue':
+      return 'bg-blue-500/20 border-blue-500/40 text-blue-700 dark:text-blue-300';
+    case 'red':
+      return 'bg-red-500/20 border-red-500/40 text-red-700 dark:text-red-300';
+    case 'gray':
+      return 'bg-muted/60 border-border text-muted-foreground';
     default:
-      return "bg-muted/40 border-border text-muted-foreground";
+      return 'bg-muted/40 border-border text-muted-foreground';
   }
 }
 
@@ -104,9 +108,16 @@ export function WeeklyCalendar({
   className,
 }: WeeklyCalendarProps) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState<{ day: number; startSlot: number; endSlot: number } | null>(null);
+  const [dragging, setDragging] = useState<{
+    day: number;
+    startSlot: number;
+    endSlot: number;
+  } | null>(null);
 
-  const hours = useMemo(() => HOURS.filter((h) => h >= startHour && h <= endHour), [startHour, endHour]);
+  const hours = useMemo(
+    () => HOURS.filter((h) => h >= startHour && h <= endHour),
+    [startHour, endHour],
+  );
   const totalSlots = hours.length * HOUR_SLOTS;
 
   // Compute day dates for the week
@@ -126,21 +137,18 @@ export function WeeklyCalendar({
       const slotHeight = SLOT_HEIGHT_PX;
       return Math.max(0, Math.min(totalSlots - 1, Math.floor(relY / slotHeight)));
     },
-    [totalSlots]
+    [totalSlots],
   );
 
-  const dayFromX = useCallback(
-    (x: number): number => {
-      if (!gridRef.current) return 0;
-      const rect = gridRef.current.getBoundingClientRect();
-      const relX = x - rect.left;
-      // Label column is ~48px, then 7 equal day columns
-      const labelWidth = 48;
-      const dayWidth = (rect.width - labelWidth) / 7;
-      return Math.max(0, Math.min(6, Math.floor((relX - labelWidth) / dayWidth)));
-    },
-    []
-  );
+  const dayFromX = useCallback((x: number): number => {
+    if (!gridRef.current) return 0;
+    const rect = gridRef.current.getBoundingClientRect();
+    const relX = x - rect.left;
+    // Label column is ~48px, then 7 equal day columns
+    const labelWidth = 48;
+    const dayWidth = (rect.width - labelWidth) / 7;
+    return Math.max(0, Math.min(6, Math.floor((relX - labelWidth) / dayWidth)));
+  }, []);
 
   const slotToDate = useCallback(
     (day: number, slot: number): Date => {
@@ -152,7 +160,7 @@ export function WeeklyCalendar({
       d.setHours(hour, min, 0, 0);
       return d;
     },
-    [weekDays, startHour]
+    [weekDays, startHour],
   );
 
   const handleMouseDown = useCallback(
@@ -163,7 +171,7 @@ export function WeeklyCalendar({
       const slot = slotFromY(e.clientY);
       setDragging({ day, startSlot: slot, endSlot: slot });
     },
-    [dragEnabled, readOnly, dayFromX, slotFromY]
+    [dragEnabled, readOnly, dayFromX, slotFromY],
   );
 
   const handleMouseMove = useCallback(
@@ -175,7 +183,7 @@ export function WeeklyCalendar({
         setDragging((prev) => (prev ? { ...prev, endSlot: slot } : null));
       }
     },
-    [dragging, dayFromX, slotFromY]
+    [dragging, dayFromX, slotFromY],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -194,12 +202,15 @@ export function WeeklyCalendar({
   }, [dragging, onCreateSlot, slotToDate]);
 
   return (
-    <div className={cn("flex flex-col select-none", className)}>
+    <div className={cn('flex flex-col select-none', className)}>
       {/* Day headers */}
       <div className="flex border-b border-border">
         <div className="w-12 shrink-0" />
         {weekDays.map((day, i) => (
-          <div key={i} className="flex-1 px-1 py-2 text-center text-xs font-medium text-muted-foreground">
+          <div
+            key={day.toISOString()}
+            className="flex-1 px-1 py-2 text-center text-xs font-medium text-muted-foreground"
+          >
             <div>{WEEKDAY_LABELS[i]}</div>
             <div className="text-[10px] text-muted-foreground/60">
               {day.getDate()}/{day.getMonth() + 1}
@@ -209,6 +220,7 @@ export function WeeklyCalendar({
       </div>
 
       {/* Time grid */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: drag-to-create grid is a mouse-only canvas, events are keyboard-accessible */}
       <div
         ref={gridRef}
         className="relative flex overflow-y-auto"
@@ -221,8 +233,14 @@ export function WeeklyCalendar({
         {/* Hour labels */}
         <div className="w-12 shrink-0">
           {hours.map((h) => (
-            <div key={h} className="relative" style={{ height: `${HOUR_SLOTS * SLOT_HEIGHT_PX}px` }}>
-              <span className="absolute -top-2 right-1 text-[10px] text-muted-foreground/60">{formatHour(h)}</span>
+            <div
+              key={h}
+              className="relative"
+              style={{ height: `${HOUR_SLOTS * SLOT_HEIGHT_PX}px` }}
+            >
+              <span className="absolute -top-2 right-1 text-[10px] text-muted-foreground/60">
+                {formatHour(h)}
+              </span>
             </div>
           ))}
         </div>
@@ -230,7 +248,7 @@ export function WeeklyCalendar({
         {/* Day columns */}
         <div className="flex flex-1">
           {weekDays.map((day, dayIdx) => (
-            <div key={dayIdx} className="relative flex-1 border-l border-border">
+            <div key={day.toISOString()} className="relative flex-1 border-l border-border">
               {/* Hour grid lines */}
               {hours.map((h) => (
                 <div
@@ -250,13 +268,15 @@ export function WeeklyCalendar({
                   const endMinutes = evEnd.getHours() * 60 + evEnd.getMinutes();
                   const topOffset = ((startMinutes - startHour * 60) / 15) * SLOT_HEIGHT_PX;
                   const height = ((endMinutes - startMinutes) / 15) * SLOT_HEIGHT_PX;
-                  if (topOffset + height < 0 || topOffset > totalSlots * SLOT_HEIGHT_PX) return null;
+                  if (topOffset + height < 0 || topOffset > totalSlots * SLOT_HEIGHT_PX)
+                    return null;
                   return (
-                    <div
+                    <button
                       key={ev.id}
+                      type="button"
                       className={cn(
-                        "absolute left-0.5 right-0.5 rounded border px-1 py-0.5 text-[10px] leading-tight overflow-hidden cursor-pointer transition-opacity hover:opacity-80",
-                        colorClasses(ev.color)
+                        'absolute left-0.5 right-0.5 rounded border px-1 py-0.5 text-left text-[10px] leading-tight overflow-hidden cursor-pointer transition-opacity hover:opacity-80',
+                        colorClasses(ev.color),
                       )}
                       style={{ top: `${topOffset}px`, height: `${Math.max(height, 12)}px` }}
                       onClick={(e) => {
@@ -271,9 +291,11 @@ export function WeeklyCalendar({
                         </div>
                       )}
                       {height >= 44 && ev.participants && ev.participants.length > 0 && (
-                        <div className="truncate opacity-60">{ev.participants.length} participant(s)</div>
+                        <div className="truncate opacity-60">
+                          {ev.participants.length} participant(s)
+                        </div>
                       )}
-                    </div>
+                    </button>
                   );
                 })}
 

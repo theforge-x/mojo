@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { Alert, Button, Input } from '@mojo/shared/ui';
+import { useState } from 'react';
 
 export interface LoginFormProps {
-  onSubmit: (
-    input: { email: string; password: string },
-  ) => Promise<void> | Promise<{ redirectTo: string }>;
+  onSubmit: (input: {
+    email: string;
+    password: string;
+  }) => Promise<void> | Promise<{ redirectTo: string }>;
 }
 
 export function LoginForm({ onSubmit }: LoginFormProps) {
@@ -34,7 +35,13 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && <Alert variant="danger">{error}</Alert>}
-      <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      <Input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
       <Input
         type="password"
         placeholder="Password"
