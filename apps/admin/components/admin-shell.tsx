@@ -31,7 +31,7 @@ import {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarSeparator,
-  useSidebar,
+  SidebarTrigger,
 } from '@mojo/shared/ui';
 import {
   ChevronDown,
@@ -41,8 +41,6 @@ import {
   GraduationCap,
   LineChart,
   LogOut,
-  PanelLeftClose,
-  PanelLeftOpen,
   Scale,
   Settings,
   ShieldCheck,
@@ -278,10 +276,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
                         <SidebarMenuItem>
                           <SidebarMenuButton asChild tooltip={item.title}>
-                            <a href={item.url}>
+                            <Link href={item.url}>
                               {item.icon && <item.icon />}
                               <span>{item.title}</span>
-                            </a>
+                            </Link>
                           </SidebarMenuButton>
                           {item.items?.length ? (
                             <>
@@ -296,9 +294,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                                   {item.items?.map((subItem) => (
                                     <SidebarMenuSubItem key={subItem.title}>
                                       <SidebarMenuSubButton asChild>
-                                        <a href={subItem.url}>
+                                        <Link href={subItem.url}>
                                           <span>{subItem.title}</span>
-                                        </a>
+                                        </Link>
                                       </SidebarMenuSubButton>
                                     </SidebarMenuSubItem>
                                   ))}
@@ -335,7 +333,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   <DropdownMenuSeparator />
                   {QUICK_ACTIONS.map((action) => (
                     <DropdownMenuItem key={action.title} asChild>
-                      <a href={action.url}>{action.title}</a>
+                      <Link href={action.url}>{action.title}</Link>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -350,8 +348,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        {/* <header className="flex h-14 items-center gap-2 border-b border-border px-4">
-          <SidebarTrigger /> */}
         <DashboardHeader />
         <div className="flex-1 p-6">{children}</div>
       </SidebarInset>
@@ -360,21 +356,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 }
 
 function DashboardHeader() {
-  const { state, toggleSidebar } = useSidebar();
   return (
-    <header className="sticky top-3 z-5 flex h-12 shrink-0 items-center gap-2 bg-background/90 px-4 backdrop-blur sm:px-6">
-      <Button
-        variant="ghost"
-        onClick={() => toggleSidebar()}
-        size="sm"
-        className="text-muted-foreground"
-      >
-        {state === 'expanded' ? (
-          <PanelLeftClose className="size-4" />
-        ) : (
-          <PanelLeftOpen className="size-4" />
-        )}
-      </Button>
+    <header className="sticky top-3 flex h-12 shrink-0 items-center gap-2 bg-background/90 px-4 backdrop-blur sm:px-6">
+      <SidebarTrigger className="text-muted-foreground" />
       <p className="flex-1 truncate text-sm capitalize text-muted-foreground">mojo nexus</p>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -397,31 +381,24 @@ function DashboardHeader() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <a href="/settings">
+            <Link href="/settings">
               <User className="size-4" />
               Profile
-            </a>
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <a href="/settings">
+            <Link href="/settings">
               <Settings className="size-4" />
               Settings
-            </a>
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <button
-              type="submit"
-              form="dashboard-logout-form"
-              className="flex w-full items-center gap-2"
-            >
-              <LogOut className="size-4" />
-              Log out
-            </button>
+          <DropdownMenuItem className="gap-2">
+            <LogOut className="size-4" />
+            Log out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <form id="dashboard-logout-form" action="" className="hidden" aria-hidden="true" />
     </header>
   );
 }

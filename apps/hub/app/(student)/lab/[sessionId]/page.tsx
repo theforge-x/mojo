@@ -1,6 +1,6 @@
 import { LiveKitLabProvider } from '@mojo/lab/infrastructure';
-import { Badge } from '@mojo/shared/ui';
 import { redirect } from 'next/navigation';
+import { LabNotConfigured } from '../../../../components/lab-not-configured';
 import { LabRoomClient } from '../../../../components/lab-room-client';
 import { getHub } from '../../../../demo/composition-root';
 import { currentUser } from '../../../../lib/session';
@@ -26,22 +26,7 @@ export default async function StudentLabPage({
 
   const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } = process.env;
   if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
-    return (
-      <main className="flex h-screen items-center justify-center p-8">
-        <div className="max-w-md space-y-4 rounded-lg border border-border bg-background p-8 text-center">
-          <Badge variant="primary">Lab</Badge>
-          <h1 className="font-display text-lg font-bold text-headline">
-            LiveKit is not configured
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Set <code className="rounded bg-muted px-1 py-0.5">LIVEKIT_API_KEY</code>,{' '}
-            <code className="rounded bg-muted px-1 py-0.5">LIVEKIT_API_SECRET</code> and{' '}
-            <code className="rounded bg-muted px-1 py-0.5">LIVEKIT_URL</code> to open the session
-            lab.
-          </p>
-        </div>
-      </main>
-    );
+    return <LabNotConfigured />;
   }
 
   const provider = new LiveKitLabProvider(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL);

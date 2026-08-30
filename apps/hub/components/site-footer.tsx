@@ -105,15 +105,16 @@ export function SiteFooter({ user }: { user: SiteHeaderUser }) {
             </p>
             <div className="mt-5 flex items-center gap-2">
               {SOCIALS.map((label) => (
-                <button
+                <Button
                   type="button"
                   key={label}
+                  variant="outline"
+                  className="size-9 p-0 text-muted-foreground hover:border-primary hover:bg-primary/10 hover:text-primary"
                   aria-label={label}
                   title={label}
-                  className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
                 >
                   <SocialGlyph>{SVG_PATHS[label]}</SocialGlyph>
-                </button>
+                </Button>
               ))}
             </div>
           </div>

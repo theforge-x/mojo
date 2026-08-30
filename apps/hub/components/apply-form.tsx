@@ -19,12 +19,15 @@ import {
   SelectValue,
   Stepper,
   Textarea,
+  ToggleGroup,
+  ToggleGroupItem,
 } from '@mojo/shared/ui';
 import { isValidTimezone, TIMEZONES } from '@mojo/shared/util';
 import type { AvailabilityWindow } from '@mojo/tutor-profile/domain';
 import { CheckCircle2, ImagePlus, Link2, Plus, Sparkles, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { StatTile } from './stat-tile';
 
 const SUBJECT_OPTIONS = [
   'Spanish',
@@ -139,12 +142,6 @@ export function ApplyForm({
 
   const finalPhotoUrl = photoMode === 'url' ? photoUrl.trim() : photoFile;
 
-  function toggleSubject(subject: string) {
-    setSubjects((current) =>
-      current.includes(subject) ? current.filter((s) => s !== subject) : [...current, subject],
-    );
-  }
-
   function addCertification() {
     const value = certDraft.trim();
     if (!value) return;
@@ -224,26 +221,18 @@ export function ApplyForm({
             <FieldDescription>
               Pick as many as you like. You can refine this later.
             </FieldDescription>
-            <div className="flex flex-wrap gap-2">
-              {SUBJECT_OPTIONS.map((subject) => {
-                const active = subjects.includes(subject);
-                return (
-                  <button
-                    key={subject}
-                    type="button"
-                    onClick={() => toggleSubject(subject)}
-                    aria-pressed={active}
-                    className={
-                      active
-                        ? 'rounded-full border border-primary bg-primary/10 px-4 py-2 text-sm font-medium text-headline transition-colors'
-                        : 'rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-headline'
-                    }
-                  >
-                    {subject}
-                  </button>
-                );
-              })}
-            </div>
+            <ToggleGroup
+              type="multiple"
+              className="flex flex-wrap"
+              value={subjects}
+              onValueChange={setSubjects}
+            >
+              {SUBJECT_OPTIONS.map((subject) => (
+                <ToggleGroupItem key={subject} value={subject} className="rounded-full">
+                  {subject}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
             <FieldDescription>
               {subjects.length === 0
                 ? 'No subjects selected yet.'
@@ -310,32 +299,22 @@ export function ApplyForm({
                 size="lg"
               />
               <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPhotoMode('file')}
-                    className={
-                      photoMode === 'file'
-                        ? 'inline-flex h-8 items-center gap-1.5 rounded-md bg-muted px-3 text-xs font-medium text-headline'
-                        : 'inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs text-muted-foreground hover:bg-muted'
-                    }
-                  >
+                <ToggleGroup
+                  type="single"
+                  value={photoMode}
+                  onValueChange={(value) => {
+                    if (value) setPhotoMode(value as 'file' | 'url');
+                  }}
+                >
+                  <ToggleGroupItem value="file" className="gap-1.5 text-xs">
                     <ImagePlus className="size-4" />
                     Upload
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPhotoMode('url')}
-                    className={
-                      photoMode === 'url'
-                        ? 'inline-flex h-8 items-center gap-1.5 rounded-md bg-muted px-3 text-xs font-medium text-headline'
-                        : 'inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs text-muted-foreground hover:bg-muted'
-                    }
-                  >
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="url" className="gap-1.5 text-xs">
                     <Link2 className="size-4" />
                     Paste a link
-                  </button>
-                </div>
+                  </ToggleGroupItem>
+                </ToggleGroup>
                 {photoMode === 'file' ? (
                   <Input
                     ref={fileInputRef}
@@ -581,69 +560,46 @@ export function ApplyForm({
                 </p>
               </div>
             </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Timezone
-              </p>
-              <p className="mt-1 text-sm font-medium text-headline">{timezone || '—'}</p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Subjects
-              </p>
-              <p className="mt-1 text-sm font-medium text-headline">{subjects.join(', ') || '—'}</p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Availability
-              </p>
-              <p className="mt-1 text-sm font-medium text-headline">
-                {availability
+            <StatTile label="Timezone" value={timezone || '—'} />
+            <StatTile label="Subjects" value={subjects.join(', ') || '—'} />
+            <StatTile
+              label="Availability"
+              value={
+                availability
                   .map((w) => windowLabel(w.weekday, w.startMinute, w.endMinute))
-                  .join(' · ') || '—'}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Experience
-              </p>
-              <p className="mt-1 text-sm font-medium text-headline">{yearsExperience ?? '—'}</p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Intro video
-              </p>
-              <p className="mt-1 text-sm font-medium text-headline">
-                {introVideoUrl ? 'Added' : 'Not added (still fine)'}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Credentials
-              </p>
-              <p className="mt-1 text-sm font-medium text-headline">
-                {certifications.length > 0 ? certifications.join(' · ') : 'None yet'}
-              </p>
-            </div>
+                  .join(' · ') || '—'
+              }
+            />
+            <StatTile label="Experience" value={yearsExperience ?? '—'} />
+            <StatTile
+              label="Intro video"
+              value={introVideoUrl ? 'Added' : 'Not added (still fine)'}
+            />
+            <StatTile
+              label="Credentials"
+              value={certifications.length > 0 ? certifications.join(' · ') : 'None yet'}
+            />
           </div>
-          <div className="rounded-lg border border-border bg-card p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Your intro
-            </p>
-            <p className="mt-1 text-sm text-foreground">
-              {yearsExperience ? `Teaching for ${yearsExperience}; ` : ''}
-              {bio.trim() || '—'}
-            </p>
-          </div>
+          <StatTile
+            label="Your intro"
+            value={
+              <>
+                {yearsExperience ? `Teaching for ${yearsExperience}; ` : ''}
+                {bio.trim() || '—'}
+              </>
+            }
+            valueClassName="font-normal text-foreground"
+          />
           {!signedIn && (
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Your account
-              </p>
-              <p className="mt-1 text-sm text-foreground">
-                {name.trim() || '—'} · {email.trim() || '—'}
-              </p>
-            </div>
+            <StatTile
+              label="Your account"
+              value={
+                <>
+                  {name.trim() || '—'} · {email.trim() || '—'}
+                </>
+              }
+              valueClassName="font-normal text-foreground"
+            />
           )}
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Sparkles className="size-4 text-primary" />

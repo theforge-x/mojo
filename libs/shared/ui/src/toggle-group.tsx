@@ -30,6 +30,7 @@ export function ToggleGroupItem({
         'hover:text-foreground',
         'data-[state=on]:border-primary/60 data-[state=on]:bg-primary/10 data-[state=on]:text-foreground',
         'outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'data-disabled:pointer-events-none data-disabled:opacity-50 disabled:pointer-events-none disabled:opacity-50',
         className,
       )}
       {...props}

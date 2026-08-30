@@ -44,6 +44,12 @@
   --sidebar-accent-foreground: #00214d;
   --sidebar-border: color-mix(in oklab, #00214d 12%, #fffffe);
   --sidebar-ring: #00ebc7;
+  --calendar-availability: color-mix(in oklab, #00ebc7 72%, #00214d);
+  --calendar-availability-foreground: #00214d;
+  --calendar-booking: #2f6bdb;
+  --calendar-booking-foreground: #fffffe;
+  --calendar-blocked: color-mix(in oklab, #ff5470 62%, #00214d);
+  --calendar-blocked-foreground: #fffffe;
 }
 .dark {
   --background: #001534;
@@ -76,6 +82,12 @@
   --sidebar-accent-foreground: #fffffe;
   --sidebar-border: color-mix(in oklab, #fffffe 14%, transparent);
   --sidebar-ring: #00ebc7;
+  --calendar-availability: color-mix(in oklab, #00ebc7 82%, #fffffe);
+  --calendar-availability-foreground: #001534;
+  --calendar-booking: color-mix(in oklab, #2f6bdb 40%, #a9c4ff);
+  --calendar-booking-foreground: #001534;
+  --calendar-blocked: color-mix(in oklab, #ff5470 72%, #fffffe);
+  --calendar-blocked-foreground: #001534;
 }
 @theme inline {
   --color-background: var(--background);
@@ -108,6 +120,12 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-calendar-availability: var(--calendar-availability);
+  --color-calendar-availability-foreground: var(--calendar-availability-foreground);
+  --color-calendar-booking: var(--calendar-booking);
+  --color-calendar-booking-foreground: var(--calendar-booking-foreground);
+  --color-calendar-blocked: var(--calendar-blocked);
+  --color-calendar-blocked-foreground: var(--calendar-blocked-foreground);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 0.25rem);
   --radius-sm: calc(var(--radius) - 0.4rem);

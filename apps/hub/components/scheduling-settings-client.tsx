@@ -1,7 +1,18 @@
 'use client';
 
 import type { SchedulingSettings } from '@mojo/scheduling/domain';
-import { Alert, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  Field,
+  FieldLabel,
+  Input,
+} from '@mojo/shared/ui';
 import { useState } from 'react';
 import { formatWhen } from '../lib/format';
 
@@ -53,40 +64,37 @@ export function SchedulingSettingsClient({
           <CardTitle>Scheduling settings</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-            Buffer between sessions (minutes)
-            <input
+          <Field>
+            <FieldLabel htmlFor="buffer-minutes">Buffer between sessions (minutes)</FieldLabel>
+            <Input
+              id="buffer-minutes"
               type="number"
               min={0}
               max={120}
               value={bufferMinutes}
               onChange={(event) => setBufferMinutes(Number(event.target.value))}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             />
-            <span className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               A slot that lands within {bufferMinutes} minutes of an existing booking is hidden.
-            </span>
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-            Minimum notice (minutes)
-            <input
+            </p>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="min-notice-minutes">Minimum notice (minutes)</FieldLabel>
+            <Input
+              id="min-notice-minutes"
               type="number"
               min={0}
               max={1440}
               value={minimumNoticeMinutes}
               onChange={(event) => setMinimumNoticeMinutes(Number(event.target.value))}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             />
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={paused}
-              onChange={(event) => setPaused(event.target.checked)}
-              className="h-4 w-4 accent-primary"
-            />
-            Pause new bookings
-          </label>
+          </Field>
+          <Checkbox
+            id="pause-new-bookings"
+            label="Pause new bookings"
+            checked={paused}
+            onCheckedChange={(checked) => setPaused(checked)}
+          />
           <div className="flex items-center gap-3">
             <Button onClick={save} disabled={saving} size="sm">
               {saving ? 'Saving…' : 'Save settings'}

@@ -7,6 +7,9 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Field,
+  FieldLabel,
+  Input,
   Select,
   SelectContent,
   SelectItem,
@@ -88,36 +91,36 @@ export function ExceptionEditorClient({ initialExceptions, todayKey }: Exception
       </CardHeader>
       <CardContent>
         <div className="mb-4 flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-            Date
-            <input
+          <Field className="flex-col">
+            <FieldLabel htmlFor="exception-date">Date</FieldLabel>
+            <Input
+              id="exception-date"
               type="date"
               min={todayKey}
               value={date}
               onChange={(event) => setDate(event.target.value)}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-            Start
-            <input
+          </Field>
+          <Field className="flex-col">
+            <FieldLabel htmlFor="exception-start">Start</FieldLabel>
+            <Input
+              id="exception-start"
               type="time"
               value={startTime}
               onChange={(event) => setStartTime(event.target.value)}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-            End
-            <input
+          </Field>
+          <Field className="flex-col">
+            <FieldLabel htmlFor="exception-end">End</FieldLabel>
+            <Input
+              id="exception-end"
               type="time"
               value={endTime}
               onChange={(event) => setEndTime(event.target.value)}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             />
-          </label>
-          <div className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
-            Kind
+          </Field>
+          <Field className="flex-col">
+            <FieldLabel>Kind</FieldLabel>
             <Select value={kind} onValueChange={(value) => setKind(value as 'blocked' | 'extra')}>
               <SelectTrigger className="w-36">
                 <SelectValue />
@@ -127,7 +130,7 @@ export function ExceptionEditorClient({ initialExceptions, todayKey }: Exception
                 <SelectItem value="extra">Extra</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </Field>
           <Button
             onClick={add}
             disabled={saving || endMinute <= startMinute}
@@ -152,7 +155,11 @@ export function ExceptionEditorClient({ initialExceptions, todayKey }: Exception
               >
                 <span>
                   <span className="font-medium text-headline">{e.date}</span>{' '}
-                  <span className={e.kind === 'blocked' ? 'text-destructive' : 'text-emerald-700'}>
+                  <span
+                    className={
+                      e.kind === 'blocked' ? 'text-destructive' : 'text-calendar-availability'
+                    }
+                  >
                     {minutesToLabel(e.startMinute)}–{minutesToLabel(e.endMinute)} · {e.kind}
                   </span>
                 </span>

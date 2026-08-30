@@ -84,11 +84,11 @@ function dayIndexForEvent(eventStart: string, weekStart: Date): number {
 function colorClasses(color?: string): string {
   switch (color) {
     case 'green':
-      return 'bg-emerald-500/20 border-emerald-500/40 text-emerald-700 dark:text-emerald-300';
+      return 'bg-calendar-availability/20 border-calendar-availability/40 text-calendar-availability-foreground';
     case 'blue':
-      return 'bg-blue-500/20 border-blue-500/40 text-blue-700 dark:text-blue-300';
+      return 'bg-calendar-booking/20 border-calendar-booking/40 text-calendar-booking-foreground';
     case 'red':
-      return 'bg-red-500/20 border-red-500/40 text-red-700 dark:text-red-300';
+      return 'bg-calendar-blocked/20 border-calendar-blocked/40 text-calendar-blocked-foreground';
     case 'gray':
       return 'bg-muted/60 border-border text-muted-foreground';
     default:

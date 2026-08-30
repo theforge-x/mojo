@@ -1,17 +1,13 @@
 import { CalendarView } from '@mojo/scheduling/feature';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import Link from 'next/link';
+import { LevelBadge } from '../../components/level-badge';
 import { RequestPayoutButton } from '../../components/request-payout-button';
 import { CancelSessionButton, StartSessionButton } from '../../components/session-actions';
+import { SessionStatusBadge } from '../../components/session-status-badge';
 import { getHub } from '../../demo/composition-root';
 import { formatMinor, formatWhen } from '../../lib/format';
 import { currentUser } from '../../lib/session';
-
-const LEVEL_BADGE: Record<string, 'muted' | 'primary' | 'tertiary'> = {
-  entry: 'muted',
-  established: 'primary',
-  expert: 'tertiary',
-};
 
 export default async function TutorHome() {
   const user = await currentUser();
@@ -61,9 +57,7 @@ export default async function TutorHome() {
             <CardTitle>Level</CardTitle>
           </CardHeader>
           <CardContent>
-            {performance && (
-              <Badge variant={LEVEL_BADGE[performance.level] ?? 'muted'}>{performance.level}</Badge>
-            )}
+            {performance && <LevelBadge level={performance.level} />}
             {performance && (
               <p className="mt-2 text-xs text-muted-foreground">
                 {formatHours(performance.cumulativeHoursTaught)} taught ·{' '}
@@ -97,17 +91,7 @@ export default async function TutorHome() {
                   {session.isTrial ? ' · trial' : ''}
                 </div>
                 <div className="mt-1 flex items-center gap-2">
-                  <Badge
-                    variant={
-                      session.status === 'confirmed'
-                        ? 'primary'
-                        : session.status === 'completed'
-                          ? 'muted'
-                          : 'tertiary'
-                    }
-                  >
-                    {session.status.replace('_', ' ')}
-                  </Badge>
+                  <SessionStatusBadge status={session.status} />
                 </div>
               </div>
               <div className="flex items-center gap-2">

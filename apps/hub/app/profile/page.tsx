@@ -1,6 +1,7 @@
 import { Avatar, Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { StatTile } from '../../components/stat-tile';
 import { getHub } from '../../demo/composition-root';
 import { formatMinor } from '../../lib/format';
 import { type CurrentUser, currentUser } from '../../lib/session';
@@ -92,15 +93,15 @@ async function TutorProfileCard({ user }: { user: CurrentUser }) {
         )}
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Stat
+          <StatTile
             label="Rate"
             value={listing ? `${formatMinor(listing.perSegmentMinor)}/segment` : '—'}
           />
-          <Stat
+          <StatTile
             label="Rating"
             value={listing && listing.rating > 0 ? `${listing.rating.toFixed(1)}★` : 'New tutor'}
           />
-          <Stat label="Wallet" value={formatMinor(wallet.balance.amountMinor)} />
+          <StatTile label="Wallet" value={formatMinor(wallet.balance.amountMinor)} />
         </div>
       </CardContent>
     </Card>
@@ -125,14 +126,5 @@ function AccountCard({ user, joined }: { user: CurrentUser; joined: string }) {
         </p>
       </CardContent>
     </Card>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-headline">{value}</p>
-    </div>
   );
 }

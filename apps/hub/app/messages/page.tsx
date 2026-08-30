@@ -1,5 +1,13 @@
 import type { ScheduledSession } from '@mojo/scheduling/domain';
-import { Badge, Card, CardContent, Empty, EmptyDescription, EmptyTitle } from '@mojo/shared/ui';
+import {
+  Avatar,
+  Badge,
+  Card,
+  CardContent,
+  Empty,
+  EmptyDescription,
+  EmptyTitle,
+} from '@mojo/shared/ui';
 import { MessageSquare } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { getHub } from '../../demo/composition-root';
@@ -76,9 +84,10 @@ export default async function MessagesPage() {
           {threads.map((thread) => (
             <Card key={thread.partnerId}>
               <CardContent className="flex items-center gap-3 py-4">
-                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-                  {initials(thread.name)}
-                </span>
+                <Avatar
+                  name={thread.name}
+                  className="border-transparent bg-primary/15 text-primary"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate font-display text-sm font-bold text-headline">
@@ -100,16 +109,5 @@ export default async function MessagesPage() {
         </div>
       )}
     </main>
-  );
-}
-
-function initials(name: string): string {
-  return (
-    name
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('') || '?'
   );
 }

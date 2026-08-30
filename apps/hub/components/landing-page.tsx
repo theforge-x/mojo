@@ -82,7 +82,7 @@ export function LandingPage() {
           </div>
 
           <div className="hidden lg:block">
-            <Card className="p-6 shadow-[0_20px_60px_-20px_rgba(0,235,199,0.35)]">
+            <Card className="p-6 shadow-[0_20px_60px_-20px_var(--primary)]">
               <CardContent className="flex flex-col gap-4 p-0">
                 {[
                   {
@@ -109,9 +109,7 @@ export function LandingPage() {
                       <p className="text-sm font-bold text-headline">{subj}</p>
                       <p className="text-xs text-muted-foreground">{when}</p>
                     </div>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${tint}`}>
-                      Live
-                    </span>
+                    <Badge className={tint}>Live</Badge>
                   </div>
                 ))}
               </CardContent>

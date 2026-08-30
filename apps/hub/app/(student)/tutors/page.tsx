@@ -1,15 +1,10 @@
-import { Avatar, Badge, Card, CardContent } from '@mojo/shared/ui';
+import { Avatar, Card, CardContent } from '@mojo/shared/ui';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { LevelBadge } from '../../../components/level-badge';
 import { getHub } from '../../../demo/composition-root';
 import { formatMinor } from '../../../lib/format';
 import { currentUser } from '../../../lib/session';
-
-const LEVEL_BADGE: Record<string, 'muted' | 'primary' | 'tertiary'> = {
-  entry: 'muted',
-  established: 'primary',
-  expert: 'tertiary',
-};
 
 export default async function TutorsPage({
   searchParams,
@@ -57,7 +52,7 @@ export default async function TutorsPage({
                     </div>
                   </div>
                 </div>
-                <Badge variant={LEVEL_BADGE[tutor.level]}>{tutor.level}</Badge>
+                <LevelBadge level={tutor.level} />
               </CardContent>
             </Card>
           </Link>

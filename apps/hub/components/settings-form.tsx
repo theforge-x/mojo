@@ -1,7 +1,17 @@
 'use client';
 
 import type { NotificationPreferences } from '@mojo/notifications/domain';
-import { Alert, Button, Card, CardContent, CardHeader, CardTitle, Checkbox } from '@mojo/shared/ui';
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  FieldLegend,
+  FieldSet,
+} from '@mojo/shared/ui';
 import { useEffect, useState } from 'react';
 import type { SiteHeaderUser } from './site-header';
 
@@ -100,35 +110,37 @@ export function SettingsForm({ user }: { user: SiteHeaderUser }) {
             label="Lesson reminders"
             description="A day-before and a 30-minute heads-up before each booked lesson."
             checked={preferences.lessonReminders}
-            onChange={(e) => void save({ ...preferences, lessonReminders: e.target.checked })}
+            onCheckedChange={(checked) => void save({ ...preferences, lessonReminders: checked })}
           />
           <Checkbox
             label="Session recap emails"
             description="Your tutor's AI recap after each lesson."
             checked={preferences.recapEmails}
-            onChange={(e) => void save({ ...preferences, recapEmails: e.target.checked })}
+            onCheckedChange={(checked) => void save({ ...preferences, recapEmails: checked })}
           />
           <Checkbox
             label="Occasional updates"
             description="New subjects, tutor highlights, learning tips."
             checked={preferences.marketing}
-            onChange={(e) => void save({ ...preferences, marketing: e.target.checked })}
+            onCheckedChange={(checked) => void save({ ...preferences, marketing: checked })}
           />
-          <fieldset className="space-y-2 border-t border-border pt-4">
-            <legend className="text-xs font-medium text-muted-foreground">Channels</legend>
+          <FieldSet className="space-y-2 border-t border-border pt-4">
+            <FieldLegend className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              Channels
+            </FieldLegend>
             <Checkbox
               label="Email"
               description="Send reminders to your inbox."
               checked={emailChannel}
-              onChange={(e) => toggleChannel('email', e.target.checked)}
+              onCheckedChange={(checked) => toggleChannel('email', checked)}
             />
             <Checkbox
               label="WhatsApp"
               description="Send reminders to WhatsApp."
               checked={whatsappChannel}
-              onChange={(e) => toggleChannel('whatsapp', e.target.checked)}
+              onCheckedChange={(checked) => toggleChannel('whatsapp', checked)}
             />
-          </fieldset>
+          </FieldSet>
         </CardContent>
       </Card>
 

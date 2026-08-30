@@ -136,9 +136,10 @@ export function SiteHeader({ user }: { user: SiteHeaderUser }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
+            <Button
               type="button"
-              className="flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pr-2 pl-1.5 transition-colors outline-none hover:border-primary/60 focus-visible:ring-2 focus-visible:ring-ring"
+              variant="outline"
+              className="gap-2 rounded-full px-1.5 text-headline"
             >
               <span aria-hidden className="inline-flex size-7 items-center justify-center">
                 <Avatar
@@ -147,11 +148,11 @@ export function SiteHeader({ user }: { user: SiteHeaderUser }) {
                   className="[&>span]:text-xs [&>span]:font-bold [&>span]:text-primary"
                 />
               </span>
-              <span className="hidden max-w-32 truncate text-sm font-medium text-headline sm:inline">
+              <span className="hidden max-w-32 truncate text-sm font-medium sm:inline">
                 {user.name || user.email}
               </span>
               <ChevronDown className="size-3.5 text-muted-foreground" />
-            </button>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>

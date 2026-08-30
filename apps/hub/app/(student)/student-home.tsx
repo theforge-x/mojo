@@ -1,6 +1,5 @@
 import { CalendarView } from '@mojo/scheduling/feature';
 import {
-  Badge,
   Button,
   Card,
   CardContent,
@@ -12,6 +11,7 @@ import {
 } from '@mojo/shared/ui';
 import Link from 'next/link';
 import { CancelSessionButton, ConfirmDeliveryButton } from '../../components/session-actions';
+import { SessionStatusBadge } from '../../components/session-status-badge';
 import { getHub } from '../../demo/composition-root';
 import { formatWhen } from '../../lib/format';
 import { currentUser } from '../../lib/session';
@@ -51,9 +51,7 @@ export async function StudentHome() {
             <span>
               {await label(next.tutorId)} — {formatWhen(next.startIso, next.endIso)}
             </span>
-            <Badge variant={next.status === 'confirmed' ? 'primary' : 'tertiary'}>
-              {next.status}
-            </Badge>
+            <SessionStatusBadge status={next.status} />
             <CancelSessionButton sessionId={next.id} />
           </CardContent>
         </Card>
@@ -92,17 +90,7 @@ export async function StudentHome() {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge
-                    variant={
-                      session.status === 'confirmed'
-                        ? 'primary'
-                        : session.status === 'completed'
-                          ? 'muted'
-                          : 'tertiary'
-                    }
-                  >
-                    {session.status.replace('_', ' ')}
-                  </Badge>
+                  <SessionStatusBadge status={session.status} />
                   {session.status === 'confirmed' && (
                     <Link href={`/lab/${session.id}`}>
                       <Button size="sm" variant="outline">

@@ -1,4 +1,14 @@
-import { Avatar, Badge, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import {
+  Avatar,
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Empty,
+  EmptyDescription,
+  EmptyTitle,
+} from '@mojo/shared/ui';
 import type { TutorApplication } from '@mojo/tutor-profile/domain';
 import { ReviewButtons } from '../../../components/review-buttons';
 import { getAdmin } from '../../../demo/composition-root';
@@ -11,7 +21,14 @@ export default async function ApplicationQueuePage() {
     <main className="mx-auto max-w-6xl p-6">
       <h1 className="mb-6 font-display text-2xl font-bold text-headline">Application queue</h1>
       {applications.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No applications.</p>
+        <Card>
+          <CardContent className="py-12">
+            <Empty>
+              <EmptyTitle>No applications</EmptyTitle>
+              <EmptyDescription>Applications from new tutors will show up here.</EmptyDescription>
+            </Empty>
+          </CardContent>
+        </Card>
       ) : (
         <div className="flex flex-col gap-3">
           {applications.map((app) => (

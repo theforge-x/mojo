@@ -1,4 +1,4 @@
-import { Badge, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import Link from 'next/link';
 import { FlagToggle } from '../../components/flag-toggle';
 import { getAdmin } from '../../demo/composition-root';
@@ -64,9 +64,9 @@ export default async function AdminNexus() {
             <span className="font-display text-3xl font-extrabold text-headline">
               {pendingApplications.length}
             </span>
-            <Link href="/tutors/applications">
-              <Badge variant="tertiary">review</Badge>
-            </Link>
+            <Button asChild size="sm" variant="tertiary">
+              <Link href="/tutors/applications">review</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
