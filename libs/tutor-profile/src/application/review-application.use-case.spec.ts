@@ -12,6 +12,7 @@ function fakeRepos(initial: TutorApplication | null = null) {
   let profileSaved: unknown = null;
   const applications: ApplicationRepository = {
     findById: async (id) => (store && store.id === id ? store : null),
+    list: async () => (store ? [store] : []),
     save: async (app) => {
       store = app;
     },
@@ -29,10 +30,18 @@ function sampleApplication(overrides: Partial<TutorApplication> = {}): TutorAppl
   return {
     id: 'app_1',
     tutorId: 't_1',
+    displayName: 'Adaeze Okonkwo',
+    photoUrl: 'https://avatars.example/adaeze.jpg',
+    education: 'B.Sc. Spanish — University of Lagos',
     subjects: ['Spanish'],
     bio: 'Native speaker',
     introVideoUrl: 'https://ex.com/v',
     certifications: ['DELE'],
+    timezone: 'Africa/Lagos',
+    availability: [
+      { id: 'a1', weekday: 2, startMinute: 540, endMinute: 780 },
+      { id: 'a2', weekday: 4, startMinute: 540, endMinute: 780 },
+    ],
     status: 'pending',
     submittedAt: '2026-09-01T09:00:00.000Z',
     ...overrides,
@@ -49,7 +58,15 @@ describe('reviewApplication', () => {
     });
 
     expect(get()?.status).toBe('approved');
-    expect(getProfile()).toMatchObject({ tutorId: 't_1', subjects: ['Spanish'] });
+    expect(getProfile()).toMatchObject({
+      tutorId: 't_1',
+      displayName: 'Adaeze Okonkwo',
+      photoUrl: 'https://avatars.example/adaeze.jpg',
+      education: 'B.Sc. Spanish — University of Lagos',
+      subjects: ['Spanish'],
+      timezone: 'Africa/Lagos',
+      bio: 'Native speaker',
+    });
   });
 
   it('rejects a pending application without creating a profile', async () => {

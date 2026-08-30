@@ -32,11 +32,17 @@ export function demoId(prefix: string): string {
   return `${prefix}_${serial}`;
 }
 
+const STATE_SYMBOL = Symbol.for('mojo.demo.state');
+
 /**
- * Process-local in-memory demo data, shared by every repository in the hub
+ * Process-global in-memory demo data, shared by every repository in the hub
  * app's composition root so mutations are visible across pages and API
- * routes. Not durable — the whole point is to run with zero infra; the
- * `USE_PRISMA` env switch swaps these for real Prisma repositories.
+ * routes. Next.js dev evaluates each route in its own module scope, so a
+ * plain module-level singleton would give every page its own freshly-seeded
+ * copy — the browser demo loop would never see submissions. Stashing the
+ * state on `globalThis` makes all chunks share one store. Not durable — the
+ * whole point is to run with zero infra; the `USE_PRISMA` env switch swaps
+ * these for real Prisma repositories.
  */
 export class DemoState {
   readonly users = new Map<string, User>();
@@ -64,6 +70,21 @@ export class DemoState {
   seedReady: Promise<void> | null = null;
 
   creditsMinor = 0;
+}
+
+/** Returns the process-wide demo store, creating it on first use. */
+export function sharedDemoState(): DemoState {
+  const globals = globalThis as Record<PropertyKey, unknown>;
+  const existing = globals[STATE_SYMBOL] as DemoState | undefined;
+  if (existing) return existing;
+  const fresh = new DemoState();
+  globals[STATE_SYMBOL] = fresh;
+  return fresh;
+}
+
+/** Drops the shared store (test teardown only). */
+export function clearSharedDemoState(): void {
+  delete (globalThis as Record<PropertyKey, unknown>)[STATE_SYMBOL];
 }
 
 export type MoneyState = Money;

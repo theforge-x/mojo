@@ -10,7 +10,7 @@ export interface SaveTutorButtonProps {
 }
 
 export function SaveTutorButton({ tutor }: SaveTutorButtonProps) {
-  const saved = useSyncExternalStore(subscribe, readSaved);
+  const saved = useSyncExternalStore(subscribe, readSaved, () => []);
   const isSaved = saved.some((item) => item.tutorId === tutor.tutorId);
 
   return (

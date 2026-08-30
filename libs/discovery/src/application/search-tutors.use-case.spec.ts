@@ -13,6 +13,9 @@ describe('searchTutors', () => {
       {
         tutorId: 't_1',
         displayName: 'Ada',
+        photoUrl: 'https://avatars.example/ada.jpg',
+        education: 'B.Sc. Maths',
+        timezone: 'Africa/Lagos',
         level: 'established',
         perSegmentMinor: 600_000,
         rating: 4.6,

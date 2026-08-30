@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Avatar,
   Button,
   DropdownMenu,
   DropdownMenuContent,
@@ -46,17 +47,6 @@ const ANON_NAV: NavItem[] = [
   { href: '/', label: 'Learn', icon: Sparkles },
   { href: '/apply', label: 'Become a tutor', icon: Compass },
 ];
-
-function initials(user: { name: string; email: string }): string {
-  const fromName = user.name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('');
-  if (fromName) return fromName;
-  return user.email.slice(0, 2).toUpperCase();
-}
 
 const profileItems = (
   role: 'tutor' | 'student',
@@ -150,11 +140,12 @@ export function SiteHeader({ user }: { user: SiteHeaderUser }) {
               type="button"
               className="flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pr-2 pl-1.5 transition-colors outline-none hover:border-primary/60 focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <span
-                aria-hidden
-                className="inline-flex size-7 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary"
-              >
-                {initials(user)}
+              <span aria-hidden className="inline-flex size-7 items-center justify-center">
+                <Avatar
+                  name={user.name || user.email}
+                  size="sm"
+                  className="[&>span]:text-xs [&>span]:font-bold [&>span]:text-primary"
+                />
               </span>
               <span className="hidden max-w-32 truncate text-sm font-medium text-headline sm:inline">
                 {user.name || user.email}

@@ -1,7 +1,9 @@
 'use client';
 
+import { AvailabilityEditor } from '@mojo/scheduling/feature';
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
   Field,
@@ -18,9 +20,11 @@ import {
   Stepper,
   Textarea,
 } from '@mojo/shared/ui';
-import { CheckCircle2, Plus, Sparkles, X } from 'lucide-react';
+import { isValidTimezone, TIMEZONES } from '@mojo/shared/util';
+import type { AvailabilityWindow } from '@mojo/tutor-profile/domain';
+import { CheckCircle2, ImagePlus, Link2, Plus, Sparkles, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 const SUBJECT_OPTIONS = [
   'Spanish',
@@ -46,11 +50,33 @@ const EXPERIENCE_OPTIONS = ['Less than a year', '1–3 years', '3–5 years', '5
 const STEPS = [
   { label: 'Subjects', description: 'What you teach' },
   { label: 'About you', description: 'Your teaching style' },
+  { label: 'Profile', description: 'Name, photo, education' },
   { label: 'Experience', description: 'Credentials' },
   { label: 'Intro video', description: 'Optional' },
+  { label: 'Availability', description: 'Time & zone' },
   { label: 'Your account', description: 'Where we reach you' },
   { label: 'Review', description: 'Ready to go' },
 ];
+
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function defaultTimezone(): string {
+  if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (zone && isValidTimezone(zone)) return zone;
+  }
+  return 'Africa/Lagos';
+}
+
+function windowLabel(weekday: number, startMinute: number, endMinute: number): string {
+  return `${WEEKDAY_LABELS[weekday] ?? '?'} ${clock(startMinute)}–${clock(endMinute)}`;
+}
+
+function clock(minute: number): string {
+  const h = Math.floor(minute / 60);
+  const m = minute % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
 
 export function ApplyForm({
   signedIn,
@@ -65,10 +91,17 @@ export function ApplyForm({
   const [step, setStep] = useState(0);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [bio, setBio] = useState('');
+  const [displayName, setDisplayName] = useState(initialName);
+  const [photoMode, setPhotoMode] = useState<'file' | 'url'>('file');
+  const [photoFile, setPhotoFile] = useState<string>('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [education, setEducation] = useState('');
   const [yearsExperience, setYearsExperience] = useState<string | null>(null);
   const [certifications, setCertifications] = useState<string[]>([]);
   const [certDraft, setCertDraft] = useState('');
   const [introVideoUrl, setIntroVideoUrl] = useState('');
+  const [timezone, setTimezone] = useState(defaultTimezone);
+  const [availability, setAvailability] = useState<AvailabilityWindow[]>([]);
   const [name, setName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
@@ -77,15 +110,18 @@ export function ApplyForm({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   function canContinue(): boolean {
     if (step === 0) return subjects.length > 0;
     if (step === 1) return bio.trim().length >= 30;
-    if (step === 2) return Boolean(yearsExperience);
-    if (step === 3) return true;
-    if (step === 4) {
+    if (step === 2) return displayName.trim().length >= 2;
+    if (step === 3) return Boolean(yearsExperience);
+    if (step === 4) return true;
+    if (step === 5) return isValidTimezone(timezone) && availability.length >= 1;
+    if (step === 6) {
       if (signedIn) return true;
       return (
         name.trim().length > 0 && emailIsValid && password.length >= 10 && password === confirm
@@ -93,6 +129,15 @@ export function ApplyForm({
     }
     return true;
   }
+
+  function handlePhotoFile(file: File | undefined) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setPhotoFile(typeof reader.result === 'string' ? reader.result : '');
+    reader.readAsDataURL(file);
+  }
+
+  const finalPhotoUrl = photoMode === 'url' ? photoUrl.trim() : photoFile;
 
   function toggleSubject(subject: string) {
     setSubjects((current) =>
@@ -119,6 +164,16 @@ export function ApplyForm({
           bio: `${yearsExperience ? `Teaching for ${yearsExperience}; ` : ''}${bio.trim()}`,
           certifications,
           introVideoUrl: introVideoUrl.trim(),
+          displayName: displayName.trim(),
+          photoUrl: finalPhotoUrl,
+          education: education.trim(),
+          timezone,
+          availability: availability.map(({ id, weekday, startMinute, endMinute }) => ({
+            id,
+            weekday,
+            startMinute,
+            endMinute,
+          })),
           name: signedIn ? undefined : name.trim(),
           email: signedIn ? undefined : email.trim(),
           password: signedIn ? undefined : password,
@@ -225,6 +280,103 @@ export function ApplyForm({
       {step === 2 && (
         <FieldGroup>
           <Field>
+            <FieldLabel>Display name</FieldLabel>
+            <FieldDescription>
+              The name students will see on your tutor card and channels.
+            </FieldDescription>
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="e.g. Amara Johnson"
+              required
+            />
+            {displayName.trim().length > 0 && displayName.trim().length < 2 && (
+              <FieldDescription>
+                That&apos;s a little short — a real name reads better.
+              </FieldDescription>
+            )}
+          </Field>
+
+          <Field>
+            <FieldLabel>Photo</FieldLabel>
+            <FieldDescription>
+              A clear headshot helps students recognise you. Add a photo from your device, or paste
+              a link instead.
+            </FieldDescription>
+            <div className="flex flex-wrap items-center gap-4">
+              <Avatar
+                name={displayName.trim() || 'New tutor'}
+                src={finalPhotoUrl || undefined}
+                size="lg"
+              />
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPhotoMode('file')}
+                    className={
+                      photoMode === 'file'
+                        ? 'inline-flex h-8 items-center gap-1.5 rounded-md bg-muted px-3 text-xs font-medium text-headline'
+                        : 'inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs text-muted-foreground hover:bg-muted'
+                    }
+                  >
+                    <ImagePlus className="size-4" />
+                    Upload
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPhotoMode('url')}
+                    className={
+                      photoMode === 'url'
+                        ? 'inline-flex h-8 items-center gap-1.5 rounded-md bg-muted px-3 text-xs font-medium text-headline'
+                        : 'inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs text-muted-foreground hover:bg-muted'
+                    }
+                  >
+                    <Link2 className="size-4" />
+                    Paste a link
+                  </button>
+                </div>
+                {photoMode === 'file' ? (
+                  <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handlePhotoFile(e.target.files?.[0])}
+                    className="max-w-sm"
+                  />
+                ) : (
+                  <Input
+                    value={photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    placeholder="https://… (or a data: URL)"
+                    type="url"
+                    className="max-w-sm"
+                  />
+                )}
+              </div>
+            </div>
+            <FieldDescription>
+              Optional — you&apos;ll get initials until you add one.
+            </FieldDescription>
+          </Field>
+
+          <Field>
+            <FieldLabel>Education</FieldLabel>
+            <FieldDescription>
+              School, degree, or the experience behind your expertise.
+            </FieldDescription>
+            <Input
+              value={education}
+              onChange={(e) => setEducation(e.target.value)}
+              placeholder="e.g. B.Sc. Spanish — University of Lagos"
+            />
+          </Field>
+        </FieldGroup>
+      )}
+
+      {step === 3 && (
+        <FieldGroup>
+          <Field>
             <FieldLabel>How long have you been teaching?</FieldLabel>
             <Select
               value={yearsExperience ?? undefined}
@@ -294,7 +446,7 @@ export function ApplyForm({
         </FieldGroup>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <FieldGroup>
           <Field>
             <FieldLabel>Intro video (optional)</FieldLabel>
@@ -312,7 +464,39 @@ export function ApplyForm({
         </FieldGroup>
       )}
 
-      {step === 4 &&
+      {step === 5 && (
+        <FieldGroup>
+          <Field>
+            <FieldLabel>Your timezone</FieldLabel>
+            <FieldDescription>
+              Times below are in your own local time — students see them converted.
+            </FieldDescription>
+            <Select value={timezone} onValueChange={(value) => setTimezone(value)}>
+              <SelectTrigger className="w-full sm:w-72">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {TIMEZONES.map((zone) => (
+                    <SelectItem key={zone} value={zone}>
+                      {zone}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel>When are you available?</FieldLabel>
+            <FieldDescription>
+              Add the weekly windows students can book into. You need at least one to be bookable.
+            </FieldDescription>
+            <AvailabilityEditor rules={availability} onChange={setAvailability} className="mt-1" />
+          </Field>
+        </FieldGroup>
+      )}
+
+      {step === 6 &&
         (signedIn ? (
           <FieldGroup>
             <Field>
@@ -380,14 +564,44 @@ export function ApplyForm({
           </FieldGroup>
         ))}
 
-      {step === 5 && (
+      {step === 7 && (
         <div className="flex flex-col gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex gap-3 rounded-lg border border-border bg-card p-4">
+              <Avatar name={displayName.trim() || 'New tutor'} src={finalPhotoUrl || undefined} />
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Profile
+                </p>
+                <p className="mt-1 truncate text-sm font-medium text-headline">
+                  {displayName.trim() || '—'}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {education.trim() || 'No education listed'}
+                </p>
+              </div>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Timezone
+              </p>
+              <p className="mt-1 text-sm font-medium text-headline">{timezone || '—'}</p>
+            </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Subjects
               </p>
               <p className="mt-1 text-sm font-medium text-headline">{subjects.join(', ') || '—'}</p>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Availability
+              </p>
+              <p className="mt-1 text-sm font-medium text-headline">
+                {availability
+                  .map((w) => windowLabel(w.weekday, w.startMinute, w.endMinute))
+                  .join(' · ') || '—'}
+              </p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

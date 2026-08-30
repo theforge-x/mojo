@@ -8,9 +8,13 @@ import type {
 } from '@mojo/admin-config/domain';
 import type { AnalyticsRepository, LeaderboardCandidate } from '@mojo/analytics/domain';
 import type { Review, ReviewRepository } from '@mojo/reviews/domain';
-import type { ApplicationRepository, TutorProfileRepository } from '@mojo/tutor-profile/domain';
-import type { TutorApplication, TutorProfile } from '@mojo/tutor-profile/domain';
 import type { Dispute, DisputeRepository } from '@mojo/trust-safety/domain';
+import type {
+  ApplicationRepository,
+  TutorApplication,
+  TutorProfile,
+  TutorProfileRepository,
+} from '@mojo/tutor-profile/domain';
 import type { AdminState } from './state';
 
 export class InMemoryApplicationRepository implements ApplicationRepository {
@@ -24,8 +28,10 @@ export class InMemoryApplicationRepository implements ApplicationRepository {
     this.state.applications.set(application.id, application);
   }
 
-  list(): TutorApplication[] {
-    return [...this.state.applications.values()].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  async list(): Promise<TutorApplication[]> {
+    return [...this.state.applications.values()].sort((a, b) =>
+      b.submittedAt.localeCompare(a.submittedAt),
+    );
   }
 }
 
@@ -112,7 +118,11 @@ export class InMemoryAnalyticsRepository implements AnalyticsRepository {
     const state = this.state;
     const perTutor = new Map<string, { tutorId: string; sessions: number; cancelled: number }>();
     for (const session of state.sessions.values()) {
-      const entry = perTutor.get(session.tutorId) ?? { tutorId: session.tutorId, sessions: 0, cancelled: 0 };
+      const entry = perTutor.get(session.tutorId) ?? {
+        tutorId: session.tutorId,
+        sessions: 0,
+        cancelled: 0,
+      };
       entry.sessions += 1;
       if (session.status === 'cancelled' || session.status === 'no_show') entry.cancelled += 1;
       perTutor.set(session.tutorId, entry);

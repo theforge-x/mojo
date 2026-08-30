@@ -1,17 +1,16 @@
-import type {
-  AuditLogEntry,
-  FeatureFlag,
-  SubjectTaxonomyEntry,
-} from '@mojo/admin-config/domain';
-import { makeAppendAuditLog, makeListSubjects, makeSetFeatureFlag } from '@mojo/admin-config/application';
-import type { PlatformMetrics, TutorLeaderboardEntry } from '@mojo/analytics/domain';
+import {
+  makeAppendAuditLog,
+  makeListSubjects,
+  makeSetFeatureFlag,
+} from '@mojo/admin-config/application';
+import type { AuditLogEntry, FeatureFlag, SubjectTaxonomyEntry } from '@mojo/admin-config/domain';
 import { makeBuildLeaderboard, makeComputePlatformMetrics } from '@mojo/analytics/application';
+import type { PlatformMetrics, TutorLeaderboardEntry } from '@mojo/analytics/domain';
 import type { Review } from '@mojo/reviews/domain';
-import type { TutorApplication } from '@mojo/tutor-profile/domain';
-import { makeReviewApplication } from '@mojo/tutor-profile/application';
-import type { Dispute } from '@mojo/trust-safety/domain';
 import { makeFileDispute } from '@mojo/trust-safety/application';
-import { AdminState } from './state';
+import type { Dispute } from '@mojo/trust-safety/domain';
+import { makeReviewApplication } from '@mojo/tutor-profile/application';
+import type { TutorApplication } from '@mojo/tutor-profile/domain';
 import {
   InMemoryAnalyticsRepository,
   InMemoryApplicationRepository,
@@ -23,13 +22,17 @@ import {
   InMemoryTutorProfileRepository,
 } from './repos';
 import { seedAdmin } from './seed';
+import { clearSharedAdminState, sharedAdminState } from './state';
 
 export interface AdminApp {
   readonly isDemoMode: boolean;
   readonly admin: { id: string; email: string } | null;
   applications: {
-    list(): TutorApplication[];
-    review(input: { applicationId: string; decision: 'approved' | 'rejected' }): Promise<TutorApplication>;
+    list(): Promise<TutorApplication[]>;
+    review(input: {
+      applicationId: string;
+      decision: 'approved' | 'rejected';
+    }): Promise<TutorApplication>;
   };
   profiles: {
     byTutor(tutorId: string): Promise<{ displayName: string } | null>;
@@ -61,8 +64,11 @@ export function getAdmin(): AdminApp {
   if (adminInstance) return adminInstance;
 
   const isDemoMode = process.env.USE_PRISMA !== 'true';
-  const state = new AdminState();
-  if (isDemoMode) seedAdmin(state);
+  const state = sharedAdminState();
+  if (isDemoMode && !state.seeded) {
+    seedAdmin(state);
+    state.seeded = true;
+  }
 
   const applications = new InMemoryApplicationRepository(state);
   const profiles = new InMemoryTutorProfileRepository(state);
@@ -91,15 +97,62 @@ export function getAdmin(): AdminApp {
     });
   };
 
+  const hubBaseUrl = (process.env.HUB_URL ?? '').replace(/\/$/, '');
+
   const app: AdminApp = {
     isDemoMode,
     admin: state.users.get('u_admin') ?? null,
     applications: {
-      list: () => applications.list(),
+      list: () => {
+        if (!hubBaseUrl) return applications.list();
+        // The hub is the system of record for applications in the demo loop —
+        // the admin list is whatever the hub has. Falls back to the local
+        // store when the hub isn't running so the admin app stays usable.
+        try {
+          return fetch(`${hubBaseUrl}/api/applications`).then(async (response) => {
+            if (!response.ok) return applications.list();
+            const data = (await response.json()) as { applications?: unknown };
+            if (!Array.isArray(data.applications)) return applications.list();
+            return data.applications as TutorApplication[];
+          });
+        } catch {
+          return applications.list();
+        }
+      },
       review: async ({ applicationId, decision }) => {
-        const updated = await reviewApplication({ applicationId, decision, nowIso: new Date().toISOString() });
-        audit(`application.${decision}`, applicationId);
-        return updated;
+        if (!hubBaseUrl) {
+          const updated = await reviewApplication({
+            applicationId,
+            decision,
+            nowIso: new Date().toISOString(),
+          });
+          audit(`application.${decision}`, applicationId);
+          return updated;
+        }
+        try {
+          const response = await fetch(`${hubBaseUrl}/api/applications/${applicationId}/review`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ decision }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(
+              typeof data?.error === 'string' ? data.error : 'The hub rejected this review.',
+            );
+          }
+          audit(`application.${decision}`, applicationId);
+          return data.application as TutorApplication;
+        } catch {
+          // Fall back to the local store when the hub is unreachable.
+          const updated = await reviewApplication({
+            applicationId,
+            decision,
+            nowIso: new Date().toISOString(),
+          });
+          audit(`application.${decision}`, applicationId);
+          return updated;
+        }
       },
     },
     profiles: {
@@ -149,4 +202,5 @@ export function getAdmin(): AdminApp {
 
 export function resetAdminForTests(): void {
   adminInstance = null;
+  clearSharedAdminState();
 }

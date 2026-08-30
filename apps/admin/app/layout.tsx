@@ -17,7 +17,7 @@ const dmMono = DM_Mono({ subsets: ['latin'], variable: '--font-dm-mono', weight:
 
 export const metadata: Metadata = {
   title: {
-    default: 'Mojo Admin',
+    default: 'mojo admin',
     template: '%s - mojo admin',
   },
   icons: { icon: '/logo.svg', apple: '/logo.svg' },

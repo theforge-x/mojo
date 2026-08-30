@@ -1,4 +1,4 @@
-import { Badge, Card, CardContent } from '@mojo/shared/ui';
+import { Avatar, Badge, Card, CardContent } from '@mojo/shared/ui';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getHub } from '../../../demo/composition-root';
@@ -41,14 +41,20 @@ export default async function TutorsPage({
           >
             <Card>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
-                <div>
-                  <div className="font-display text-base font-bold text-headline">
-                    {tutor.displayName}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {formatMinor(tutor.perSegmentMinor)}/segment · responds in ~
-                    {tutor.responseTimeMinutesAvg} min
-                    {tutor.rating > 0 && <> · {tutor.rating.toFixed(1)}★</>}
+                <div className="flex items-center gap-3">
+                  <Avatar name={tutor.displayName} src={tutor.photoUrl || undefined} />
+                  <div>
+                    <div className="font-display text-base font-bold text-headline">
+                      {tutor.displayName}
+                    </div>
+                    {tutor.education && (
+                      <div className="text-xs text-muted-foreground">{tutor.education}</div>
+                    )}
+                    <div className="text-sm text-muted-foreground">
+                      {formatMinor(tutor.perSegmentMinor)}/segment · responds in ~
+                      {tutor.responseTimeMinutesAvg} min
+                      {tutor.rating > 0 && <> · {tutor.rating.toFixed(1)}★</>}
+                    </div>
                   </div>
                 </div>
                 <Badge variant={LEVEL_BADGE[tutor.level]}>{tutor.level}</Badge>

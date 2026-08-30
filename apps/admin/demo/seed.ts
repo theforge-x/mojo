@@ -1,5 +1,5 @@
 import type { ScheduledSession } from '@mojo/scheduling/domain';
-import { AdminState } from './state';
+import type { AdminState } from './state';
 
 export function seedAdmin(state: AdminState): void {
   state.users.set('u_admin', { id: 'u_admin', email: 'admin@mojo.dev', role: 'admin' });
@@ -9,8 +9,18 @@ export function seedAdmin(state: AdminState): void {
       tutorId,
       displayName: tutorId === 't_1' ? 'Kelechi O.' : tutorId === 't_2' ? 'Ifeoma A.' : 'Tunde M.',
       photoUrl: '',
-      subjects: tutorId === 't_2' ? ['French', 'English'] : ['Spanish', 'Maths'].slice(tutorId === 't_3' ? 1 : 0, 1),
+      education:
+        tutorId === 't_1'
+          ? 'B.A. Modern Languages'
+          : tutorId === 't_2'
+            ? 'M.A. French Linguistics'
+            : 'B.Sc. Mathematics',
+      subjects:
+        tutorId === 't_2'
+          ? ['French', 'English']
+          : ['Spanish', 'Maths'].slice(tutorId === 't_3' ? 1 : 0, 1),
       bio: '',
+      timezone: 'Africa/Lagos',
       moderationFlagged: false,
     });
   }
@@ -20,10 +30,26 @@ export function seedAdmin(state: AdminState): void {
     state.applications.set(`app_${index + 1}`, {
       id: `app_${index + 1}`,
       tutorId: `t_new_${index + 1}`,
+      displayName: index === 0 ? 'Amara Eze' : index === 1 ? 'Bola Adeyemi' : 'Chidi Nwosu',
+      photoUrl: '',
+      education:
+        index === 0
+          ? 'B.Sc. Spanish — UNILAG'
+          : index === 1
+            ? 'Diploma in Guitar — FAAN Academy'
+            : 'M.Sc. Mathematics — OAU',
       subjects: index === 0 ? ['Spanish'] : index === 1 ? ['Guitar'] : ['Maths'],
-      bio: index === 0 ? 'Native speaker with 6 years of online teaching.' : 'Patient classroom teacher making the jump to live tutoring.',
+      bio:
+        index === 0
+          ? 'Native speaker with 6 years of online teaching.'
+          : 'Patient classroom teacher making the jump to live tutoring.',
       introVideoUrl: '',
       certifications: [],
+      timezone: 'Africa/Lagos',
+      availability: [
+        { id: `app_${index + 1}_w1`, weekday: 2, startMinute: 540, endMinute: 780 },
+        { id: `app_${index + 1}_w2`, weekday: 4, startMinute: 960, endMinute: 1140 },
+      ],
       status: 'pending',
       submittedAt: iso,
     });
@@ -57,9 +83,21 @@ export function seedAdmin(state: AdminState): void {
     resolvedAt: hour(now, 30),
   });
 
-  state.featureFlags.set('trial_pricing', { key: 'trial_pricing', enabled: true, rolloutPercent: 100 });
-  state.featureFlags.set('surge_pricing', { key: 'surge_pricing', enabled: false, rolloutPercent: 25 });
-  state.featureFlags.set('referral_rewards', { key: 'referral_rewards', enabled: true, rolloutPercent: 100 });
+  state.featureFlags.set('trial_pricing', {
+    key: 'trial_pricing',
+    enabled: true,
+    rolloutPercent: 100,
+  });
+  state.featureFlags.set('surge_pricing', {
+    key: 'surge_pricing',
+    enabled: false,
+    rolloutPercent: 25,
+  });
+  state.featureFlags.set('referral_rewards', {
+    key: 'referral_rewards',
+    enabled: true,
+    rolloutPercent: 100,
+  });
 
   state.subjects.push(
     { id: 'sub_1', name: 'Languages', parentId: null },

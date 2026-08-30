@@ -11,6 +11,9 @@ export interface TutorSearchFilters {
 export interface TutorSearchResult {
   readonly tutorId: string;
   readonly displayName: string;
+  readonly photoUrl: string;
+  readonly education: string;
+  readonly timezone: string;
   readonly level: TutorLevel;
   readonly perSegmentMinor: number;
   readonly rating: number;

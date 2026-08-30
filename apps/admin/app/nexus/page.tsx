@@ -17,7 +17,9 @@ export default async function AdminNexus() {
 
   const openDisputes = disputes.filter((d) => d.status === 'open');
   const flaggedReviews = reviews.filter((r) => r.flagged);
-  const pendingApplications = admin.applications.list().filter((a) => a.status === 'pending');
+  const pendingApplications = (await admin.applications.list()).filter(
+    (a) => a.status === 'pending',
+  );
 
   return (
     <main className="mx-auto max-w-7xl p-6">

@@ -18,7 +18,7 @@ of a bigger thing that only works once everything else exists.
 | Item | Status | Notes |
 |---|---|---|
 | Design system (Tailwind v4 tokens, shadcn-style components) | ✅ Done | Mint/coral/yellow on navy-and-paper, Manrope/DM Sans/DM Mono |
-| Tutor availability & lesson calendar (Next.js, Prisma, Postgres/Supabase) | 🔄 In progress | Recurring rules, exceptions, conflict detection, reminders — this *is* the scheduling engine every booking flow below sits on top of |
+| Tutor availability & lesson calendar (Next.js, Prisma, Postgres/Supabase) | 🔄 In progress | Recurring weekly rules, conflict detection at book time, and session status flow are built. **Remaining:** exceptions capture (repo exists, no use-case/UI), inter-session buffer minutes, time-based reminders. See `docs/phase1-mvp-todo.md` |
 
 Everything in Phase 1 assumes the calendar system's data model (availability rules,
 exceptions, session status) is stable. Don't start the booking flow until sessions can
@@ -42,6 +42,21 @@ backfilling it once levels, payouts, and rankings are all already reading from i
 
 The goal of this phase alone: a tutor can be found, booked for a trial, and paid for a
 completed lesson. Nothing else matters until this loop works end to end.
+
+**Status as of 2026-08-29** (`dev` @ `119d303`). Legend: `[x]` built · `[~]` partial
+· `[ ]` missing. The concrete work list is `docs/phase1-mvp-todo.md`; the table below
+is the at-a-glance view.
+
+| Mechanic | Status | One-line delta |
+|---|---|---|
+| Tutor profile & application | `[~]` | Wizard done; photo/education/timezone/availability capture and the review→live hand-off are missing |
+| Tutor search & discovery | `[~]` | Demo index ignores all filters; UI exposes subject + level only |
+| Trial lesson + booking | `[~]` | Trial flag, segments, cancel done; no reschedule, no free-replacement guarantee, no student checkout |
+| Virtual lab | `[x]` | LiveKit video/whiteboard/chat/files, both role joins — complete for MVP scope |
+| Payments — Nigeria-first | `[~]` | Segments, wallet, commission, payouts done; nothing collects money from students yet |
+| Messaging | `[ ]` | `send-message` use-case exists; not wired, no composer |
+| Reviews | `[ ]` | `submit-review` use-case exists; not wired, no submit UI |
+| Notifications | `[~]` | Event dispatchers wired; no scheduled reminders, calendar sync, or channel prefs |
 
 **Tutor profile & application**
 A multi-section application — photo, intro video, certifications, education, written

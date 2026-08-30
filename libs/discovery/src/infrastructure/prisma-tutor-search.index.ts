@@ -28,6 +28,9 @@ export class PrismaTutorSearchIndex implements TutorSearchIndex {
         return {
           tutorId: profile.tutorId,
           displayName: profile.displayName,
+          photoUrl: profile.photoUrl ?? '',
+          education: profile.education,
+          timezone: profile.timezone,
           level,
           perSegmentMinor: DEFAULT_SEGMENT_RATE_NGN[level],
           rating: perf?.averageRating ?? 0,

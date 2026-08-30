@@ -8,3 +8,5 @@ coverage
 *.env
 *.env.local
 prisma/dev.db
+
+docs/ai_sessions

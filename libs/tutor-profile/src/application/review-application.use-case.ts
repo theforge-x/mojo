@@ -28,10 +28,13 @@ export function makeReviewApplication(deps: {
   applications: ApplicationRepository;
   profiles: TutorProfileRepository;
 }) {
-  return async function reviewApplication(input: ReviewApplicationInput): Promise<TutorApplication> {
+  return async function reviewApplication(
+    input: ReviewApplicationInput,
+  ): Promise<TutorApplication> {
     const existing = await deps.applications.findById(input.applicationId);
     if (!existing) throw new ApplicationNotFoundError(input.applicationId);
-    if (existing.status !== 'pending') throw new ApplicationAlreadyReviewedError(input.applicationId);
+    if (existing.status !== 'pending')
+      throw new ApplicationAlreadyReviewedError(input.applicationId);
 
     const updated: TutorApplication = {
       ...existing,
@@ -50,10 +53,13 @@ export function makeReviewApplication(deps: {
 function profileFromApplication(app: TutorApplication): TutorProfile {
   return {
     tutorId: app.tutorId,
-    displayName: app.subjects[0] ? `Tutor — ${app.subjects.join(', ')}` : 'New tutor',
-    photoUrl: '',
+    displayName:
+      app.displayName || (app.subjects[0] ? `Tutor — ${app.subjects.join(', ')}` : 'New tutor'),
+    photoUrl: app.photoUrl,
+    education: app.education,
     subjects: app.subjects,
     bio: app.bio,
+    timezone: app.timezone,
     moderationFlagged: false,
   };
 }

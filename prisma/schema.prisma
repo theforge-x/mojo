@@ -54,14 +54,19 @@ enum ApplicationStatus {
 }
 
 model TutorApplication {
-  id             String            @id @default(cuid())
-  tutorId        String
-  subjects       String[]
-  bio            String
-  introVideoUrl  String
-  certifications String[]
-  status         ApplicationStatus @default(pending)
-  submittedAt    DateTime          @default(now())
+  id               String            @id @default(cuid())
+  tutorId          String
+  displayName      String            @default("")
+  photoUrl         String            @default("")
+  education        String            @default("")
+  subjects         String[]
+  bio              String
+  introVideoUrl    String
+  certifications   String[]
+  timezone         String            @default("Africa/Lagos")
+  availabilityRules Json             @default("[]")
+  status           ApplicationStatus @default(pending)
+  submittedAt      DateTime          @default(now())
 
   @@map("tutor_applications")
 }
@@ -71,8 +76,10 @@ model TutorProfile {
   user              User    @relation(fields: [tutorId], references: [id])
   displayName       String
   photoUrl          String?
+  education         String  @default("")
   subjects          String[]
   bio               String
+  timezone          String  @default("Africa/Lagos")
   moderationFlagged Boolean @default(false)
 
   @@map("tutor_profiles")

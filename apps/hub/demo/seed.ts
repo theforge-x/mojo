@@ -1,8 +1,6 @@
 import type { User } from '@mojo/identity/domain';
 import { bcryptPasswordHasher } from '@mojo/identity/infrastructure';
-import type { MojoPlusSubscription } from '@mojo/mojo-plus/domain';
 import type { ReferralLink } from '@mojo/referrals/domain';
-import type { Review } from '@mojo/reviews/domain';
 import type {
   AvailabilityRule,
   ScheduledSession,
@@ -213,24 +211,30 @@ export async function seedDemo(state: DemoState): Promise<void> {
       tutorId: 't_1',
       displayName: 'Kelechi O.',
       photoUrl: '',
+      education: 'B.A. Modern Languages — UNIBEN',
       subjects: ['Spanish'],
       bio: 'DELE-certified Spanish tutor, conversation-first.',
+      timezone: 'Africa/Lagos',
       moderationFlagged: false,
     },
     {
       tutorId: 't_2',
       displayName: 'Ifeoma A.',
       photoUrl: '',
+      education: 'M.A. French Linguistics — Université de Lyon',
       subjects: ['French', 'English'],
       bio: 'Expat-friendly French and English coaching.',
+      timezone: 'Africa/Lagos',
       moderationFlagged: false,
     },
     {
       tutorId: 't_3',
       displayName: 'Tunde M.',
       photoUrl: '',
+      education: 'B.Sc. Mathematics — UI Ibadan',
       subjects: ['Maths'],
       bio: 'Maths tutor for secondary and JAMB prep.',
+      timezone: 'Africa/Lagos',
       moderationFlagged: false,
     },
   ];

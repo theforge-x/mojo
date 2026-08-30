@@ -1,14 +1,21 @@
-import type { BookingRepository, DeliveryConfirmation, BookingSession } from '@mojo/booking/domain';
 import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
-import type { TutorSearchFilters, TutorSearchResult, TutorSearchIndex } from '@mojo/discovery/domain';
-import type { Role, User } from '@mojo/identity/domain';
-import type { UserRepository, TokenIssuer } from '@mojo/identity/domain';
+import type { BookingRepository, BookingSession, DeliveryConfirmation } from '@mojo/booking/domain';
+import type {
+  TutorSearchFilters,
+  TutorSearchIndex,
+  TutorSearchResult,
+} from '@mojo/discovery/domain';
+import type { Role, TokenIssuer, User, UserRepository } from '@mojo/identity/domain';
 import type { Message, MessageRepository } from '@mojo/messaging/domain';
 import type { MojoPlusRepository, MojoPlusSubscription } from '@mojo/mojo-plus/domain';
-import type { PayoutRail, WalletRepository } from '@mojo/payments/domain';
-import type { PayoutRequest, Wallet, WalletTransaction } from '@mojo/payments/domain';
+import type {
+  PayoutRail,
+  PayoutRequest,
+  Wallet,
+  WalletRepository,
+  WalletTransaction,
+} from '@mojo/payments/domain';
 import type { TutorLevelReader } from '@mojo/pricing/domain';
-import { money, type Money, type TutorLevel } from '@mojo/shared/domain';
 import type { ReferralConversion, ReferralLink, ReferralRepository } from '@mojo/referrals/domain';
 import type { Review, ReviewRepository } from '@mojo/reviews/domain';
 import type {
@@ -19,11 +26,16 @@ import type {
   SchedulingSettings,
   SessionRepository,
 } from '@mojo/scheduling/domain';
-import type { TutorPerformance, TutorPerformanceRepository } from '@mojo/tutor-performance/domain';
-import type { ApplicationRepository, TutorProfileRepository } from '@mojo/tutor-profile/domain';
-import type { TutorApplication, TutorProfile } from '@mojo/tutor-profile/domain';
+import { type Money, money, type TutorLevel } from '@mojo/shared/domain';
 import type { Dispute, DisputeRepository } from '@mojo/trust-safety/domain';
-import { demoId, type DemoState } from './state';
+import type { TutorPerformance, TutorPerformanceRepository } from '@mojo/tutor-performance/domain';
+import type {
+  ApplicationRepository,
+  TutorApplication,
+  TutorProfile,
+  TutorProfileRepository,
+} from '@mojo/tutor-profile/domain';
+import { type DemoState, demoId } from './state';
 
 export const DEFAULT_RATE_MINOR: Record<TutorLevel, number> = {
   entry: 400_000,
@@ -87,12 +99,20 @@ export class InMemoryAvailabilityRepository implements AvailabilityRepository {
     const withIds = rules.map((rule) => (rule.id ? rule : { ...rule, id: demoId('rule') }));
     this.state.availabilityRules.set(tutorId, withIds);
   }
+
+  async saveSettings(settings: SchedulingSettings): Promise<void> {
+    this.state.schedulingSettings.set(settings.tutorId, settings);
+  }
 }
 
 export class InMemorySessionRepository implements SessionRepository {
   constructor(private readonly state: DemoState) {}
 
-  async getBookedSessions(tutorId: string, rangeStartIso: string, rangeEndIso: string): Promise<ScheduledSession[]> {
+  async getBookedSessions(
+    tutorId: string,
+    rangeStartIso: string,
+    rangeEndIso: string,
+  ): Promise<ScheduledSession[]> {
     return [...this.state.sessions.values()]
       .filter((s) => s.tutorId === tutorId && s.startIso < rangeEndIso && s.endIso > rangeStartIso)
       .sort((a, b) => a.startIso.localeCompare(b.startIso));
@@ -183,7 +203,11 @@ export class InMemoryWalletRepository implements WalletRepository {
     return { tutorId, balance: money(this.state.walletBalancesMinor.get(tutorId) ?? 0, 'NGN') };
   }
 
-  async credit(tutorId: string, amount: Money, relatedSessionId: string | null): Promise<WalletTransaction> {
+  async credit(
+    tutorId: string,
+    amount: Money,
+    relatedSessionId: string | null,
+  ): Promise<WalletTransaction> {
     const current = this.state.walletBalancesMinor.get(tutorId) ?? 0;
     this.state.walletBalancesMinor.set(tutorId, current + amount.amountMinor);
     this.state.creditsMinor += amount.amountMinor;
@@ -266,7 +290,8 @@ export class InMemoryReferralRepository implements ReferralRepository {
 
   async findConversion(code: string, newUserId: string): Promise<ReferralConversion | null> {
     return (
-      this.state.referralConversions.find((c) => c.code === code && c.newUserId === newUserId) ?? null
+      this.state.referralConversions.find((c) => c.code === code && c.newUserId === newUserId) ??
+      null
     );
   }
 
@@ -316,6 +341,9 @@ export class InMemoryTutorSearchIndex implements TutorSearchIndex {
       return {
         tutorId: profile.tutorId,
         displayName: profile.displayName,
+        photoUrl: profile.photoUrl,
+        education: profile.education,
+        timezone: profile.timezone,
         level,
         perSegmentMinor: DEFAULT_RATE_MINOR[level],
         rating: perf?.averageRating ?? 0,
@@ -336,7 +364,7 @@ export class InMemoryApplicationRepository implements ApplicationRepository {
     this.state.applications.set(application.id, application);
   }
 
-  list(): TutorApplication[] {
+  async list(): Promise<TutorApplication[]> {
     return [...this.state.applications.values()];
   }
 }
@@ -376,4 +404,4 @@ export const demoTranscriptSummarizer: TranscriptSummarizer = {
 };
 
 export type DemoRole = Role;
-export type { PayoutRequest, User, ScheduledSession, TutorProfile, TutorApplication };
+export type { PayoutRequest, ScheduledSession, TutorApplication, TutorProfile, User };

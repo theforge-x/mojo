@@ -35,6 +35,14 @@
   --input: color-mix(in oklab, #00214d 16%, #fffffe);
   --ring: #00ebc7;
   --radius: 0.75rem;
+  --sidebar: #fffffe;
+  --sidebar-foreground: #1b2d45;
+  --sidebar-primary: #00ebc7;
+  --sidebar-primary-foreground: #00214d;
+  --sidebar-accent: color-mix(in oklab, #00ebc7 16%, #fffffe);
+  --sidebar-accent-foreground: #00214d;
+  --sidebar-border: color-mix(in oklab, #00214d 12%, #fffffe);
+  --sidebar-ring: #00ebc7;
 }
 .dark {
   --background: #001534;
@@ -59,6 +67,14 @@
   --border: color-mix(in oklab, #fffffe 14%, transparent);
   --input: color-mix(in oklab, #fffffe 22%, transparent);
   --ring: #00ebc7;
+  --sidebar: #001534;
+  --sidebar-foreground: color-mix(in oklab, #fffffe 88%, #001534);
+  --sidebar-primary: #00ebc7;
+  --sidebar-primary-foreground: #00214d;
+  --sidebar-accent: color-mix(in oklab, #00ebc7 16%, #00214d);
+  --sidebar-accent-foreground: #fffffe;
+  --sidebar-border: color-mix(in oklab, #fffffe 14%, transparent);
+  --sidebar-ring: #00ebc7;
 }
 @theme inline {
   --color-background: var(--background);
@@ -66,6 +82,8 @@
   --color-headline: var(--headline);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -81,6 +99,14 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 0.25rem);
   --radius-sm: calc(var(--radius) - 0.4rem);

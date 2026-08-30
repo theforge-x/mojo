@@ -6,8 +6,39 @@ import { currentUser } from '../../lib/session';
 
 export default async function ApplyPage() {
   const user = await currentUser();
-  if (user?.role === 'tutor') {
-    const profile = user.role === 'tutor' ? await getHub().profile.byTutor(user.id) : null;
+
+  if (user) {
+    const hub = getHub();
+    const application = await hub.profile.applicationForTutor(user.id);
+    if (application) {
+      return (
+        <main className="mx-auto max-w-2xl p-6">
+          <Card>
+            <CardContent className="flex flex-col items-start gap-3 py-6">
+              <p>
+                {application.status === 'approved' && 'You are already a tutor.'}
+                {application.status === 'in_review' &&
+                  'Your application is being reviewed. Hang tight!'}
+                {application.status === 'pending' && 'Your application is in the queue for review.'}
+                {application.status === 'rejected' &&
+                  'Your application was not approved — edit and resubmit anytime.'}
+              </p>
+              {application.status === 'approved' ? (
+                <Link href="/tutor">
+                  <Button size="sm">Go to your hub</Button>
+                </Link>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Status: <span className="font-medium">{application.status}</span> · submitted{' '}
+                  {new Date(application.submittedAt).toLocaleDateString()}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      );
+    }
+    const profile = await hub.profile.byTutor(user.id);
     if (profile) {
       return (
         <main className="mx-auto max-w-2xl p-6">

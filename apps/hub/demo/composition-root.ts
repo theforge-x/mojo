@@ -29,6 +29,7 @@ import {
   makeCancelSession,
   makeConfirmSession,
   makeSetAvailability,
+  makeUpdateSchedulingSettings,
 } from '@mojo/scheduling/application';
 import type {
   AvailabilityRepository,
@@ -49,7 +50,7 @@ import {
 import type { DisputeRepository } from '@mojo/trust-safety/domain';
 import { makeRecomputeLevel } from '@mojo/tutor-performance/application';
 import type { TutorPerformance, TutorPerformanceRepository } from '@mojo/tutor-performance/domain';
-import { makeSubmitApplication } from '@mojo/tutor-profile/application';
+import { makeReviewApplication, makeSubmitApplication } from '@mojo/tutor-profile/application';
 import type {
   ApplicationRepository,
   TutorApplication,
@@ -98,12 +99,18 @@ import {
   MemTokenIssuer,
 } from './repos';
 import { seedDemo } from './seed';
-import { DemoState, demoId, type SentNotification } from './state';
+import {
+  clearSharedDemoState,
+  type DemoState,
+  demoId,
+  type SentNotification,
+  sharedDemoState,
+} from './state';
 
 interface Repositories {
   users: UserRepository;
   tokens: TokenIssuer;
-  availability: AvailabilityRepository & { saveRules(rules: AvailabilityRule[]): Promise<void> };
+  availability: AvailabilityRepository;
   sessions: SessionRepository & {
     listByTutor(tutorId: string): Promise<ScheduledSession[]>;
     listByStudent(studentId: string): Promise<ScheduledSession[]>;
@@ -154,6 +161,7 @@ export interface HubApp {
     cancel(input: CancelSessionInput): Promise<void>;
     confirmSession(input: ConfirmSessionInput): Promise<void>;
     saveAvailability(tutorId: string, rules: Omit<AvailabilityRule, 'tutorId'>[]): Promise<void>;
+    updateSettings(input: { tutorId: string; timezone: string }): Promise<void>;
   };
   booking: {
     confirmDelivery(input: ConfirmDeliveryInput): Promise<void>;
@@ -170,11 +178,20 @@ export interface HubApp {
   };
   profile: {
     submitApplication(app: TutorApplication, nowIso: string): Promise<void>;
+    review(input: {
+      applicationId: string;
+      decision: 'approved' | 'rejected';
+      nowIso?: string;
+    }): Promise<TutorApplication>;
+    applicationForTutor(tutorId: string): Promise<TutorApplication | null>;
+    applications(): Promise<TutorApplication[]>;
     byTutor(tutorId: string): Promise<{
       displayName: string;
       photoUrl: string;
+      education: string;
       subjects: readonly string[];
       bio: string;
+      timezone: string;
     } | null>;
   };
   recaps: {
@@ -193,9 +210,11 @@ export function getHub(): HubApp {
   if (hubInstance) return hubInstance;
 
   const isDemoMode = process.env.USE_PRISMA !== 'true';
-  const state = new DemoState();
+  const state = sharedDemoState();
   const repos = isDemoMode ? buildInMemoryRepositories(state) : buildPrismaRepositories(state);
-  if (isDemoMode) state.seedReady = seedDemo(state);
+  if (isDemoMode && !state.seedReady) {
+    state.seedReady = seedDemo(state);
+  }
 
   hubInstance = buildApp(repos, isDemoMode, state);
   return hubInstance;
@@ -204,6 +223,7 @@ export function getHub(): HubApp {
 export function resetHubForTests(): void {
   hubInstance = null;
   eventCounts.clear();
+  clearSharedDemoState();
 }
 
 function buildInMemoryRepositories(state: DemoState): Repositories {
@@ -214,12 +234,7 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
   return {
     users,
     tokens: new MemTokenIssuer(),
-    availability: {
-      getRules: (t) => availability.getRules(t),
-      getExceptions: (t, d) => availability.getExceptions(t, d),
-      getSettings: (t) => availability.getSettings(t),
-      saveRules: (rules) => availability.saveRules(rules),
-    },
+    availability,
     sessions: {
       getBookedSessions: (t, a, b) => sessions.getBookedSessions(t, a, b),
       save: (s) => sessions.save(s),
@@ -256,26 +271,7 @@ function buildPrismaRepositories(state: DemoState): Repositories {
   return {
     users: userRepo,
     tokens: new MemTokenIssuer(),
-    availability: {
-      getRules: (t) => availability.getRules(t),
-      getExceptions: (t, d) => availability.getExceptions(t, d),
-      getSettings: (t) => availability.getSettings(t),
-      saveRules: async (rules) => {
-        for (const rule of rules) {
-          await prisma.availabilityRule.upsert({
-            where: { id: rule.id },
-            create: {
-              id: rule.id,
-              tutorId: rule.tutorId,
-              weekday: rule.weekday,
-              startMinute: rule.startMinute,
-              endMinute: rule.endMinute,
-            },
-            update: { startMinute: rule.startMinute, endMinute: rule.endMinute },
-          });
-        }
-      },
-    },
+    availability,
     sessions: {
       getBookedSessions: (t, a, b) => sessions.getBookedSessions(t, a, b),
       save: (s) => sessions.save(s),
@@ -395,12 +391,17 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   });
   const cancelSession = makeCancelSession({ sessions: repos.sessions });
   const confirmSession = makeConfirmSession({ sessions: repos.sessions });
-  const setAvailability = makeSetAvailability({
-    save: (rules) => repos.availability.saveRules(rules),
+  const setAvailability = makeSetAvailability({ availability: repos.availability });
+  const updateSchedulingSettings = makeUpdateSchedulingSettings({
+    availability: repos.availability,
   });
   const confirmDelivery = makeConfirmDelivery({ bookings: repos.bookings });
   const searchTutors = makeSearchTutors({ index: repos.searchIndex });
   const submitApplication = makeSubmitApplication({ applications: repos.applications });
+  const reviewApplication = makeReviewApplication({
+    applications: repos.applications,
+    profiles: repos.profiles,
+  });
   const recordSessionCompletion = makeRecordSessionCompletion(repos.levels);
   const recomputeLevel = makeRecomputeLevel({ performances: repos.performances });
   const generateRecap = makeGenerateRecap({ recaps: repos.recaps, summarizer: repos.summarizer });
@@ -548,6 +549,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       cancel: (input) => cancelSession(input),
       confirmSession: (input) => confirmSession(input),
       saveAvailability: (tutorId, rules) => setAvailability(tutorId, rules),
+      updateSettings: (input) => updateSchedulingSettings(input),
     },
     booking: {
       confirmDelivery: (input) => confirmDelivery(input),
@@ -567,14 +569,23 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     },
     profile: {
       submitApplication: (app, nowIso) => submitApplication(app, nowIso),
+      review: (input) =>
+        reviewApplication({ ...input, nowIso: input.nowIso ?? new Date().toISOString() }),
+      applicationForTutor: async (tutorId) => {
+        const all = await repos.applications.list();
+        return all.find((app) => app.tutorId === tutorId) ?? null;
+      },
+      applications: () => repos.applications.list(),
       byTutor: async (tutorId) => {
         const profile = await repos.profiles.findByTutorId(tutorId);
         return profile
           ? {
               displayName: profile.displayName,
               photoUrl: profile.photoUrl,
+              education: profile.education,
               subjects: profile.subjects,
               bio: profile.bio,
+              timezone: profile.timezone,
             }
           : null;
       },

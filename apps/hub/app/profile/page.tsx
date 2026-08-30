@@ -1,4 +1,4 @@
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import { Avatar, Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getHub } from '../../demo/composition-root';
@@ -62,7 +62,11 @@ async function TutorProfileCard({ user }: { user: CurrentUser }) {
       <CardContent className="py-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Avatar name={profile?.displayName ?? user.name} />
+            <Avatar
+              name={profile?.displayName ?? user.name}
+              src={profile?.photoUrl || undefined}
+              size="lg"
+            />
             <div>
               <p className="font-display text-lg font-bold text-headline">
                 {profile?.displayName ?? user.name}
@@ -71,6 +75,9 @@ async function TutorProfileCard({ user }: { user: CurrentUser }) {
                 {(profile?.subjects ?? []).join(' · ') || 'Tutor'} ·{' '}
                 <span className="capitalize">{performance?.level ?? 'entry'}</span> level
               </p>
+              {profile?.education && (
+                <p className="text-xs text-muted-foreground">{profile.education}</p>
+              )}
             </div>
           </div>
           <Link href="/tutor/availability">
@@ -121,33 +128,11 @@ function AccountCard({ user, joined }: { user: CurrentUser; joined: string }) {
   );
 }
 
-function Avatar({ name }: { name: string }) {
-  return (
-    <span
-      aria-hidden
-      className="inline-flex size-12 items-center justify-center rounded-full bg-primary/15 text-base font-bold text-primary"
-    >
-      {initials(name)}
-    </span>
-  );
-}
-
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-semibold text-headline">{value}</p>
     </div>
-  );
-}
-
-function initials(name: string): string {
-  return (
-    name
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('') || '?'
   );
 }

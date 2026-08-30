@@ -1,6 +1,35 @@
 import { WeakPasswordError } from '@mojo/identity/application';
+import type { Weekday } from '@mojo/scheduling/domain';
+import { isValidTimezone } from '@mojo/shared/util';
+import type { AvailabilityWindow } from '@mojo/tutor-profile/domain';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getHub } from '../../../demo/composition-root';
+
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+function parseWindows(raw: unknown): AvailabilityWindow[] {
+  if (!Array.isArray(raw)) return [];
+  const windows = raw.filter((w): w is Record<string, unknown> => typeof w === 'object' && !!w);
+  return windows.flatMap((w) => {
+    const weekday = w.weekday;
+    const startMinute = w.startMinute;
+    const endMinute = w.endMinute;
+    if (
+      typeof weekday !== 'number' ||
+      ![0, 1, 2, 3, 4, 5, 6].includes(weekday) ||
+      typeof startMinute !== 'number' ||
+      typeof endMinute !== 'number' ||
+      !Number.isInteger(startMinute) ||
+      !Number.isInteger(endMinute) ||
+      startMinute < 0 ||
+      endMinute > 1440 ||
+      startMinute >= endMinute
+    ) {
+      return [];
+    }
+    return [{ id: crypto.randomUUID(), weekday: weekday as Weekday, startMinute, endMinute }];
+  });
+}
 
 export async function POST(request: NextRequest) {
   const hub = getHub();
@@ -23,11 +52,44 @@ export async function POST(request: NextRequest) {
   const certifications = Array.isArray(body.certifications)
     ? body.certifications.filter((c: unknown): c is string => typeof c === 'string')
     : [];
+  const displayName = typeof body.displayName === 'string' ? body.displayName.trim() : '';
+  const education = typeof body.education === 'string' ? body.education.trim() : '';
+  const photoUrl = typeof body.photoUrl === 'string' ? body.photoUrl.trim() : '';
+  const timezone = typeof body.timezone === 'string' ? body.timezone : '';
+  const availability = parseWindows(body.availability);
 
   if (subjects.length === 0 || bio.trim().length < 30) {
     return NextResponse.json(
       { ok: false, error: 'Add at least one subject and a short intro of 30+ characters.' },
       { status: 422 },
+    );
+  }
+
+  if (displayName.length < 2) {
+    return NextResponse.json(
+      { ok: false, error: 'Tell us your display name (at least 2 characters).' },
+      { status: 422 },
+    );
+  }
+
+  if (!timezone || !isValidTimezone(timezone)) {
+    return NextResponse.json(
+      { ok: false, error: 'Pick the timezone you plan to teach in.' },
+      { status: 422 },
+    );
+  }
+
+  if (availability.length === 0) {
+    return NextResponse.json(
+      { ok: false, error: 'Add at least one weekly window when you are available.' },
+      { status: 422 },
+    );
+  }
+
+  if (photoUrl.length > 0 && photoUrl.length > MAX_PHOTO_BYTES) {
+    return NextResponse.json(
+      { ok: false, error: 'That photo is too large — use a smaller image.' },
+      { status: 413 },
     );
   }
 
@@ -57,7 +119,6 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const timezone = typeof body.timezone === 'string' ? body.timezone : 'Africa/Lagos';
     const locale = typeof body.locale === 'string' ? body.locale : 'en-NG';
     try {
       const registered = await hub.identity.register({
@@ -91,10 +152,15 @@ export async function POST(request: NextRequest) {
   const application = {
     id: crypto.randomUUID(),
     tutorId,
+    displayName,
+    photoUrl,
+    education,
     subjects,
     bio,
     introVideoUrl,
     certifications: certifications.slice(0, 12),
+    timezone,
+    availability,
     status: 'pending' as const,
     submittedAt: nowIso,
   };
@@ -108,6 +174,27 @@ export async function POST(request: NextRequest) {
         error: error instanceof Error ? error.message : 'Could not submit application.',
       },
       { status: 409 },
+    );
+  }
+
+  try {
+    await hub.scheduling.saveAvailability(
+      tutorId,
+      availability.map((window) => ({
+        id: window.id,
+        weekday: window.weekday,
+        startMinute: window.startMinute,
+        endMinute: window.endMinute,
+      })),
+    );
+    await hub.scheduling.updateSettings({ tutorId, timezone });
+  } catch {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Application saved but scheduling could not be persisted — try again.',
+      },
+      { status: 500 },
     );
   }
 
@@ -129,4 +216,27 @@ export async function POST(request: NextRequest) {
     { ok: true, applicationId: application.id, createdAccount: false },
     { status: 201 },
   );
+}
+
+export async function GET() {
+  const hub = getHub();
+  const applications = await hub.profile.applications();
+  return NextResponse.json({
+    ok: true,
+    applications: applications.map((app) => ({
+      id: app.id,
+      tutorId: app.tutorId,
+      displayName: app.displayName,
+      photoUrl: app.photoUrl,
+      education: app.education,
+      subjects: app.subjects,
+      bio: app.bio,
+      introVideoUrl: app.introVideoUrl,
+      certifications: app.certifications,
+      timezone: app.timezone,
+      availability: app.availability,
+      status: app.status,
+      submittedAt: app.submittedAt,
+    })),
+  });
 }

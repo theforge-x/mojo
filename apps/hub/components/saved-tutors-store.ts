@@ -37,6 +37,7 @@ export function toggleSaved(tutor: SavedTutor): void {
 }
 
 export function subscribe(callback: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
   window.addEventListener('storage', callback);
   window.addEventListener(UPDATED_EVENT, callback);
   return () => {
