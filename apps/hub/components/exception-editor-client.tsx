@@ -7,15 +7,17 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  DatePicker,
   Field,
   FieldLabel,
-  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  TimeSelect,
 } from '@mojo/shared/ui';
+import { format } from 'date-fns';
 import { useCallback, useEffect, useState } from 'react';
 
 interface ExceptionEditorClientProps {
@@ -31,8 +33,8 @@ export function ExceptionEditorClient({ initialExceptions, todayKey }: Exception
   const [exceptions, setExceptions] = useState<AvailabilityException[]>(initialExceptions);
   const [date, setDate] = useState(todayKey);
   const [kind, setKind] = useState<'blocked' | 'extra'>('blocked');
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
+  const [startTime, setStartTime] = useState<number>(540);
+  const [endTime, setEndTime] = useState<number>(600);
   const [saving, setSaving] = useState(false);
 
   const toKey = addDays(todayKey, WEEK);
@@ -66,14 +68,11 @@ export function ExceptionEditorClient({ initialExceptions, todayKey }: Exception
     }
   };
 
-  const startMinute = timeToMinutes(startTime);
-  const endMinute = timeToMinutes(endTime);
-
   const add = () => {
     const daySet = exceptions
       .filter((e) => e.date === date)
       .map((e) => ({ kind: e.kind, startMinute: e.startMinute, endMinute: e.endMinute }));
-    daySet.push({ kind, startMinute, endMinute });
+    daySet.push({ kind, startMinute: startTime, endMinute: endTime });
     void save(daySet);
   };
 
@@ -93,36 +92,38 @@ export function ExceptionEditorClient({ initialExceptions, todayKey }: Exception
         <div className="mb-4 flex flex-wrap items-end gap-3">
           <Field className="flex-col">
             <FieldLabel htmlFor="exception-date">Date</FieldLabel>
-            <Input
+            <DatePicker
               id="exception-date"
-              type="date"
-              min={todayKey}
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
+              className="w-40"
+              fromDate={parseKey(todayKey)}
+              value={parseKey(date)}
+              onChange={(next) => {
+                if (next) setDate(format(next, 'yyyy-MM-dd'));
+              }}
             />
           </Field>
           <Field className="flex-col">
             <FieldLabel htmlFor="exception-start">Start</FieldLabel>
-            <Input
+            <TimeSelect
               id="exception-start"
-              type="time"
+              ariaLabel="Start time"
               value={startTime}
-              onChange={(event) => setStartTime(event.target.value)}
+              onValueChange={setStartTime}
             />
           </Field>
           <Field className="flex-col">
             <FieldLabel htmlFor="exception-end">End</FieldLabel>
-            <Input
+            <TimeSelect
               id="exception-end"
-              type="time"
+              ariaLabel="End time"
               value={endTime}
-              onChange={(event) => setEndTime(event.target.value)}
+              onValueChange={setEndTime}
             />
           </Field>
           <Field className="flex-col">
-            <FieldLabel>Kind</FieldLabel>
+            <FieldLabel htmlFor="exception-kind">Kind</FieldLabel>
             <Select value={kind} onValueChange={(value) => setKind(value as 'blocked' | 'extra')}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger id="exception-kind" className="w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -133,7 +134,7 @@ export function ExceptionEditorClient({ initialExceptions, todayKey }: Exception
           </Field>
           <Button
             onClick={add}
-            disabled={saving || endMinute <= startMinute}
+            disabled={saving || endTime <= startTime}
             size="sm"
             variant="secondary"
           >
@@ -175,17 +176,14 @@ export function ExceptionEditorClient({ initialExceptions, todayKey }: Exception
   );
 }
 
+function parseKey(key: string): Date {
+  return new Date(`${key}T00:00:00`);
+}
+
 function addDays(key: string, offset: number): string {
   const d = new Date(`${key}T00:00:00.000Z`);
   d.setUTCDate(d.getUTCDate() + offset);
   return d.toISOString().slice(0, 10);
-}
-
-function timeToMinutes(value: string): number {
-  const [rawHour, rawMinute] = value.split(':').map(Number);
-  const hour = Number.isFinite(rawHour) ? (rawHour as number) : 0;
-  const minute = Number.isFinite(rawMinute) ? (rawMinute as number) : 0;
-  return hour * 60 + minute;
 }
 
 function minutesToLabel(minutes: number): string {

@@ -11,8 +11,13 @@
 @source "../../../../../libs/shared/ui/src/**/*.{ts,tsx}";
 @source "../../../../*/src/feature/**/*.{ts,tsx}";
 
+/* Class-based dark mode (theme switch puts .dark on <html>), matching the
+   .dark token block below instead of the `prefers-color-scheme` default. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root,
 .light {
+  color-scheme: light;
   --background: #fffffe;
   --foreground: #1b2d45;
   --headline: #00214d;
@@ -52,6 +57,7 @@
   --calendar-blocked-foreground: #fffffe;
 }
 .dark {
+  color-scheme: dark;
   --background: #001534;
   --foreground: color-mix(in oklab, #fffffe 88%, #001534);
   --headline: #fffffe;

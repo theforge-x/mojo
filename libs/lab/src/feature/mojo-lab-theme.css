@@ -43,3 +43,31 @@
   outline: 2px solid var(--primary);
   outline-offset: -2px;
 }
+
+/* Reaction emoji float up from the centre of the stage and fade out. The
+   translate(-50%, …) pairs with the overlay's top-1/2 left-1/2 anchor; the
+   duration must match REACTION_TTL_MS in lab-reactions.tsx so reactions
+   disappear at the same time they stop being visible. */
+@keyframes mojo-reaction-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 28px) scale(0.4);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.15);
+  }
+  30% {
+    transform: translate(-50%, -10px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -88px) scale(1);
+  }
+}
+
+[data-lk-theme="mojo"] .mojo-reaction {
+  animation: mojo-reaction-float 3.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+  line-height: 1;
+}

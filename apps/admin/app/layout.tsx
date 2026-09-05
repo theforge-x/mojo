@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { DM_Mono, DM_Sans, Manrope } from 'next/font/google';
 import '../../../libs/shared/ui/src/styles/globals.css';
+import { ThemeProvider } from '@mojo/shared/ui';
 import { AdminShell } from '../components/admin-shell';
 
 const manrope = Manrope({
@@ -25,9 +26,15 @@ export const metadata: Metadata = {
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${manrope.variable} ${dmSans.variable} ${dmMono.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${manrope.variable} ${dmSans.variable} ${dmMono.variable}`}
+    >
       <body>
-        <AdminShell>{children}</AdminShell>
+        <ThemeProvider>
+          <AdminShell>{children}</AdminShell>
+        </ThemeProvider>
       </body>
     </html>
   );

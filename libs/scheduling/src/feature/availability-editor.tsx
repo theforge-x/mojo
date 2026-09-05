@@ -7,6 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  TimeSelect,
 } from '@mojo/shared/ui';
 import { cn } from '@mojo/shared/util';
 import { MinusIcon, PlusIcon } from 'lucide-react';
@@ -24,7 +25,6 @@ const WEEKDAY_LABELS: Record<Weekday, string> = {
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 const SLOT_MINUTES = 15;
-const TIME_OPTIONS = Array.from({ length: 96 }, (_, i) => i * SLOT_MINUTES);
 
 export interface WeeklyWindow {
   readonly id: string;
@@ -104,7 +104,7 @@ export function AvailabilityEditor({
                 value={String(rule.weekday)}
                 onValueChange={(value) => patch(rule.id, { weekday: Number(value) as Weekday })}
               >
-                <SelectTrigger size="sm" className="w-36" aria-label="Day">
+                <SelectTrigger className="w-36" aria-label="Day">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -116,39 +116,19 @@ export function AvailabilityEditor({
                 </SelectContent>
               </Select>
 
-              <Select
-                value={String(rule.startMinute)}
-                onValueChange={(value) => patch(rule.id, { startMinute: Number(value) })}
-              >
-                <SelectTrigger size="sm" className="w-24" aria-label="Start time">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIME_OPTIONS.map((minute) => (
-                    <SelectItem key={minute} value={String(minute)}>
-                      {formatMinute(minute)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TimeSelect
+                ariaLabel="Start time"
+                value={rule.startMinute}
+                onValueChange={(minute) => patch(rule.id, { startMinute: minute })}
+              />
 
               <span className="text-muted-foreground">–</span>
 
-              <Select
-                value={String(rule.endMinute)}
-                onValueChange={(value) => patch(rule.id, { endMinute: Number(value) })}
-              >
-                <SelectTrigger size="sm" className="w-24" aria-label="End time">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIME_OPTIONS.map((minute) => (
-                    <SelectItem key={minute} value={String(minute)}>
-                      {formatMinute(minute)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TimeSelect
+                ariaLabel="End time"
+                value={rule.endMinute}
+                onValueChange={(minute) => patch(rule.id, { endMinute: minute })}
+              />
 
               <Button
                 type="button"
@@ -177,10 +157,4 @@ export function AvailabilityEditor({
       </div>
     </div>
   );
-}
-
-function formatMinute(minute: number): string {
-  const h = Math.floor(minute / 60);
-  const m = minute % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }

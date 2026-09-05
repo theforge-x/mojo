@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   SiteLogo,
+  ThemeToggle,
 } from '@mojo/shared/ui';
 import { cn } from '@mojo/shared/util';
 import {
@@ -95,6 +96,7 @@ export function SiteHeader({ user }: { user: SiteHeaderUser }) {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link href="/login">
               <Button size="sm" variant="ghost">
                 Sign in
@@ -134,60 +136,63 @@ export function SiteHeader({ user }: { user: SiteHeaderUser }) {
           )}
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-2 rounded-full px-1.5 text-headline"
-            >
-              <span aria-hidden className="inline-flex size-7 items-center justify-center">
-                <Avatar
-                  name={user.name || user.email}
-                  size="sm"
-                  className="[&>span]:text-xs [&>span]:font-bold [&>span]:text-primary"
-                />
-              </span>
-              <span className="hidden max-w-32 truncate text-sm font-medium sm:inline">
-                {user.name || user.email}
-              </span>
-              <ChevronDown className="size-3.5 text-muted-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>
-              <span className="block truncate text-sm font-semibold text-headline">
-                {user.name}
-              </span>
-              <span className="block truncate text-xs font-normal text-muted-foreground">
-                {user.email}
-              </span>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {profileItems(user.role === 'tutor' ? 'tutor' : 'student').map(
-              ({ href, label, icon: Icon }) => (
-                <DropdownMenuItem key={label} asChild>
-                  <Link href={href} className="gap-2">
-                    <Icon className="size-4" />
-                    {label}
-                  </Link>
-                </DropdownMenuItem>
-              ),
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              disabled={pending}
-              onSelect={(event) => {
-                event.preventDefault();
-                startTransition(() => void logout());
-              }}
-              className="gap-2 text-destructive focus:text-destructive"
-            >
-              <LogOut className="size-4" />
-              Sign out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2 rounded-full p-2 text-headline"
+              >
+                <span aria-hidden className="inline-flex size-6 items-center justify-center">
+                  <Avatar
+                    name={user.name || user.email}
+                    size="sm"
+                    className="[&>span]:text-xs [&>span]:font-bold [&>span]:text-primary"
+                  />
+                </span>
+                <span className="hidden max-w-32 truncate text-sm font-medium sm:inline">
+                  {user.name || user.email}
+                </span>
+                <ChevronDown className="size-3.5 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <span className="block truncate text-sm font-semibold text-headline">
+                  {user.name}
+                </span>
+                <span className="block truncate text-xs font-normal text-muted-foreground">
+                  {user.email}
+                </span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {profileItems(user.role === 'tutor' ? 'tutor' : 'student').map(
+                ({ href, label, icon: Icon }) => (
+                  <DropdownMenuItem key={label} asChild>
+                    <Link href={href} className="gap-2">
+                      <Icon className="size-4" />
+                      {label}
+                    </Link>
+                  </DropdownMenuItem>
+                ),
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={pending}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  startTransition(() => void logout());
+                }}
+                variant="destructive"
+              >
+                <LogOut className="size-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

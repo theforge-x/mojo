@@ -32,6 +32,7 @@ import {
   SidebarProvider,
   SidebarSeparator,
   SidebarTrigger,
+  ThemeToggle,
 } from '@mojo/shared/ui';
 import {
   ChevronDown,
@@ -360,9 +361,10 @@ function DashboardHeader() {
     <header className="sticky top-3 flex h-12 shrink-0 items-center gap-2 bg-background/90 px-4 backdrop-blur sm:px-6">
       <SidebarTrigger className="text-muted-foreground" />
       <p className="flex-1 truncate text-sm capitalize text-muted-foreground">mojo nexus</p>
+      <ThemeToggle />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-2 px-2">
+          <Button variant="ghost" className="gap-2 px-1 rounded-full">
             <Avatar name="Nexus Admin" size="sm" />
             <span className="hidden max-w-32 truncate text-sm font-medium sm:inline">
               Nexus Admin
@@ -393,7 +395,7 @@ function DashboardHeader() {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="gap-2">
+          <DropdownMenuItem variant="destructive">
             <LogOut className="size-4" />
             Log out
           </DropdownMenuItem>

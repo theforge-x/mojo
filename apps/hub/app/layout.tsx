@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { DM_Mono, DM_Sans, Manrope } from 'next/font/google';
 import '../../../libs/shared/ui/src/styles/globals.css';
+import { ThemeProvider } from '@mojo/shared/ui';
 import { SiteFooter } from '../components/site-footer';
 import { SiteHeader } from '../components/site-header';
 import { currentUser } from '../lib/session';
@@ -31,13 +32,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const headerUser = user ? { name: user.name, email: user.email, role: user.role } : null;
 
   return (
-    <html lang="en" className={`${manrope.variable} ${dmSans.variable} ${dmMono.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${manrope.variable} ${dmSans.variable} ${dmMono.variable}`}
+    >
       <body>
-        <div className="flex min-h-svh flex-col">
-          <SiteHeader user={headerUser} />
-          <div className="flex-1">{children}</div>
-          <SiteFooter user={headerUser} />
-        </div>
+        <ThemeProvider>
+          <div className="flex min-h-svh flex-col">
+            <SiteHeader user={headerUser} />
+            <div className="flex-1">{children}</div>
+            <SiteFooter user={headerUser} />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
