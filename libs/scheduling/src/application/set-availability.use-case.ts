@@ -42,7 +42,7 @@ export function makeUpdateSchedulingSettings(deps: { availability: AvailabilityR
       tutorId: input.tutorId,
       timezone: input.timezone,
       bufferMinutes: input.bufferMinutes ?? current.bufferMinutes ?? 15,
-      minimumNoticeMinutes: input.minimumNoticeMinutes ?? current.minimumNoticeMinutes ?? 30,
+      minimumNoticeMinutes: input.minimumNoticeMinutes ?? current.minimumNoticeMinutes ?? 60,
       pausedForNewBookings: input.pausedForNewBookings ?? current.pausedForNewBookings ?? false,
     });
   };

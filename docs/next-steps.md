@@ -19,7 +19,7 @@ that loop.
 
 | Mechanic | Built | What exists | What's missing |
 |---|---|---|---|
-| Tutor profile & application | `[~]` | 6-step wizard (`apply-form.tsx`) — subjects, bio, experience/certs, intro video, account; submission stored via `tutor-profile/submit-application` | Photo, education, timezone, and availability capture in the wizard; applicant status view; the review → live hand-off (below) |
+| Tutor profile & application | `[x]` | 6-step wizard (`apply-form.tsx`) — subjects, bio, experience/certs, intro video, account; photo, education, timezone and availability captured; submission stored via `tutor-profile/submit-application`; review → live hand-off wired (admin queue reads the hub over `HUB_URL`, approval publishes a searchable profile) | Applicant status view; download/edit of an already-approved profile |
 | Tutor search & discovery | `[~]` | `TutorSearchFilters` domain (subject, level, language, minRating, availableWithinHours); `/tutors` page + cards (photo, level, rating, price/segment, response time) | **The demo index ignores every filter** — `InMemoryTutorSearchIndex.search` returns all profiles. UI exposes only subject + level. No filters on language / rating / availability window. No intro-video thumbnail on cards |
 | Trial lesson + booking | `[~]` | `isTrial` bookings against live availability (min-notice + conflict validation); booked→confirmed→completed with timestamped `statusHistory`; trial charge (tutor keeps ₦0); segment pricing + commission split on completion; cancel with UI | Reschedule (no use-case, no route, no UI); free replacement lesson guarantee; student-side checkout / payment capture |
 | Virtual lab | `[x]` | LiveKit per-request participant tokens, room per session; video + whiteboard + text chat + file sharing (in-browser in demo); both-role join guards | (none for MVP scope) |
@@ -30,27 +30,27 @@ that loop.
 
 ## Phase 0 leftovers that block Phase 1
 
-The calendar engine is the load-bearing foundation; three Phase 0 items remain:
-- **Availability exceptions** — the repo (`getExceptions`) exists but there is no
-  set-exception use-case or UI. Tutors can only set recurring weekly rules.
-- **Buffer time** — settings carry minimum booking notice only; inter-session
-  buffer isn't modeled.
-- **Reminder scheduling** — notification dispatch is purely event-driven; nothing
-  fires on a time basis.
+The calendar foundation is complete — recurring rules, one-off exceptions,
+inter-session buffer, minimum notice, pause-new-bookings, and conflict
+detection are built and validated at book time. What remains is operational:
+- **Reminder scheduling** — notification dispatch is still purely event-driven;
+  nothing fires on a time basis.
 
-## The single biggest blocker: the application → live loop
+## The application → live loop (was the biggest blocker; now wired)
 
-The review → publish hand-off exists as a use-case (`tutor-profile/review-application`,
-which upserts a `TutorProfile` on approval) but it is **not wired into either app**:
+The review → publish hand-off is in place (`tutor-profile/review-application`
+upserts a `TutorProfile` on approval) and is wired through both apps:
 
-- The hub's submitted applications live in the hub's in-memory `state.applications`.
-  The admin app's review queue operates on the **admin app's own in-memory store**,
-  so an admin approval never sees the hub's application and never publishes a profile.
-- The hub facade exposes no `review` method and no application-status read.
-- Approval *would* work end-to-end in the demo if wired, because
-  `InMemoryTutorSearchIndex` reads straight off `state.profiles` — a saved profile
-  appears in search at the default Entry rate. The main store split is the only thing
-  standing between "submitted application" and "findable tutor".
+- The hub's submitted applications live in the hub's `state.applications`; the
+  admin app reads them over the `HUB_URL` bridge (in-memory `fetch` in demo
+  mode, direct Prisma when `USE_PRISMA=true`) and posts review decisions back,
+  so an approval lands on the same application and publishes a live profile.
+- `InMemoryTutorSearchIndex` reads straight off `state.profiles` — a saved
+  profile appears in search at the default Entry rate.
+
+Still open: an applicant-facing status read (`/apply` or `/tutor` showing
+pending / approved-with-link / rejected), and richer profile capture (photo and
+display name land as placeholders today).
 
 Secondary, related gap: `profileFromApplication` publishes a placeholder
 (`displayName` derived from subjects, empty `photoUrl`), so the wizard should capture
@@ -122,14 +122,11 @@ The MVP is not real until a non-seeded tutor can be found and booked.
 3. Acceptance: two demo accounts hold a pre-booking conversation and the start
    session shows in both inboxes.
 
-### Step 7 — Calendar + notification polish needed by the loop
-1. Availability exceptions: add a set-exception use-case + UI on the weekly calendar,
-   and let booking validate against exceptions.
-2. Buffer minutes between sessions, as a scheduling setting.
-3. Time-based reminder scheduling in `notifications` (e.g. session T-minus 30min and
+### Step 7 — Notification polish needed by the loop
+1. Time-based reminder scheduling in `notifications` (e.g. session T-minus 30min and
    day-before), plus very basic per-channel preferences.
-4. Acceptance: an exception blocks a slot in view and at book time; a reminder fires
-   before a booked trial; a tutor's availability shows buffer around booked slots.
+2. (The scheduling side of this step is done — exceptions block a slot in view and
+   at book time, and availability shows buffer around booked slots.)
 
 ### Step 8 — Tutor teaching actions + recap surfaced
 1. Tutor-side mark-complete / no-show / cancel from the lab; today completion is

@@ -8,6 +8,9 @@ import type {
 import type { AvailabilityRepository, SessionRepository } from '../domain/scheduling.ports';
 import type { ScheduledSession } from '../domain/session.types';
 
+const DEFAULT_BUFFER_MINUTES = 15;
+const DEFAULT_NOTICE_MINUTES = 60;
+
 export class PrismaAvailabilityRepository implements AvailabilityRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -61,8 +64,22 @@ export class PrismaAvailabilityRepository implements AvailabilityRepository {
   }
 
   async getSettings(tutorId: string): Promise<SchedulingSettings> {
-    const row = await this.prisma.schedulingSettings.findUniqueOrThrow({ where: { tutorId } });
-    return { ...row };
+    const row = await this.prisma.schedulingSettings.findUnique({ where: { tutorId } });
+    if (row) return { ...row };
+    // No settings row yet (a just-approved tutor, or an applicant whose
+    // scheduling save raced their first settings write). Seed one from the
+    // account's timezone so slot generation is tz-correct rather than throwing
+    // findUniqueOrThrow and 500ing the apply/availability/booking routes.
+    const user = await this.prisma.user.findUnique({ where: { id: tutorId } });
+    const defaults: SchedulingSettings = {
+      tutorId,
+      timezone: user?.timezone || 'Africa/Lagos',
+      bufferMinutes: DEFAULT_BUFFER_MINUTES,
+      minimumNoticeMinutes: DEFAULT_NOTICE_MINUTES,
+      pausedForNewBookings: false,
+    };
+    await this.saveSettings(defaults);
+    return defaults;
   }
 
   async saveSettings(settings: SchedulingSettings): Promise<void> {

@@ -95,7 +95,7 @@ export async function seedDemo(state: DemoState): Promise<void> {
     tutorId: '',
     timezone: 'Africa/Lagos',
     bufferMinutes: 15,
-    minimumNoticeMinutes: 30,
+    minimumNoticeMinutes: 60,
     pausedForNewBookings: false,
   };
   for (const tutorId of ['t_1', 't_2', 't_3']) {

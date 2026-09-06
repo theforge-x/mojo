@@ -26,9 +26,10 @@ Phase 1 loop is `docs/phase1-mvp-todo.md`.
 ## Admin
 
 **Tutor & content oversight**
-- [~] Tutor application review queue (approve / reject — review route exists but
-      operates on the admin app's own in-memory store, so approval never publishes a
-      live profile yet; request-changes not present)
+- [x] Tutor application review queue (approve / reject — the admin reads the
+      hub's application queue over `HUB_URL`, and approval publishes a live,
+      searchable tutor profile via `tutor-profile/review-application`;
+      request-changes not present)
 - [ ] Re-review queue for tutors who edit an already-approved profile
 - [ ] Profile content moderation — photos, intro videos, written bios
 - [ ] Review flagging for public reviews (remove abusive or fake reviews)
@@ -89,9 +90,9 @@ Phase 1 loop is `docs/phase1-mvp-todo.md`.
 
 **Availability & scheduling**
 - [x] Set recurring weekly availability
-- [ ] Add one-off exceptions (time off, extra hours)
-- [~] Set buffer time between sessions and minimum booking notice — minimum notice
-      only; no inter-session buffer
+- [x] Add one-off exceptions (time off, extra hours)
+- [x] Set buffer time between sessions and minimum booking notice, plus
+      pause-new-bookings mode (slots hidden and bookings rejected while paused)
 - [x] View calendar (week view of upcoming and past sessions)
 - [~] Reschedule or cancel a session, subject to the cancellation policy — cancel is
       built; **reschedule** is not (no use-case, route, or UI)

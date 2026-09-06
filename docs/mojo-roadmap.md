@@ -18,7 +18,7 @@ of a bigger thing that only works once everything else exists.
 | Item | Status | Notes |
 |---|---|---|
 | Design system (Tailwind v4 tokens, shadcn-style components) | ✅ Done | Mint/coral/yellow on navy-and-paper, Manrope/DM Sans/DM Mono |
-| Tutor availability & lesson calendar (Next.js, Prisma, Postgres/Supabase) | 🔄 In progress | Recurring weekly rules, conflict detection at book time, and session status flow are built. **Remaining:** exceptions capture (repo exists, no use-case/UI), inter-session buffer minutes, time-based reminders. See `docs/phase1-mvp-todo.md` |
+| Tutor availability & lesson calendar (Next.js, Prisma, Postgres/Supabase) | ✅ Done | Recurring weekly rules, one-off exceptions (blocked/extra), timezone-aware slot generation, inter-session buffer minutes, minimum-notice window, pause-new-bookings, and conflict detection at book time are all built. Time-based reminders land with the notifications module |
 
 Everything in Phase 1 assumes the calendar system's data model (availability rules,
 exceptions, session status) is stable. Don't start the booking flow until sessions can

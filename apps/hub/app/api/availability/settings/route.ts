@@ -19,7 +19,7 @@ export async function PUT(request: Request) {
     bufferMinutes: Number.isFinite(body.bufferMinutes) ? Number(body.bufferMinutes) : 15,
     minimumNoticeMinutes: Number.isFinite(body.minimumNoticeMinutes)
       ? Number(body.minimumNoticeMinutes)
-      : 30,
+      : 60,
     pausedForNewBookings:
       typeof body.pausedForNewBookings === 'boolean' ? body.pausedForNewBookings : false,
   };

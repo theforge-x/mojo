@@ -43,9 +43,14 @@ npm run build               # lint:boundaries + nx run-many --target=build --all
 `USE_PRISMA` (in `.env`) flips persistence:
 
 - **Unset / `false` (default)** — in-memory demo roots (`apps/hub/demo`,
-  `apps/admin/demo`) seed a `DemoState`; nothing else is needed to run.
+  `apps/admin/demo`) seed a `DemoState`; nothing else is needed to run. The two
+  apps run as separate dev servers, so the admin's application queue bridges to
+  the hub over `HUB_URL` (defaults to `http://localhost:3003`, the hub's dev
+  port) — submit a tutor application on the hub and it appears in the admin's
+  nexus / application queue for review and approval.
 - **`true`** — the same use-cases run against Prisma repositories. Requires a
-  reachable Postgres (`DATABASE_URL`) and `npx prisma migrate deploy`. See
+  reachable Postgres (`DATABASE_URL`) and `npx prisma migrate deploy`. Both
+  apps share the database, so the `HUB_URL` bridge is not used. See
   `docs/deployment.md` for the free-tier setup (Supabase).
 
 ### Demo accounts — password `Password123`

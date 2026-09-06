@@ -110,8 +110,15 @@ export function getAdmin(): AdminApp {
   // Cross-process demo bridge only: dev runs the hub and admin as two servers,
   // so a same-process `DemoState` can't be shared. The hub stays the system of
   // record over `HUB_URL`; the Prisma path needs no bridge because both apps
-  // target the same database.
-  const hubBaseUrl = isDemoMode ? (process.env.HUB_URL ?? '').replace(/\/$/, '') : '';
+  // target the same database. Defaults to the README's hub dev port so the demo
+  // works out of the box; an explicit `HUB_URL` overrides it. An empty override
+  // (tests, or a deliberately standalone admin) falls back to the local store.
+  const hubBaseUrl = isDemoMode
+    ? (process.env.HUB_URL === undefined ? 'http://localhost:3003' : process.env.HUB_URL).replace(
+        /\/$/,
+        '',
+      )
+    : '';
 
   const app: AdminApp = {
     isDemoMode,
@@ -122,15 +129,16 @@ export function getAdmin(): AdminApp {
         // The hub is the system of record for applications in the demo loop —
         // the admin list is whatever the hub has. Falls back to the shared
         // store when the hub isn't running so the admin app stays usable.
+        const fallback = () => applications.list();
         try {
           return fetch(`${hubBaseUrl}/api/applications`).then(async (response) => {
-            if (!response.ok) return applications.list();
+            if (!response.ok) return fallback();
             const data = (await response.json()) as { applications?: unknown };
-            if (!Array.isArray(data.applications)) return applications.list();
+            if (!Array.isArray(data.applications)) return fallback();
             return data.applications as TutorApplication[];
           });
         } catch {
-          return applications.list();
+          return fallback();
         }
       },
       review: async ({ applicationId, decision }) => {

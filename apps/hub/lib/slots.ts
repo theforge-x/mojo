@@ -27,6 +27,8 @@ const SLOT_LENGTH_MINUTES = 30;
  *   - anything before the minimum-notice boundary is skipped;
  *   - anything that would collide with an already-booked session (with the
  *     buffer window applied) is skipped.
+ * A tutor in "pause new bookings" mode yields no slots at all — the resting
+ * rules stay intact, but nothing new is offered until the pause is lifted.
  * Booking itself is still re-validated by @mojo/scheduling at the root.
  */
 export function bookableSlots(
@@ -40,6 +42,7 @@ export function bookableSlots(
     existingSessions?: ScheduledSession[];
   } = {},
 ): BookableSlot[] {
+  if (settings.pausedForNewBookings) return [];
   const {
     days = 7,
     minutesStep = SLOT_LENGTH_MINUTES,

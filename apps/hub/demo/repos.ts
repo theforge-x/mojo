@@ -114,7 +114,7 @@ export class InMemoryAvailabilityRepository implements AvailabilityRepository {
         tutorId,
         timezone: 'Africa/Lagos',
         bufferMinutes: 15,
-        minimumNoticeMinutes: 30,
+        minimumNoticeMinutes: 60,
         pausedForNewBookings: false,
       }
     );

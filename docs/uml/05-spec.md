@@ -267,7 +267,10 @@ ports to Prisma adapters. In the current tree:
   extent shown in thin server components (e.g. `(tutor)/home/page.tsx` returns
   hard-coded sessions; the lab page composes the `@mojo/lab/feature` `LabRoom` with
   `LiveKitLabProvider`).
-- `apps/admin` renders `TutorApplication` rows from a hard-coded array.
+- `apps/admin` renders `TutorApplication` rows from the hub-backed application
+  queue (`getAdmin().applications.list()` — over the `HUB_URL` bridge in demo
+  mode, Prisma directly otherwise); approve/reject posts back through the same
+  path and publishes a `TutorProfile` on approval.
 - **No module's use-case is wired to a real HTTP/session flow yet.** The event
   subscribers for `pricing`, `payments`, `tutor-performance`, etc. are not present.
 - Conformance caveats with the planning docs are flagged in

@@ -9,7 +9,7 @@ function fakeAvailability(initial: Partial<SchedulingSettings> = {}) {
     tutorId: 't_1',
     timezone: 'Africa/Lagos',
     bufferMinutes: 15,
-    minimumNoticeMinutes: 30,
+    minimumNoticeMinutes: 60,
     pausedForNewBookings: false,
     ...initial,
   };
@@ -49,7 +49,7 @@ describe('updateSchedulingSettings', () => {
       tutorId: 't_1',
       timezone: 'Europe/London',
       bufferMinutes: 15,
-      minimumNoticeMinutes: 30,
+      minimumNoticeMinutes: 60,
       pausedForNewBookings: false,
     });
   });

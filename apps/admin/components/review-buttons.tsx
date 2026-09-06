@@ -16,7 +16,7 @@ export function ReviewButtons({ applicationId }: { applicationId: string }) {
       const response = await fetch(`/api/applications/${applicationId}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision }),
+        body: JSON.stringify({ decision: decision === 'approve' ? 'approved' : 'rejected' }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? 'Review failed.');

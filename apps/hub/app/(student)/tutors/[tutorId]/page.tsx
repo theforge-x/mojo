@@ -65,7 +65,17 @@ export default async function TutorDetailPage({
       </div>
 
       <h2 className="mb-3 font-display text-lg font-bold text-headline">Available slots</h2>
-      {slots.length === 0 ? (
+      {settings.pausedForNewBookings ? (
+        <Card>
+          <CardContent>
+            <Empty>
+              <EmptyDescription>
+                This tutor is not accepting new bookings right now.
+              </EmptyDescription>
+            </Empty>
+          </CardContent>
+        </Card>
+      ) : slots.length === 0 ? (
         <Card>
           <CardContent>
             <Empty>

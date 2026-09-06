@@ -7,7 +7,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const hub = getHub();
 
   try {
-    const decision = body.decision === 'rejected' ? 'rejected' : 'approved';
+    const decision = body.decision;
+    if (decision !== 'approved' && decision !== 'rejected') {
+      return NextResponse.json(
+        { ok: false, error: 'decision must be "approved" or "rejected".' },
+        { status: 422 },
+      );
+    }
     const application = await hub.profile.review({ applicationId: id, decision });
     return NextResponse.json({ ok: true, application });
   } catch (error) {
