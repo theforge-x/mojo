@@ -56,7 +56,7 @@ export default async function ApplyPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-10">
+    <main className="mx-auto w-full max-w-6xl p-6 lg:p-10">
       <div className="mb-6">
         <h1 className="font-display text-2xl font-bold text-headline">Become a mojo tutor</h1>
         <p className="mt-1 max-w-xl text-sm text-muted-foreground">
