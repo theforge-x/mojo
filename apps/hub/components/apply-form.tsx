@@ -49,6 +49,8 @@ const SUBJECT_OPTIONS = [
   'Business',
 ];
 
+const LANGUAGE_OPTIONS = ['English', 'French', 'Spanish', 'Yoruba', 'Igbo', 'Hausa', 'Pidgin'];
+
 const EXPERIENCE_OPTIONS = ['Less than a year', '1–3 years', '3–5 years', '5+ years'];
 
 const STEPS = [
@@ -94,6 +96,7 @@ export function ApplyForm({
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [subjects, setSubjects] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<string[]>([]);
   const [bio, setBio] = useState('');
   const [displayName, setDisplayName] = useState(initialName);
   const [photoMode, setPhotoMode] = useState<'file' | 'url'>('file');
@@ -119,7 +122,7 @@ export function ApplyForm({
   const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   function canContinue(): boolean {
-    if (step === 0) return subjects.length > 0;
+    if (step === 0) return subjects.length > 0 && languages.length >= 1;
     if (step === 1) return bio.trim().length >= 30;
     if (step === 2) return displayName.trim().length >= 2;
     if (step === 3) return Boolean(yearsExperience);
@@ -159,6 +162,7 @@ export function ApplyForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subjects,
+          languages,
           bio: `${yearsExperience ? `Teaching for ${yearsExperience}; ` : ''}${bio.trim()}`,
           certifications,
           introVideoUrl: introVideoUrl.trim(),
@@ -221,6 +225,7 @@ export function ApplyForm({
               signedIn={signedIn}
               subjectOptions={SUBJECT_OPTIONS}
               subjects={subjects}
+              languages={languages}
               bio={bio}
               displayName={displayName}
               photoUrl={finalPhotoUrl}
@@ -262,6 +267,31 @@ export function ApplyForm({
                   {subjects.length === 0
                     ? 'No subjects selected yet.'
                     : `Selected: ${subjects.join(', ')}`}
+                </FieldDescription>
+              </Field>
+
+              <Field>
+                <FieldLabel>Which languages do you teach in?</FieldLabel>
+                <FieldDescription>
+                  Students use this to find tutors who speak their language — pick every language
+                  you could run a lesson in.
+                </FieldDescription>
+                <ToggleGroup
+                  type="multiple"
+                  className="flex flex-wrap"
+                  value={languages}
+                  onValueChange={setLanguages}
+                >
+                  {LANGUAGE_OPTIONS.map((language) => (
+                    <ToggleGroupItem key={language} value={language} className="rounded-full">
+                      {language}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+                <FieldDescription>
+                  {languages.length === 0
+                    ? 'Pick at least one language to continue.'
+                    : `Selected: ${languages.join(', ')}`}
                 </FieldDescription>
               </Field>
             </FieldGroup>
@@ -599,6 +629,7 @@ export function ApplyForm({
                 </div>
                 <StatTile label="Timezone" value={timezone || '—'} />
                 <StatTile label="Subjects" value={subjects.join(', ') || '—'} />
+                <StatTile label="Languages" value={languages.join(', ') || '—'} />
                 <StatTile
                   label="Availability"
                   value={

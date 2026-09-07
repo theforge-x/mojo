@@ -1,6 +1,7 @@
 import { type DemoState, seedDemoApplications } from '@mojo/demo-state';
 import type { User } from '@mojo/identity/domain';
 import { bcryptPasswordHasher } from '@mojo/identity/infrastructure';
+import type { Message } from '@mojo/messaging/domain';
 import type { ReferralLink } from '@mojo/referrals/domain';
 import type {
   AvailabilityRule,
@@ -215,6 +216,7 @@ export async function seedDemo(state: DemoState): Promise<void> {
       photoUrl: '',
       education: 'B.A. Modern Languages — UNIBEN',
       subjects: ['Spanish'],
+      languages: ['English', 'Spanish'],
       bio: 'DELE-certified Spanish tutor, conversation-first.',
       timezone: 'Africa/Lagos',
       moderationFlagged: false,
@@ -225,6 +227,7 @@ export async function seedDemo(state: DemoState): Promise<void> {
       photoUrl: '',
       education: 'M.A. French Linguistics — Université de Lyon',
       subjects: ['French', 'English'],
+      languages: ['English', 'French'],
       bio: 'Expat-friendly French and English coaching.',
       timezone: 'Africa/Lagos',
       moderationFlagged: false,
@@ -235,6 +238,7 @@ export async function seedDemo(state: DemoState): Promise<void> {
       photoUrl: '',
       education: 'B.Sc. Mathematics — UI Ibadan',
       subjects: ['Maths'],
+      languages: ['English'],
       bio: 'Maths tutor for secondary and JAMB prep.',
       timezone: 'Africa/Lagos',
       moderationFlagged: false,
@@ -260,4 +264,32 @@ export async function seedDemo(state: DemoState): Promise<void> {
 
   const referralLink: ReferralLink = { code: 'GOODSTART', ownerId: 'st_1', ownerRole: 'student' };
   state.referralLinks.set(referralLink.code, referralLink);
+
+  const messages: Message[] = [
+    {
+      id: 'm_1',
+      senderId: 'st_1',
+      recipientId: 't_2',
+      body: 'Hi Ifeoma! Quick question before we meet — can we also cover DELF A2 listening drills in Friday’s slot?',
+      sentAt: isoAt(-2, 16, 0),
+      readAt: isoAt(-2, 16, 30),
+    },
+    {
+      id: 'm_2',
+      senderId: 't_2',
+      recipientId: 'st_1',
+      body: 'Hi Ada! Happy to. I’ll bring a couple of practice listens and we can go from there.',
+      sentAt: isoAt(-2, 16, 45),
+      readAt: null,
+    },
+    {
+      id: 'm_3',
+      senderId: 'st_1',
+      recipientId: 't_3',
+      body: 'Hi Tunde! I’m looking for JAMB maths prep — what do your rates look like?',
+      sentAt: isoAt(-1, 9, 20),
+      readAt: null,
+    },
+  ];
+  for (const message of messages) state.messages.set(message.id, message);
 }

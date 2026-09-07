@@ -25,6 +25,7 @@ export interface WizardArtworkProps {
   signedIn: boolean;
   subjectOptions: string[];
   subjects: string[];
+  languages: string[];
   bio: string;
   displayName: string;
   photoUrl: string;
@@ -172,7 +173,15 @@ function Stage({ children, className }: { children: ReactNode; className?: strin
   );
 }
 
-function SubjectsScene({ options, selected }: { options: string[]; selected: string[] }) {
+function SubjectsScene({
+  options,
+  selected,
+  languages,
+}: {
+  options: string[];
+  selected: string[];
+  languages: string[];
+}) {
   return (
     <Stage className="p-4">
       <div className="grid grid-cols-2 gap-1.5">
@@ -194,6 +203,13 @@ function SubjectsScene({ options, selected }: { options: string[]; selected: str
           );
         })}
       </div>
+      {languages.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+          <Globe className="size-3.5 shrink-0 text-primary" />
+          <span className="font-medium text-foreground">Teaches in:</span>
+          <span className="truncate">{languages.join(' · ')}</span>
+        </div>
+      )}
     </Stage>
   );
 }
@@ -508,6 +524,7 @@ function ReviewRow({
 function ReviewScene({
   signedIn,
   subjects,
+  languages,
   bio,
   displayName,
   photoUrl,
@@ -554,6 +571,20 @@ function ReviewScene({
               ))}
               {subjects.length > 3 && <Badge variant="muted">+{subjects.length - 3} more</Badge>}
             </div>
+          ) : (
+            'None selected'
+          )}
+        </ReviewRow>
+        <ReviewRow icon={<Globe className="size-4" />} label="Languages">
+          {languages.length > 0 ? (
+            <span className="flex flex-wrap gap-1">
+              {languages.slice(0, 3).map((language) => (
+                <Badge key={language} variant="muted">
+                  {language}
+                </Badge>
+              ))}
+              {languages.length > 3 && <Badge variant="muted">+{languages.length - 3} more</Badge>}
+            </span>
           ) : (
             'None selected'
           )}
@@ -627,7 +658,9 @@ export function WizardArtwork(props: WizardArtworkProps) {
 
   switch (step) {
     case 0:
-      scene = <SubjectsScene options={subjectOptions} selected={subjects} />;
+      scene = (
+        <SubjectsScene options={subjectOptions} selected={subjects} languages={props.languages} />
+      );
       caption = meta.caption(subjects.length, subjectOptions.length);
       break;
     case 1:

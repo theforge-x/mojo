@@ -63,6 +63,7 @@ const profileItems = (
   const studentOnly = [{ href: '/saved-tutors', label: 'Saved tutors', icon: Bookmark }] as const;
   const tutorOnly = [
     { href: '/tutor/availability', label: 'Availability', icon: Calendar },
+    { href: '/tutor/outreach', label: 'Outreach', icon: Sparkles },
   ] as const;
   const tail = [
     { href: '/settings', label: 'Settings', icon: Settings },

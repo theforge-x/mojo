@@ -1,5 +1,6 @@
 import { CalendarView } from '@mojo/scheduling/feature';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import { Handshake } from 'lucide-react';
 import Link from 'next/link';
 import { LevelBadge } from '../../components/level-badge';
 import { RequestPayoutButton } from '../../components/request-payout-button';
@@ -14,10 +15,11 @@ export default async function TutorHome() {
   if (user?.role !== 'tutor') return null;
 
   const hub = getHub();
-  const [sessions, performance, wallet] = await Promise.all([
+  const [sessions, performance, wallet, interests] = await Promise.all([
     hub.scheduling.sessionsByTutor(user.id),
     hub.performance.byTutor(user.id),
     hub.wallet.forTutor(user.id),
+    hub.interests.forTutor(user.id),
   ]);
 
   const upcoming = sessions.filter((s) => s.status === 'booked' || s.status === 'confirmed');
@@ -41,7 +43,7 @@ export default async function TutorHome() {
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle>Upcoming sessions</CardTitle>
@@ -76,6 +78,21 @@ export default async function TutorHome() {
             </span>
           </CardContent>
         </Card>
+        <Link href="/tutor/outreach">
+          <Card className="h-full transition-opacity hover:opacity-90">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Handshake className="size-4 text-primary" />
+                Outreach
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <span className="font-display text-3xl font-extrabold text-headline">
+                {interests.length}
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <h2 className="mb-3 font-display text-lg font-bold text-headline">Sessions</h2>

@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
   const subjects = Array.isArray(body.subjects)
     ? body.subjects.filter((s: unknown): s is string => typeof s === 'string')
     : [];
+  const languages = Array.isArray(body.languages)
+    ? body.languages.filter((l: unknown): l is string => typeof l === 'string')
+    : [];
   const bio = typeof body.bio === 'string' ? body.bio : '';
   const introVideoUrl = typeof body.introVideoUrl === 'string' ? body.introVideoUrl : '';
   const certifications = Array.isArray(body.certifications)
@@ -61,6 +64,13 @@ export async function POST(request: NextRequest) {
   if (subjects.length === 0 || bio.trim().length < 30) {
     return NextResponse.json(
       { ok: false, error: 'Add at least one subject and a short intro of 30+ characters.' },
+      { status: 422 },
+    );
+  }
+
+  if (languages.length === 0) {
+    return NextResponse.json(
+      { ok: false, error: 'Pick at least one language you can teach in.' },
       { status: 422 },
     );
   }
@@ -156,6 +166,7 @@ export async function POST(request: NextRequest) {
     photoUrl,
     education,
     subjects,
+    languages: languages.slice(0, 8),
     bio,
     introVideoUrl,
     certifications: certifications.slice(0, 12),
@@ -230,6 +241,7 @@ export async function GET() {
       photoUrl: app.photoUrl,
       education: app.education,
       subjects: app.subjects,
+      languages: app.languages,
       bio: app.bio,
       introVideoUrl: app.introVideoUrl,
       certifications: app.certifications,

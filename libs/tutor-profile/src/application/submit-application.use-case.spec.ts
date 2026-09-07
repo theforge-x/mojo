@@ -24,6 +24,7 @@ function sampleApplication(overrides: Partial<TutorApplication> = {}): TutorAppl
     photoUrl: '',
     education: 'B.Sc. Mathematics — ABU Zaria',
     subjects: ['maths'],
+    languages: ['English'],
     bio: 'I love teaching',
     introVideoUrl: 'https://ex.com/v',
     certifications: ['NCE'],

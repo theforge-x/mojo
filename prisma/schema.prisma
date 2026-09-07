@@ -60,6 +60,7 @@ model TutorApplication {
   photoUrl         String            @default("")
   education        String            @default("")
   subjects         String[]
+  languages        String[]          @default([])
   bio              String
   introVideoUrl    String
   certifications   String[]
@@ -78,6 +79,7 @@ model TutorProfile {
   photoUrl          String?
   education         String  @default("")
   subjects          String[]
+  languages         String[]  @default([])
   bio               String
   timezone          String  @default("Africa/Lagos")
   moderationFlagged Boolean @default(false)
@@ -278,6 +280,17 @@ model Message {
 
   @@index([senderId, recipientId])
   @@map("messages")
+}
+
+model TutorInterest {
+  id        String   @id @default(cuid())
+  studentId String
+  tutorId   String
+  source    String   @default("view") // search | view
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, tutorId])
+  @@map("tutor_interests")
 }
 
 model Review {

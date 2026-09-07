@@ -14,3 +14,7 @@ export function formatWhen(startIso: string, endIso: string): string {
   const endTime = end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   return `${day} ${startTime}–${endTime}`;
 }
+
+export function formatMessageTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+}

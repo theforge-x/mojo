@@ -1,67 +1,25 @@
-import { Avatar, Card, CardContent } from '@mojo/shared/ui';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { LevelBadge } from '../../../components/level-badge';
-import { getHub } from '../../../demo/composition-root';
-import { formatMinor } from '../../../lib/format';
+import {
+  TutorDirectory,
+  type TutorDirectorySearchParams,
+} from '../../../components/tutor-directory';
 import { currentUser } from '../../../lib/session';
 
 export default async function TutorsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ subject?: string; level?: string }>;
+  searchParams: Promise<TutorDirectorySearchParams>;
 }) {
   const user = await currentUser();
   if (!user) redirect('/');
   if (user.role !== 'student') redirect('/tutor');
 
-  const { subject, level } = await searchParams;
-  const tutors = await getHub().discovery.search({
-    ...(subject ? { subject } : {}),
-    ...(isValidLevel(level) ? { level: level as 'entry' | 'established' | 'expert' } : {}),
-  });
+  const params = await searchParams;
 
   return (
     <main className="mx-auto max-w-6xl p-6">
       <h1 className="mb-2 font-display text-2xl font-bold text-headline">Find your tutor</h1>
-      <p className="mb-6 text-sm text-muted-foreground">
-        {tutors.length} tutor{tutors.length === 1 ? '' : 's'} available. Pick one and book a slot.
-      </p>
-      <div className="flex flex-col gap-3">
-        {tutors.map((tutor) => (
-          <Link
-            key={tutor.tutorId}
-            href={`/tutors/${tutor.tutorId}`}
-            className="transition-opacity hover:opacity-90"
-          >
-            <Card>
-              <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
-                <div className="flex items-center gap-3">
-                  <Avatar name={tutor.displayName} src={tutor.photoUrl || undefined} />
-                  <div>
-                    <div className="font-display text-base font-bold text-headline">
-                      {tutor.displayName}
-                    </div>
-                    {tutor.education && (
-                      <div className="text-xs text-muted-foreground">{tutor.education}</div>
-                    )}
-                    <div className="text-sm text-muted-foreground">
-                      {formatMinor(tutor.perSegmentMinor)}/segment · responds in ~
-                      {tutor.responseTimeMinutesAvg} min
-                      {tutor.rating > 0 && <> · {tutor.rating.toFixed(1)}★</>}
-                    </div>
-                  </div>
-                </div>
-                <LevelBadge level={tutor.level} />
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      <TutorDirectory searchParams={params} />
     </main>
   );
-}
-
-function isValidLevel(level: string | undefined): level is 'entry' | 'established' | 'expert' {
-  return level === 'entry' || level === 'established' || level === 'expert';
 }

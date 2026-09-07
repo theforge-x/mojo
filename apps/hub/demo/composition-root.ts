@@ -18,7 +18,20 @@ import type {
 import { makeAuthenticateUser, makeRegisterUser } from '@mojo/identity/application';
 import type { TokenIssuer, User, UserRepository } from '@mojo/identity/domain';
 import { bcryptPasswordHasher } from '@mojo/identity/infrastructure';
-import type { MessageRepository } from '@mojo/messaging/domain';
+import {
+  makeListThread,
+  makeListTutorInterests,
+  makeMarkRead,
+  makeRecordInterest,
+  makeSendMessage,
+  makeThreadsFor,
+} from '@mojo/messaging/application';
+import type {
+  InterestRepository,
+  Message,
+  MessageRepository,
+  TutorInterest,
+} from '@mojo/messaging/domain';
 import type { MojoPlusRepository } from '@mojo/mojo-plus/domain';
 import { makeDispatchNotification } from '@mojo/notifications/application';
 import {
@@ -79,6 +92,7 @@ import {
   PrismaAvailabilityRepository,
   PrismaBookingRepository,
   PrismaDisputeRepository,
+  PrismaInterestRepository,
   PrismaMessageRepository,
   PrismaRecapRepository,
   PrismaReferralRepository,
@@ -98,6 +112,7 @@ import {
   InMemoryAvailabilityRepository,
   InMemoryBookingRepository,
   InMemoryDisputeRepository,
+  InMemoryInterestRepository,
   InMemoryMessageRepository,
   InMemoryMojoPlusRepository,
   InMemoryPayoutRail,
@@ -136,6 +151,7 @@ interface Repositories {
   referrals: ReferralRepository;
   disputes: DisputeRepository;
   messages: MessageRepository;
+  interests: InterestRepository;
   searchIndex: TutorSearchIndex;
   applications: ApplicationRepository;
   profiles: TutorProfileRepository;
@@ -204,12 +220,28 @@ export interface HubApp {
       photoUrl: string;
       education: string;
       subjects: readonly string[];
+      languages: readonly string[];
       bio: string;
       timezone: string;
     } | null>;
   };
   recaps: {
     latestFor(sessionId: string): Promise<LessonRecap | null>;
+  };
+  messaging: {
+    send(message: Message): Promise<void>;
+    threadBetween(participantA: string, participantB: string): Promise<Message[]>;
+    threadsFor(participantId: string): Promise<string[]>;
+    markRead(id: string, at: string): Promise<void>;
+  };
+  interests: {
+    record(input: {
+      studentId: string;
+      tutorId: string;
+      source: 'search' | 'view';
+      nowIso?: string;
+    }): Promise<void>;
+    forTutor(tutorId: string): Promise<TutorInterest[]>;
   };
   notifications: {
     log(): readonly SentNotification[];
@@ -272,6 +304,7 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
     referrals: new InMemoryReferralRepository(state),
     disputes: new InMemoryDisputeRepository(state),
     messages: new InMemoryMessageRepository(state),
+    interests: new InMemoryInterestRepository(state),
     searchIndex: new InMemoryTutorSearchIndex(state),
     applications: new InMemoryApplicationRepository(state),
     profiles: new InMemoryTutorProfileRepository(state),
@@ -310,6 +343,7 @@ function buildPrismaRepositories(state: DemoState): Repositories {
     referrals: new PrismaReferralRepository(prisma),
     disputes: new PrismaDisputeRepository(prisma),
     messages: new PrismaMessageRepository(prisma),
+    interests: new PrismaInterestRepository(prisma),
     searchIndex: new PrismaTutorSearchIndex(prisma),
     applications: new PrismaApplicationRepository(prisma),
     profiles: new PrismaTutorProfileRepository(prisma),
@@ -425,6 +459,12 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const generateRecap = makeGenerateRecap({ recaps: repos.recaps, summarizer: repos.summarizer });
   const releasePayout = makeReleasePayout({ wallets: repos.wallets, rail: repos.rail });
   const dispatchNotification = makeDispatchNotification({ dispatchers: repos.notifications });
+  const sendMessage = makeSendMessage({ messages: repos.messages });
+  const listThread = makeListThread({ messages: repos.messages });
+  const threadsFor = makeThreadsFor({ messages: repos.messages });
+  const markRead = makeMarkRead({ messages: repos.messages });
+  const recordInterest = makeRecordInterest({ interests: repos.interests });
+  const listTutorInterests = makeListTutorInterests({ interests: repos.interests });
 
   const count = (name: string) => {
     eventCounts.set(name, (eventCounts.get(name) ?? 0) + 1);
@@ -599,6 +639,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
               photoUrl: profile.photoUrl,
               education: profile.education,
               subjects: profile.subjects,
+              languages: profile.languages,
               bio: profile.bio,
               timezone: profile.timezone,
             }
@@ -607,6 +648,16 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     },
     recaps: {
       latestFor: (sessionId) => repos.recaps.findBySession(sessionId),
+    },
+    messaging: {
+      send: (message) => sendMessage(message),
+      threadBetween: (a, b) => listThread(a, b),
+      threadsFor: (participantId) => threadsFor(participantId),
+      markRead: (id, at) => markRead(id, at),
+    },
+    interests: {
+      record: (input) => recordInterest(input),
+      forTutor: (tutorId) => listTutorInterests(tutorId),
     },
     notifications: {
       log: () => state.notifications,

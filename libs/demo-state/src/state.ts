@@ -1,7 +1,7 @@
 import type { LessonRecap } from '@mojo/ai-learning/domain';
 import type { DeliveryConfirmation } from '@mojo/booking/domain';
 import type { User } from '@mojo/identity/domain';
-import type { Message } from '@mojo/messaging/domain';
+import type { Message, TutorInterest } from '@mojo/messaging/domain';
 import type { MojoPlusSubscription } from '@mojo/mojo-plus/domain';
 import type { NotificationPreferences } from '@mojo/notifications/domain';
 import type { PayoutRequest, WalletTransaction } from '@mojo/payments/domain';
@@ -68,6 +68,7 @@ export class DemoState {
   readonly referralConversions: ReferralConversion[] = [];
   readonly disputes = new Map<string, Dispute>();
   readonly messages = new Map<string, Message>();
+  readonly tutorInterests = new Map<string, TutorInterest>();
   readonly notifications: SentNotification[] = [];
   readonly notificationPreferences = new Map<string, NotificationPreferences>();
 

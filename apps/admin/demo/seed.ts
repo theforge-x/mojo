@@ -21,6 +21,12 @@ export function seedAdmin(state: AdminState, shared: ApplicationProfileStore): v
         tutorId === 't_2'
           ? ['French', 'English']
           : ['Spanish', 'Maths'].slice(tutorId === 't_3' ? 1 : 0, 1),
+      languages:
+        tutorId === 't_2'
+          ? ['English', 'French']
+          : tutorId === 't_3'
+            ? ['English']
+            : ['English', 'Spanish'],
       bio: '',
       timezone: 'Africa/Lagos',
       moderationFlagged: false,

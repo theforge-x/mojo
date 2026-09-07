@@ -30,6 +30,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
         photoUrl: application.photoUrl,
         education: application.education,
         subjects: [...application.subjects],
+        languages: [...application.languages],
         bio: application.bio,
         introVideoUrl: application.introVideoUrl,
         certifications: [...application.certifications],
@@ -43,6 +44,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
         photoUrl: application.photoUrl,
         education: application.education,
         subjects: [...application.subjects],
+        languages: [...application.languages],
         bio: application.bio,
         introVideoUrl: application.introVideoUrl,
         certifications: [...application.certifications],
@@ -60,6 +62,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
     photoUrl: string;
     education: string;
     subjects: string[];
+    languages: string[];
     bio: string;
     introVideoUrl: string;
     certifications: string[];
@@ -75,6 +78,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
       photoUrl: row.photoUrl,
       education: row.education,
       subjects: row.subjects,
+      languages: row.languages,
       bio: row.bio,
       introVideoUrl: row.introVideoUrl,
       certifications: row.certifications,
@@ -103,6 +107,7 @@ export class PrismaTutorProfileRepository implements TutorProfileRepository {
       photoUrl: row.photoUrl ?? '',
       education: row.education,
       subjects: row.subjects,
+      languages: row.languages,
       bio: row.bio,
       timezone: row.timezone,
       moderationFlagged: row.moderationFlagged,
@@ -118,6 +123,7 @@ export class PrismaTutorProfileRepository implements TutorProfileRepository {
         photoUrl: profile.photoUrl || null,
         education: profile.education,
         subjects: [...profile.subjects],
+        languages: [...profile.languages],
         bio: profile.bio,
         timezone: profile.timezone,
         moderationFlagged: profile.moderationFlagged,
@@ -127,6 +133,7 @@ export class PrismaTutorProfileRepository implements TutorProfileRepository {
         photoUrl: profile.photoUrl || null,
         education: profile.education,
         subjects: [...profile.subjects],
+        languages: [...profile.languages],
         bio: profile.bio,
         timezone: profile.timezone,
         moderationFlagged: profile.moderationFlagged,

@@ -1,13 +1,23 @@
 import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
 import type { BookingRepository, BookingSession, DeliveryConfirmation } from '@mojo/booking/domain';
 import { type DemoState, demoId } from '@mojo/demo-state';
-import type {
-  TutorSearchFilters,
-  TutorSearchIndex,
-  TutorSearchResult,
+import {
+  type AvailabilityExceptionView,
+  type AvailabilityView,
+  type AvailabilityWindowView,
+  hasAvailabilityWithin,
+  type TutorSearchFilters,
+  type TutorSearchIndex,
+  type TutorSearchResult,
+  tutorMatchesFilters,
 } from '@mojo/discovery/domain';
 import type { Role, TokenIssuer, User, UserRepository } from '@mojo/identity/domain';
-import type { Message, MessageRepository } from '@mojo/messaging/domain';
+import type {
+  InterestRepository,
+  Message,
+  MessageRepository,
+  TutorInterest,
+} from '@mojo/messaging/domain';
 import type { MojoPlusRepository, MojoPlusSubscription } from '@mojo/mojo-plus/domain';
 import type {
   PayoutRail,
@@ -355,27 +365,126 @@ export class InMemoryMessageRepository implements MessageRepository {
   async save(message: Message): Promise<void> {
     this.state.messages.set(message.id, message);
   }
+
+  async listBetween(participantA: string, participantB: string): Promise<Message[]> {
+    return [...this.state.messages.values()]
+      .filter(
+        (m) =>
+          (m.senderId === participantA && m.recipientId === participantB) ||
+          (m.senderId === participantB && m.recipientId === participantA),
+      )
+      .sort((a, b) => a.sentAt.localeCompare(b.sentAt));
+  }
+
+  async listThreadsFor(participantId: string): Promise<string[]> {
+    const partners = new Set<string>();
+    for (const message of this.state.messages.values()) {
+      if (message.senderId !== participantId) partners.add(message.senderId);
+      if (message.recipientId !== participantId) partners.add(message.recipientId);
+    }
+    return [...partners];
+  }
+
+  async markRead(id: string, at: string): Promise<void> {
+    const message = this.state.messages.get(id);
+    if (!message) return;
+    this.state.messages.set(id, { ...message, readAt: at });
+  }
+}
+
+export class InMemoryInterestRepository implements InterestRepository {
+  constructor(private readonly state: DemoState) {}
+
+  private key(studentId: string, tutorId: string): string {
+    return `${studentId}:${tutorId}`;
+  }
+
+  async find(studentId: string, tutorId: string): Promise<TutorInterest | null> {
+    return this.state.tutorInterests.get(this.key(studentId, tutorId)) ?? null;
+  }
+
+  async record(interest: TutorInterest): Promise<void> {
+    this.state.tutorInterests.set(this.key(interest.studentId, interest.tutorId), interest);
+  }
+
+  async forTutor(tutorId: string): Promise<TutorInterest[]> {
+    return [...this.state.tutorInterests.values()]
+      .filter((i) => i.tutorId === tutorId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
 }
 
 export class InMemoryTutorSearchIndex implements TutorSearchIndex {
   constructor(private readonly state: DemoState) {}
 
-  async search(_filters: TutorSearchFilters): Promise<TutorSearchResult[]> {
-    return [...this.state.profiles.values()].map((profile) => {
-      const perf = this.state.performances.get(profile.tutorId);
-      const level = perf?.level ?? 'entry';
-      return {
-        tutorId: profile.tutorId,
-        displayName: profile.displayName,
-        photoUrl: profile.photoUrl,
-        education: profile.education,
-        timezone: profile.timezone,
-        level,
-        perSegmentMinor: DEFAULT_RATE_MINOR[level],
-        rating: perf?.averageRating ?? 0,
-        responseTimeMinutesAvg: perf?.responseTimeMinutesAvg ?? 0,
-      };
-    });
+  async search(filters: TutorSearchFilters): Promise<TutorSearchResult[]> {
+    return [...this.state.profiles.values()]
+      .filter((profile) => {
+        const perf = this.state.performances.get(profile.tutorId);
+        const level = perf?.level ?? 'entry';
+        const rating = perf?.averageRating ?? 0;
+        if (
+          !tutorMatchesFilters(
+            { subjects: profile.subjects, languages: profile.languages, level, rating },
+            filters,
+          )
+        ) {
+          return false;
+        }
+        if (filters.availableWithinHours !== undefined) {
+          return hasAvailabilityWithin(
+            this.availabilityViewOf(profile.tutorId, profile.timezone),
+            filters.availableWithinHours,
+          );
+        }
+        return true;
+      })
+      .map((profile) => {
+        const perf = this.state.performances.get(profile.tutorId);
+        const level = perf?.level ?? 'entry';
+        return {
+          tutorId: profile.tutorId,
+          displayName: profile.displayName,
+          photoUrl: profile.photoUrl,
+          education: profile.education,
+          timezone: profile.timezone,
+          level,
+          perSegmentMinor: DEFAULT_RATE_MINOR[level],
+          rating: perf?.averageRating ?? 0,
+          responseTimeMinutesAvg: perf?.responseTimeMinutesAvg ?? 0,
+        };
+      });
+  }
+
+  private availabilityViewOf(tutorId: string, timezone: string): AvailabilityView {
+    const rules: AvailabilityWindowView[] = (this.state.availabilityRules.get(tutorId) ?? []).map(
+      (rule) => ({
+        weekday: rule.weekday,
+        startMinute: rule.startMinute,
+        endMinute: rule.endMinute,
+      }),
+    );
+    const exceptions: AvailabilityExceptionView[] = (
+      this.state.availabilityExceptions.get(tutorId) ?? []
+    ).map((exception) => ({
+      dateKey: exception.date,
+      kind: exception.kind,
+      startMinute: exception.startMinute,
+      endMinute: exception.endMinute,
+    }));
+    const settings = this.state.schedulingSettings.get(tutorId);
+    return {
+      timezone,
+      rules,
+      exceptions,
+      settings: settings
+        ? {
+            bufferMinutes: settings.bufferMinutes,
+            minimumNoticeMinutes: settings.minimumNoticeMinutes,
+            pausedForNewBookings: settings.pausedForNewBookings,
+          }
+        : null,
+    };
   }
 }
 

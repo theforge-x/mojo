@@ -34,6 +34,8 @@ export default async function TutorDetailPage({
   const tutor = tutors.find((t) => t.tutorId === tutorId);
   if (!tutor) notFound();
 
+  hub.interests.record({ studentId: user.id, tutorId, source: 'view' }).catch(() => {});
+
   const slots = bookableSlots(rules, settings, {
     exceptions,
     existingSessions: sessions,
@@ -44,15 +46,20 @@ export default async function TutorDetailPage({
       <div className="mb-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-display text-2xl font-bold text-headline">{tutor.displayName}</h1>
-          <SaveTutorButton
-            tutor={{
-              tutorId,
-              displayName: tutor.displayName,
-              subjects: profile?.subjects ?? [],
-              perSegmentMinor: tutor.perSegmentMinor,
-              level: tutor.level,
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <Link href={`/messages?with=${encodeURIComponent(tutorId)}`}>
+              <Button variant="outline">Message tutor</Button>
+            </Link>
+            <SaveTutorButton
+              tutor={{
+                tutorId,
+                displayName: tutor.displayName,
+                subjects: profile?.subjects ?? [],
+                perSegmentMinor: tutor.perSegmentMinor,
+                level: tutor.level,
+              }}
+            />
+          </div>
         </div>
         <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
           <Badge variant="primary">{tutor.level}</Badge>
@@ -61,6 +68,11 @@ export default async function TutorDetailPage({
         </div>
         {profile?.bio && (
           <p className="mt-3 max-w-prose text-sm text-muted-foreground">{profile.bio}</p>
+        )}
+        {profile && profile.languages.length > 0 && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Teaches in: {profile.languages.join(', ')}
+          </p>
         )}
       </div>
 

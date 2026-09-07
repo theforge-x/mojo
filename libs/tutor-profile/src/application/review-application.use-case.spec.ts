@@ -34,6 +34,7 @@ function sampleApplication(overrides: Partial<TutorApplication> = {}): TutorAppl
     photoUrl: 'https://avatars.example/adaeze.jpg',
     education: 'B.Sc. Spanish — University of Lagos',
     subjects: ['Spanish'],
+    languages: ['English', 'Spanish'],
     bio: 'Native speaker',
     introVideoUrl: 'https://ex.com/v',
     certifications: ['DELE'],
@@ -64,6 +65,7 @@ describe('reviewApplication', () => {
       photoUrl: 'https://avatars.example/adaeze.jpg',
       education: 'B.Sc. Spanish — University of Lagos',
       subjects: ['Spanish'],
+      languages: ['English', 'Spanish'],
       timezone: 'Africa/Lagos',
       bio: 'Native speaker',
     });

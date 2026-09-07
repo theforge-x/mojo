@@ -20,6 +20,7 @@ export interface TutorApplication {
   readonly photoUrl: string;
   readonly education: string;
   readonly subjects: readonly string[];
+  readonly languages: readonly string[];
   readonly bio: string;
   readonly introVideoUrl: string;
   readonly certifications: readonly string[];
@@ -35,6 +36,7 @@ export interface TutorProfile {
   readonly photoUrl: string;
   readonly education: string;
   readonly subjects: readonly string[];
+  readonly languages: readonly string[];
   readonly bio: string;
   readonly timezone: string;
   readonly moderationFlagged: boolean;

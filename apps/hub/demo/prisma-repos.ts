@@ -6,7 +6,7 @@ export { PrismaRecapRepository } from '@mojo/ai-learning/infrastructure';
 export { PrismaBookingRepository } from '@mojo/booking/infrastructure';
 export { PrismaTutorSearchIndex } from '@mojo/discovery/infrastructure';
 export { PrismaUserRepository } from '@mojo/identity/infrastructure';
-export { PrismaMessageRepository } from '@mojo/messaging/infrastructure';
+export { PrismaInterestRepository, PrismaMessageRepository } from '@mojo/messaging/infrastructure';
 export { EmailDispatcher, WhatsAppDispatcher } from '@mojo/notifications/infrastructure';
 export {
   PaystackPayoutRail,

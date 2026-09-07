@@ -58,6 +58,7 @@ function profileFromApplication(app: TutorApplication): TutorProfile {
     photoUrl: app.photoUrl,
     education: app.education,
     subjects: app.subjects,
+    languages: app.languages,
     bio: app.bio,
     timezone: app.timezone,
     moderationFlagged: false,

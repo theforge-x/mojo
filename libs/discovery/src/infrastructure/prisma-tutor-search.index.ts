@@ -1,13 +1,21 @@
 import { DEFAULT_SEGMENT_RATE_NGN } from '@mojo/pricing/domain';
 import type { PrismaClient } from '@prisma/client';
+import {
+  type AvailabilityExceptionView,
+  type AvailabilityView,
+  type AvailabilityWindowView,
+  hasAvailabilityWithin,
+} from '../domain/available-within-hours';
 import type { TutorSearchIndex } from '../domain/discovery.ports';
 import type { TutorSearchFilters, TutorSearchResult } from '../domain/discovery.types';
+import { tutorMatchesFilters } from '../domain/match-filters';
 
 /**
- * In-process search over the consolidated schema. `language` and
- * `availableWithinHours` are accepted by the domain filters but have no
- * persisted column to filter on today, so they are intentionally not applied
- * (see the data-model `[dark spots]` note).
+ * In-process search over the consolidated schema. All five domain filters —
+ * subject, level, language, minRating and availableWithinHours — are applied
+ * here; availability is resolved from the scheduling tables rather than a
+ * persisted column, so the `availableWithinHours` query is only issued when
+ * the caller asks for it.
  */
 export class PrismaTutorSearchIndex implements TutorSearchIndex {
   constructor(private readonly prisma: PrismaClient) {}
@@ -16,12 +24,73 @@ export class PrismaTutorSearchIndex implements TutorSearchIndex {
     const profiles = await this.prisma.tutorProfile.findMany();
     if (profiles.length === 0) return [];
 
+    const tutorIds = profiles.map((p) => p.tutorId);
     const performances = await this.prisma.tutorPerformance.findMany({
-      where: { tutorId: { in: profiles.map((p) => p.tutorId) } },
+      where: { tutorId: { in: tutorIds } },
     });
     const performanceByTutorId = new Map(performances.map((p) => [p.tutorId, p]));
 
-    const results: TutorSearchResult[] = profiles
+    const availabilityByTutorId = new Map<string, AvailabilityView>();
+    if (filters.availableWithinHours !== undefined) {
+      const [rules, exceptions, settings] = await Promise.all([
+        this.prisma.availabilityRule.findMany({ where: { tutorId: { in: tutorIds } } }),
+        this.prisma.availabilityException.findMany({ where: { tutorId: { in: tutorIds } } }),
+        this.prisma.schedulingSettings.findMany({ where: { tutorId: { in: tutorIds } } }),
+      ]);
+      const rulesByTutorId = groupBy(rules, (rule) => rule.tutorId);
+      const exceptionsByTutorId = groupBy(exceptions, (exception) => exception.tutorId);
+      const settingsByTutorId = new Map(settings.map((s) => [s.tutorId, s]));
+
+      for (const profile of profiles) {
+        const rawSettings = settingsByTutorId.get(profile.tutorId);
+        availabilityByTutorId.set(profile.tutorId, {
+          timezone: profile.timezone,
+          rules: (rulesByTutorId.get(profile.tutorId) ?? []).map(
+            (rule): AvailabilityWindowView => ({
+              weekday: rule.weekday,
+              startMinute: rule.startMinute,
+              endMinute: rule.endMinute,
+            }),
+          ),
+          exceptions: (exceptionsByTutorId.get(profile.tutorId) ?? []).map(
+            (exception): AvailabilityExceptionView => ({
+              dateKey: exception.date,
+              kind: exception.kind,
+              startMinute: exception.startMinute,
+              endMinute: exception.endMinute,
+            }),
+          ),
+          settings: rawSettings
+            ? {
+                bufferMinutes: rawSettings.bufferMinutes,
+                minimumNoticeMinutes: rawSettings.minimumNoticeMinutes,
+                pausedForNewBookings: rawSettings.pausedForNewBookings,
+              }
+            : null,
+        });
+      }
+    }
+
+    return profiles
+      .filter((profile) => {
+        const perf = performanceByTutorId.get(profile.tutorId);
+        const level = perf?.level ?? 'entry';
+        const rating = perf?.averageRating ?? 0;
+        if (
+          !tutorMatchesFilters(
+            { subjects: profile.subjects, languages: profile.languages, level, rating },
+            filters,
+          )
+        ) {
+          return false;
+        }
+        if (filters.availableWithinHours !== undefined) {
+          const availability = availabilityByTutorId.get(profile.tutorId);
+          if (!availability) return false;
+          return hasAvailabilityWithin(availability, filters.availableWithinHours);
+        }
+        return true;
+      })
       .map((profile) => {
         const perf = performanceByTutorId.get(profile.tutorId);
         const level = perf?.level ?? 'entry';
@@ -36,19 +105,17 @@ export class PrismaTutorSearchIndex implements TutorSearchIndex {
           rating: perf?.averageRating ?? 0,
           responseTimeMinutesAvg: perf?.responseTimeMinutesAvg ?? 0,
         };
-      })
-      .filter((r) => {
-        if (
-          filters.subject &&
-          !profiles.find((p) => p.tutorId === r.tutorId)?.subjects.includes(filters.subject)
-        ) {
-          return false;
-        }
-        if (filters.level && r.level !== filters.level) return false;
-        if (filters.minRating !== undefined && r.rating < filters.minRating) return false;
-        return true;
       });
-
-    return results;
   }
+}
+
+function groupBy<T, K extends string>(items: readonly T[], key: (item: T) => K): Map<K, T[]> {
+  const grouped = new Map<K, T[]>();
+  for (const item of items) {
+    const k = key(item);
+    const bucket = grouped.get(k);
+    if (bucket) bucket.push(item);
+    else grouped.set(k, [item]);
+  }
+  return grouped;
 }

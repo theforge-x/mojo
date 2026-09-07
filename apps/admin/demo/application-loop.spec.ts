@@ -11,6 +11,7 @@ function pendingApplication(prefix: string): TutorApplication {
     photoUrl: '',
     education: 'M.Sc. — Test University',
     subjects: ['Maths'],
+    languages: ['English'],
     bio: 'A short but genuinely useful intro that clears the character bar.',
     introVideoUrl: '',
     certifications: [],

@@ -25,6 +25,7 @@ export function seedDemoApplications(store: { applications: Map<string, TutorApp
             ? 'Diploma in Guitar — FAAN Academy'
             : 'M.Sc. Mathematics — OAU',
       subjects: index === 0 ? ['Spanish'] : index === 1 ? ['Guitar'] : ['Maths'],
+      languages: index === 0 ? ['English', 'Spanish'] : index === 1 ? ['English'] : ['English'],
       bio:
         index === 0
           ? 'Native speaker with 6 years of online teaching.'
