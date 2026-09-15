@@ -119,6 +119,9 @@ export function getAdmin(): AdminApp {
         '',
       )
     : '';
+  const bridgeSecret =
+    process.env.INTERNAL_BRIDGE_SECRET ?? (isDemoMode ? 'demo-bridge-dev-only' : '');
+  const bridgeHeaders = bridgeSecret ? { 'x-mojo-bridge': bridgeSecret } : undefined;
 
   const app: AdminApp = {
     isDemoMode,
@@ -131,7 +134,9 @@ export function getAdmin(): AdminApp {
         // store when the hub isn't running so the admin app stays usable.
         const fallback = () => applications.list();
         try {
-          const response = await fetch(`${hubBaseUrl}/api/applications`);
+          const response = await fetch(`${hubBaseUrl}/api/applications`, {
+            headers: bridgeHeaders,
+          });
           if (!response.ok) return fallback();
           const data = (await response.json()) as { applications?: unknown };
           if (!Array.isArray(data.applications)) return fallback();
@@ -153,7 +158,7 @@ export function getAdmin(): AdminApp {
         try {
           const response = await fetch(`${hubBaseUrl}/api/applications/${applicationId}/review`, {
             method: 'POST',
-            headers: { 'content-type': 'application/json' },
+            headers: { 'content-type': 'application/json', ...bridgeHeaders },
             body: JSON.stringify({ decision }),
           });
           const data = await response.json();

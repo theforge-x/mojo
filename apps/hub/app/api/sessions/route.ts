@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
+import { requireRole } from '../../../lib/session';
 import { getHub } from '../../../demo/composition-root';
 
 export async function POST(request: Request) {
+  const user = await requireRole('student');
+  if (!user) {
+    return NextResponse.json({ ok: false, error: 'Student sign-in required.' }, { status: 401 });
+  }
+
   const body = await request.json().catch(() => ({}));
   const tutorId = typeof body.tutorId === 'string' ? body.tutorId : '';
-  const studentId = typeof body.studentId === 'string' ? body.studentId : '';
   const startIso = typeof body.startIso === 'string' ? body.startIso : '';
   const endIso = typeof body.endIso === 'string' ? body.endIso : '';
   const isTrial = body.isTrial === true;
@@ -13,7 +18,7 @@ export async function POST(request: Request) {
     const session = await getHub().scheduling.book({
       sessionId: crypto.randomUUID(),
       tutorId,
-      studentId,
+      studentId: user.id,
       startIso,
       endIso,
       isTrial,

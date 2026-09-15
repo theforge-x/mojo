@@ -4,6 +4,7 @@ import { WeakPasswordError } from '@mojo/identity/application';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getHub } from '../demo/composition-root';
+import { sessionCookieOptions } from './session';
 
 export async function loginWithDemo(input: {
   email: string;
@@ -12,10 +13,11 @@ export async function loginWithDemo(input: {
   const { token, role, user } = await getHub().identity.authenticate(input.email, input.password);
 
   const store = await cookies();
-  store.set('mojo_user', token, { httpOnly: true, sameSite: 'lax', path: '/' });
-  store.set('mojo_role', role, { httpOnly: true, sameSite: 'lax', path: '/' });
+  const options = sessionCookieOptions();
+  store.set('mojo_user', token, options);
+  store.set('mojo_role', role, options);
 
-  return { redirectTo: user.role === 'tutor' ? '/tutor' : '/' };
+  return { redirectTo: user.role === 'admin' ? '/tutors' : user.role === 'tutor' ? '/tutor' : '/' };
 }
 
 export async function logout(): Promise<void> {
@@ -43,8 +45,9 @@ export async function signupWithDemo(input: {
 
     const { token, role, user } = await getHub().identity.authenticate(input.email, input.password);
     const store = await cookies();
-    store.set('mojo_user', token, { httpOnly: true, sameSite: 'lax', path: '/' });
-    store.set('mojo_role', role, { httpOnly: true, sameSite: 'lax', path: '/' });
+    const options = sessionCookieOptions();
+    store.set('mojo_user', token, options);
+    store.set('mojo_role', role, options);
 
     return { redirectTo: user.role === 'tutor' ? '/tutor' : '/' };
   } catch (error) {

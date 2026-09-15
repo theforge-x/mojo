@@ -3,6 +3,8 @@ import type { Weekday } from '@mojo/scheduling/domain';
 import { isValidTimezone } from '@mojo/shared/util';
 import type { AvailabilityWindow } from '@mojo/tutor-profile/domain';
 import { type NextRequest, NextResponse } from 'next/server';
+import { isBridgeRequest } from '../../../lib/bridge';
+import { sessionCookieOptions } from '../../../lib/session';
 import { getHub } from '../../../demo/composition-root';
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -218,8 +220,9 @@ export async function POST(request: NextRequest) {
       { ok: true, applicationId: application.id, createdAccount: true },
       { status: 201 },
     );
-    response.cookies.set('mojo_user', sessionToken, { httpOnly: true, sameSite: 'lax', path: '/' });
-    response.cookies.set('mojo_role', role, { httpOnly: true, sameSite: 'lax', path: '/' });
+    const options = sessionCookieOptions();
+    response.cookies.set('mojo_user', sessionToken, options);
+    response.cookies.set('mojo_role', role, options);
     return response;
   }
 
@@ -229,8 +232,18 @@ export async function POST(request: NextRequest) {
   );
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const hub = getHub();
+  // Closed endpoint: the admin console reads the queue either as a signed-in
+  // admin or via the server-to-server demo bridge (`x-mojo-bridge`). The
+  // previous open dump exposed applicant PII to anyone.
+  if (!isBridgeRequest(request)) {
+    const token = request.cookies.get('mojo_user')?.value;
+    const user = token ? await hub.identity.userByToken(token) : null;
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ ok: false, error: 'Admin sign-in required.' }, { status: 401 });
+    }
+  }
   const applications = await hub.profile.applications();
   return NextResponse.json({
     ok: true,

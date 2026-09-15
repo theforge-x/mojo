@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sessionCookieOptions } from '../../../../lib/session';
 import { getHub } from '../../../../demo/composition-root';
 
 export async function POST(request: Request) {
@@ -15,8 +16,9 @@ export async function POST(request: Request) {
       user: { id: user.id, email: user.email, role },
     });
 
-    response.cookies.set('mojo_user', token, { httpOnly: true, sameSite: 'lax', path: '/' });
-    response.cookies.set('mojo_role', role, { httpOnly: true, sameSite: 'lax', path: '/' });
+    const options = sessionCookieOptions();
+    response.cookies.set('mojo_user', token, options);
+    response.cookies.set('mojo_role', role, options);
 
     return response;
   } catch (error) {

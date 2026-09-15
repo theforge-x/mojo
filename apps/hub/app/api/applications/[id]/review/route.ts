@@ -1,10 +1,21 @@
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
+import { isBridgeRequest } from '../../../../../lib/bridge';
 import { getHub } from '../../../../../demo/composition-root';
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
   const hub = getHub();
+
+  // Closed endpoint: only a signed-in admin or the server-to-server demo
+  // bridge may approve/reject. Previously anyone could call this.
+  if (!isBridgeRequest(request)) {
+    const token = request.cookies.get('mojo_user')?.value;
+    const user = token ? await hub.identity.userByToken(token) : null;
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json({ ok: false, error: 'Admin sign-in required.' }, { status: 401 });
+    }
+  }
 
   try {
     const decision = body.decision;

@@ -75,7 +75,7 @@ export class InMemoryUserRepository implements UserRepository {
 export class MemTokenIssuer implements TokenIssuer {
   async issue(userId: string): Promise<{ token: string; expiresAt: string }> {
     return {
-      token: `demo-${userId}-${Math.random().toString(36).slice(2)}`,
+      token: `demo-${userId}-${crypto.randomUUID().replace(/-/g, '')}`,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
   }

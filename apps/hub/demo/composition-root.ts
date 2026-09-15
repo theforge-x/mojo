@@ -421,11 +421,13 @@ function inMemoryDispatchers(
 function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): HubApp {
   // Demo client records issued tokens so a session cookie can be resolved
   // back to its user without trusting an opaque token as a primary key.
-  const issuedTokens = new Map<string, string>();
+  // The map also enforces expiry — tokens minted with `expiresAt` stop
+  // resolving once past it, instead of living forever.
+  const issuedTokens = new Map<string, { userId: string; expiresAt: string }>();
   const tokens: TokenIssuer = {
     issue: async (userId: string) => {
       const issued = await repos.tokens.issue(userId);
-      issuedTokens.set(issued.token, userId);
+      issuedTokens.set(issued.token, { userId, expiresAt: issued.expiresAt });
       return issued;
     },
   };
@@ -548,18 +550,27 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     identity: {
       userById: (id) => repos.users.findById(id),
       userByToken: async (token) => {
-        // MemTokenIssuer mints `demo-<userId>-<nonce>`; the issued-tokens map
-        // below is a per-module-instance cache, so it can't be the only way to
-        // resolve a cookie (Next compiles pages/route-handlers into separate
-        // bundles, and the map resets on restart). Parse the embedded user id
-        // deterministically as the resilient fallback.
+        // The issued-tokens map is a per-module-instance cache, so it can't
+        // be the only way to resolve a cookie (Next compiles pages and
+        // route-handlers into separate bundles, and the map resets on
+        // restart). Parse the embedded user id deterministically as the
+        // resilient fallback. Either way the role always comes from the
+        // stored user — never from a client-writable cookie.
         const mapped = issuedTokens.get(token);
-        if (mapped) return repos.users.findById(mapped);
+        if (mapped) {
+          if (Date.parse(mapped.expiresAt) < Date.now()) {
+            issuedTokens.delete(token);
+            return null;
+          }
+          const user = await repos.users.findById(mapped.userId);
+          if (!user || user.suspendedAt) return null;
+          return user;
+        }
         if (token.startsWith('demo-')) {
           const embedded = token.slice('demo-'.length).split('-')[0];
           if (embedded) {
             const user = await repos.users.findById(embedded);
-            if (user) return user;
+            if (user && !user.suspendedAt) return user;
           }
         }
         return null;
