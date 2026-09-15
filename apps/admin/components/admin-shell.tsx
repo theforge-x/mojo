@@ -247,7 +247,14 @@ const QUICK_ACTIONS: { title: string; url: string }[] = [
   { title: 'Admin settings', url: '/settings' },
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({
+  children,
+  adminEmail,
+}: {
+  children: React.ReactNode;
+  adminEmail?: string | null;
+}) {
+  const displayName = adminEmail ?? 'Nexus Admin';
   return (
     <SidebarProvider>
       <Sidebar variant="floating" collapsible="icon">
@@ -349,14 +356,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <DashboardHeader />
+        <DashboardHeader displayName={displayName} />
         <div className="flex-1 p-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
 }
 
-function DashboardHeader() {
+function DashboardHeader({ displayName }: { displayName: string }) {
   return (
     <header className="sticky top-3 flex h-12 shrink-0 items-center gap-2 bg-background/90 px-4 backdrop-blur sm:px-6">
       <SidebarTrigger className="text-muted-foreground" />
@@ -365,9 +372,9 @@ function DashboardHeader() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="gap-2 px-1 rounded-full">
-            <Avatar name="Nexus Admin" size="sm" />
+            <Avatar name={displayName} size="sm" />
             <span className="hidden max-w-32 truncate text-sm font-medium sm:inline">
-              Nexus Admin
+              {displayName}
             </span>
             <ChevronDown className="hidden size-4 text-muted-foreground sm:inline" />
           </Button>
@@ -375,7 +382,7 @@ function DashboardHeader() {
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>
             <div className="flex flex-col space-y-1">
-              <span className="truncate text-sm font-semibold">Nexus Admin</span>
+              <span className="truncate text-sm font-semibold">{displayName}</span>
               <span className="truncate text-xs font-normal capitalize text-muted-foreground">
                 admin
               </span>
@@ -395,7 +402,13 @@ function DashboardHeader() {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' });
+              window.location.href = '/login';
+            }}
+          >
             <LogOut className="size-4" />
             Log out
           </DropdownMenuItem>

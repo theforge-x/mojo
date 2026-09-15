@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAdmin } from '../../../demo/composition-root';
+import { requireAdmin } from '../../../lib/session';
 
 export async function POST(request: Request) {
+  const adminUser = await requireAdmin();
+  if (!adminUser) {
+    return NextResponse.json({ ok: false, error: 'Admin sign-in required.' }, { status: 401 });
+  }
   const body = await request.json().catch(() => ({}));
   const sessionId = typeof body.sessionId === 'string' ? body.sessionId : '';
   const filedBy = body.filedBy === 'tutor' ? 'tutor' : 'student';

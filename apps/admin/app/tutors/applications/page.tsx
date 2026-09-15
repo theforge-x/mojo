@@ -12,8 +12,12 @@ import {
 import type { TutorApplication } from '@mojo/tutor-profile/domain';
 import { ReviewButtons } from '../../../components/review-buttons';
 import { getAdmin } from '../../../demo/composition-root';
+import { redirect } from 'next/navigation';
+import { requireAdmin } from '../../../lib/session';
 
 export default async function ApplicationQueuePage() {
+  const adminUser = await requireAdmin();
+  if (!adminUser) redirect('/login');
   const admin = getAdmin();
   const applications = await admin.applications.list();
 

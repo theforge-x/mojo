@@ -1,10 +1,14 @@
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { FlagToggle } from '../../components/flag-toggle';
 import { getAdmin } from '../../demo/composition-root';
 import { formatMinor } from '../../lib/format';
+import { requireAdmin } from '../../lib/session';
 
 export default async function AdminNexus() {
+  const adminUser = await requireAdmin();
+  if (!adminUser) redirect('/login');
   const admin = getAdmin();
   const [metrics, leaderboard, flags, disputes, reviews, log] = await Promise.all([
     admin.analytics.metrics(),

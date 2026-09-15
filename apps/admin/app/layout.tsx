@@ -3,6 +3,7 @@ import { DM_Mono, DM_Sans, Manrope } from 'next/font/google';
 import '../../../libs/shared/ui/src/styles/globals.css';
 import { ThemeProvider } from '@mojo/shared/ui';
 import { AdminShell } from '../components/admin-shell';
+import { currentAdmin } from '../lib/session';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -24,7 +25,8 @@ export const metadata: Metadata = {
   icons: { icon: '/logo.svg', apple: '/logo.svg' },
 };
 
-export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminRootLayout({ children }: { children: React.ReactNode }) {
+  const admin = await currentAdmin();
   return (
     <html
       lang="en"
@@ -33,7 +35,7 @@ export default function AdminRootLayout({ children }: { children: React.ReactNod
     >
       <body>
         <ThemeProvider>
-          <AdminShell>{children}</AdminShell>
+          <AdminShell adminEmail={admin?.email ?? null}>{children}</AdminShell>
         </ThemeProvider>
       </body>
     </html>

@@ -1,8 +1,12 @@
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import { redirect } from 'next/navigation';
 import { FileDisputeForm } from '../../../components/file-dispute-form';
 import { getAdmin } from '../../../demo/composition-root';
+import { requireAdmin } from '../../../lib/session';
 
 export default async function DisputesPage() {
+  const adminUser = await requireAdmin();
+  if (!adminUser) redirect('/login');
   const disputes = getAdmin().disputes.list();
 
   return (
