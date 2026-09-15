@@ -18,6 +18,8 @@ export function SaveTutorButton({ tutor }: SaveTutorButtonProps) {
       type="button"
       variant={isSaved ? 'secondary' : 'outline'}
       size="sm"
+      aria-pressed={isSaved}
+      aria-label={isSaved ? `Unsave ${tutor.displayName}` : `Save tutor ${tutor.displayName}`}
       onClick={() => toggleSaved(tutor)}
     >
       {isSaved ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}

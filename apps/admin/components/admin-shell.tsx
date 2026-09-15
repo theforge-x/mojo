@@ -87,7 +87,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
             url: '#',
           },
           {
-            title: 'suspensions/appeals',
+            title: 'suspensions',
             url: '#',
           },
         ],
@@ -102,7 +102,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
             url: '#',
           },
           {
-            title: 'Suspensions & appeals',
+            title: 'Suspensions',
             url: '#',
           },
         ],
@@ -144,7 +144,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
             url: '#',
           },
           {
-            title: 'Mupta+ config',
+            title: 'Mojo+ config',
             url: '#',
           },
           {
@@ -159,7 +159,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
         icon: University,
         items: [
           {
-            title: 'Subjects',
+            title: 'Subjects & languages',
             url: '#',
           },
           {
@@ -195,7 +195,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
             url: '#',
           },
           {
-            title: 'Retention & cohorts',
+            title: 'Retention',
             url: '#',
           },
         ],
@@ -206,7 +206,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
         icon: ShieldCheck,
         items: [
           {
-            title: 'Admin roles & permissions',
+            title: 'Roles & permissions',
             url: '#',
           },
           {

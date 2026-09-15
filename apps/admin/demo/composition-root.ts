@@ -124,19 +124,18 @@ export function getAdmin(): AdminApp {
     isDemoMode,
     admin: state.users.get('u_admin') ?? null,
     applications: {
-      list: () => {
+      list: async () => {
         if (!hubBaseUrl) return applications.list();
         // The hub is the system of record for applications in the demo loop —
         // the admin list is whatever the hub has. Falls back to the shared
         // store when the hub isn't running so the admin app stays usable.
         const fallback = () => applications.list();
         try {
-          return fetch(`${hubBaseUrl}/api/applications`).then(async (response) => {
-            if (!response.ok) return fallback();
-            const data = (await response.json()) as { applications?: unknown };
-            if (!Array.isArray(data.applications)) return fallback();
-            return data.applications as TutorApplication[];
-          });
+          const response = await fetch(`${hubBaseUrl}/api/applications`);
+          if (!response.ok) return fallback();
+          const data = (await response.json()) as { applications?: unknown };
+          if (!Array.isArray(data.applications)) return fallback();
+          return data.applications as TutorApplication[];
         } catch {
           return fallback();
         }

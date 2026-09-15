@@ -37,8 +37,8 @@
   --accent-foreground: #00214d;
   --destructive: #ff5470;
   --destructive-foreground: #fffffe;
-  --border: color-mix(in oklab, #00214d 12%, #fffffe);
-  --input: color-mix(in oklab, #00214d 16%, #fffffe);
+  --border: color-mix(in oklab, #00214d 8%, #fffffe);
+  --input: color-mix(in oklab, #00214d 10%, #fffffe);
   --ring: #00ebc7;
   --radius: 0.75rem;
   --sidebar: #fffffe;
@@ -77,8 +77,8 @@
   --accent-foreground: #fffffe;
   --destructive: #ff5470;
   --destructive-foreground: #fffffe;
-  --border: color-mix(in oklab, #fffffe 14%, transparent);
-  --input: color-mix(in oklab, #fffffe 22%, transparent);
+  --border: color-mix(in oklab, #fffffe 10%, transparent);
+  --input: color-mix(in oklab, #fffffe 12%, transparent);
   --ring: #00ebc7;
   --sidebar: #001534;
   --sidebar-foreground: color-mix(in oklab, #fffffe 88%, #001534);

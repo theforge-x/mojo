@@ -1,6 +1,6 @@
 'use client';
 
-import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { ThemeProvider as NextThemesProvider } from '@teispace/next-themes';
 
 /**
  * Class-strategy theme provider on top of next-themes: toggling writes a

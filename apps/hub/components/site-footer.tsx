@@ -179,7 +179,7 @@ export function SiteFooter({ user }: { user: SiteHeaderUser }) {
           <span className="text-xs">Learn live. Tutoring for real life.</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} mojo · Made in Lagos
+          &copy; {new Date().getFullYear()} mojo · Made in Nigeria
         </p>
       </div>
     </footer>

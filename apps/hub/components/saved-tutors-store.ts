@@ -11,15 +11,29 @@ export interface SavedTutor {
 const STORAGE_KEY = 'mojo.savedTutors';
 const UPDATED_EVENT = 'saved-tutors-updated';
 
-export function readSaved(): SavedTutor[] {
-  if (typeof window === 'undefined') return [];
+let cachedSnapshot: SavedTutor[] = [];
+let lastRaw: string | null = null;
+
+function readRaw(): string | null {
+  if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? (parsed as SavedTutor[]) : [];
+    return window.localStorage.getItem(STORAGE_KEY);
   } catch {
-    return [];
+    return null;
   }
+}
+
+export function readSaved(): SavedTutor[] {
+  const raw = readRaw();
+  if (raw === lastRaw) return cachedSnapshot;
+  lastRaw = raw;
+  try {
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    cachedSnapshot = Array.isArray(parsed) ? (parsed as SavedTutor[]) : [];
+  } catch {
+    cachedSnapshot = [];
+  }
+  return cachedSnapshot;
 }
 
 export function writeSaved(list: SavedTutor[]): void {
