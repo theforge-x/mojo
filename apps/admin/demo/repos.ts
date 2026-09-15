@@ -99,6 +99,12 @@ export class InMemoryReviewRepository implements ReviewRepository {
     return null;
   }
 
+  async listByTutor(tutorId: string): Promise<Review[]> {
+    return [...this.state.reviews.values()]
+      .filter((r) => r.tutorId === tutorId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
   async save(review: Review): Promise<void> {
     this.state.reviews.set(review.id, review);
   }

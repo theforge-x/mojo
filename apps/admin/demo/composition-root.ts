@@ -8,7 +8,7 @@ import { makeBuildLeaderboard, makeComputePlatformMetrics } from '@mojo/analytic
 import type { PlatformMetrics, TutorLeaderboardEntry } from '@mojo/analytics/domain';
 import { clearSharedDemoState, sharedDemoState } from '@mojo/demo-state';
 import type { Review } from '@mojo/reviews/domain';
-import { makeFileDispute } from '@mojo/trust-safety/application';
+import { makeFileDispute, makeResolveDispute } from '@mojo/trust-safety/application';
 import type { Dispute } from '@mojo/trust-safety/domain';
 import { makeReviewApplication } from '@mojo/tutor-profile/application';
 import type {
@@ -57,6 +57,7 @@ export interface AdminApp {
   disputes: {
     list(): Promise<Dispute[]>;
     file(input: { sessionId: string; filedBy: string; reason: string }): Promise<void>;
+    resolve(input: { disputeId: string; outcome: 'upheld' | 'dismissed' }): Promise<void>;
   };
   analytics: {
     metrics(): Promise<PlatformMetrics>;
@@ -107,6 +108,7 @@ export function getAdmin(): AdminApp {
 
   const reviewApplication = makeReviewApplication({ applications, profiles });
   const fileDispute = makeFileDispute({ disputes });
+  const resolveDispute = makeResolveDispute({ disputes });
   const computePlatformMetrics = makeComputePlatformMetrics({ analytics });
   const buildLeaderboard = makeBuildLeaderboard({ analytics });
   const setFeatureFlag = makeSetFeatureFlag({ flags });
@@ -223,6 +225,10 @@ export function getAdmin(): AdminApp {
           resolvedAt: null,
         });
         audit('dispute.filed', sessionId);
+      },
+      resolve: async ({ disputeId, outcome }) => {
+        await resolveDispute({ disputeId, outcome, nowIso: new Date().toISOString() });
+        audit(`dispute.${outcome}`, disputeId);
       },
     },
     analytics: {

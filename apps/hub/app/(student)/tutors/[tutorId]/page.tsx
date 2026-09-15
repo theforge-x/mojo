@@ -24,12 +24,13 @@ export default async function TutorDetailPage({
   const todayKey = tutorLocalTime(new Date().toISOString(), settings.timezone).dateKey;
   const weekEndKey = dateKeyPlus(todayKey, 7);
 
-  const [tutors, rules, sessions, exceptions, profile] = await Promise.all([
+  const [tutors, rules, sessions, exceptions, profile, tutorReviews] = await Promise.all([
     hub.discovery.search({}),
     hub.scheduling.availabilityRules(tutorId),
     hub.scheduling.sessionsByTutor(tutorId),
     hub.scheduling.exceptions(tutorId, todayKey, weekEndKey),
     hub.profile.byTutor(tutorId),
+    hub.reviews.forTutor(tutorId),
   ]);
   const tutor = tutors.find((t) => t.tutorId === tutorId);
   if (!tutor) notFound();
@@ -117,6 +118,27 @@ export default async function TutorDetailPage({
         Slots shown respect this tutor&apos;s weekly availability and minimum-notice window. Booking
         is verified again by the scheduling domain before it&apos;s confirmed.
       </p>
+
+      <h2 className="mb-3 mt-8 font-display text-lg font-bold text-headline">
+        Reviews ({tutorReviews.length})
+      </h2>
+      {tutorReviews.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No reviews yet.</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {tutorReviews.slice(0, 10).map((review) => (
+            <Card key={review.id}>
+              <CardContent className="py-4">
+                <p className="text-sm font-medium">{'★'.repeat(review.rating)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{review.body}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {new Date(review.createdAt).toLocaleDateString()}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
       <Link href="/tutors" className="mt-2 inline-block">
         <Button variant="outline" size="sm">
           Back to tutors

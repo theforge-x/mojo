@@ -1,6 +1,6 @@
 import { makeGenerateRecap } from '@mojo/ai-learning/application';
 import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
-import { type ConfirmDeliveryInput, makeConfirmDelivery } from '@mojo/booking/application';
+import { type ConfirmDeliveryInput, makeConfirmDelivery, makeMarkNoShow } from '@mojo/booking/application';
 import type { BookingRepository } from '@mojo/booking/domain';
 import {
   clearSharedDemoState,
@@ -50,7 +50,8 @@ import type { PayoutRail, WalletRepository } from '@mojo/payments/domain';
 import { makeRecordSessionCompletion } from '@mojo/pricing/application';
 import { DEFAULT_SEGMENT_RATE_NGN, type TutorLevelReader } from '@mojo/pricing/domain';
 import type { ReferralRepository } from '@mojo/referrals/domain';
-import type { ReviewRepository } from '@mojo/reviews/domain';
+import { makeSubmitReview } from '@mojo/reviews/application';
+import type { Review, ReviewRepository } from '@mojo/reviews/domain';
 import {
   type BookSessionInput,
   type CancelSessionInput,
@@ -205,6 +206,7 @@ export interface HubApp {
   };
   booking: {
     confirmDelivery(input: ConfirmDeliveryInput): Promise<void>;
+    markNoShow(sessionId: string, by: 'student' | 'tutor', nowIso: string): Promise<void>;
   };
   discovery: {
     search(filters: TutorSearchFilters): Promise<TutorSearchResult[]>;
@@ -237,6 +239,11 @@ export interface HubApp {
   };
   recaps: {
     latestFor(sessionId: string): Promise<LessonRecap | null>;
+  };
+  reviews: {
+    submit(review: Review): Promise<void>;
+    reviewForSession(sessionId: string): Promise<Review | null>;
+    forTutor(tutorId: string): Promise<Review[]>;
   };
   messaging: {
     send(message: Message): Promise<void>;
@@ -471,6 +478,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       },
     },
   });
+  const markNoShow = makeMarkNoShow({ bookings: repos.bookings });
   const searchTutors = makeSearchTutors({ index: repos.searchIndex });
   const submitApplication = makeSubmitApplication({ applications: repos.applications });
   const reviewApplication = makeReviewApplication({
@@ -480,6 +488,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const recordSessionCompletion = makeRecordSessionCompletion(repos.levels);
   const recomputeLevel = makeRecomputeLevel({ performances: repos.performances });
   const generateRecap = makeGenerateRecap({ recaps: repos.recaps, summarizer: repos.summarizer });
+  const submitReview = makeSubmitReview({ reviews: repos.reviews });
   const releasePayout = makeReleasePayout({ wallets: repos.wallets, rail: repos.rail });
   const dispatchNotification = makeDispatchNotification({ dispatchers: repos.notifications });
   const sendMessage = makeSendMessage({ messages: repos.messages });
@@ -649,6 +658,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     },
     booking: {
       confirmDelivery: (input) => confirmDelivery(input),
+      markNoShow: (sessionId, by, nowIso) => markNoShow({ sessionId, by, nowIso }),
     },
     discovery: {
       search: (filters) => searchTutors(filters),
@@ -689,6 +699,11 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     },
     recaps: {
       latestFor: (sessionId) => repos.recaps.findBySession(sessionId),
+    },
+    reviews: {
+      submit: (review) => submitReview(review),
+      reviewForSession: (sessionId) => repos.reviews.findBySession(sessionId),
+      forTutor: (tutorId) => repos.reviews.listByTutor(tutorId),
     },
     messaging: {
       send: (message) => sendMessage(message),

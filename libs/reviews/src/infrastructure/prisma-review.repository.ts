@@ -39,6 +39,14 @@ export class PrismaReviewRepository implements ReviewRepository {
     return rows.map((row) => this.toDomain(row));
   }
 
+  async listByTutor(tutorId: string): Promise<Review[]> {
+    const rows = await this.prisma.review.findMany({
+      where: { tutorId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((row) => this.toDomain(row));
+  }
+
   private toDomain(row: {
     id: string;
     sessionId: string;

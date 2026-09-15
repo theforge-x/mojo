@@ -1,6 +1,7 @@
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import { redirect } from 'next/navigation';
 import { FileDisputeForm } from '../../../components/file-dispute-form';
+import { ResolveDisputeButtons } from '../../../components/resolve-dispute-buttons';
 import { getAdmin } from '../../../demo/composition-root';
 import { requireAdmin } from '../../../lib/session';
 
@@ -42,17 +43,20 @@ export default async function DisputesPage() {
                   )}
                 </p>
               </div>
-              <Badge
-                variant={
-                  dispute.status === 'open'
-                    ? 'tertiary'
-                    : dispute.status === 'upheld'
-                      ? 'primary'
-                      : 'muted'
-                }
-              >
-                {dispute.status}
-              </Badge>
+              <div className="flex items-center gap-3">
+                <Badge
+                  variant={
+                    dispute.status === 'open'
+                      ? 'tertiary'
+                      : dispute.status === 'upheld'
+                        ? 'primary'
+                        : 'muted'
+                  }
+                >
+                  {dispute.status}
+                </Badge>
+                {dispute.status === 'open' && <ResolveDisputeButtons disputeId={dispute.id} />}
+              </div>
             </CardContent>
           </Card>
         ))}

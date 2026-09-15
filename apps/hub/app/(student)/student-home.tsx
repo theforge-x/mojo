@@ -11,6 +11,7 @@ import {
 } from '@mojo/shared/ui';
 import Link from 'next/link';
 import { CancelSessionButton, ConfirmDeliveryButton } from '../../components/session-actions';
+import { RecapCard, RescheduleForm, ReviewForm } from '../../components/session-feedback';
 import { SessionStatusBadge } from '../../components/session-status-badge';
 import { getHub } from '../../demo/composition-root';
 import { formatWhen } from '../../lib/format';
@@ -76,17 +77,32 @@ export async function StudentHome() {
         <div className="flex flex-col gap-3">
           {(
             await Promise.all(
-              sessions.map(async (session) => ({ session, tutor: await label(session.tutorId) })),
+              sessions.map(async (session) => ({
+                session,
+                tutor: await label(session.tutorId),
+                review:
+                  session.status === 'completed'
+                    ? await hub.reviews.reviewForSession(session.id)
+                    : null,
+                recap:
+                  session.status === 'completed'
+                    ? await hub.recaps.latestFor(session.id)
+                    : null,
+              })),
             )
-          ).map(({ session, tutor }) => (
+          ).map(({ session, tutor, review, recap }) => (
             <Card key={session.id}>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
                 <div>
                   <div className="text-sm">
                     {tutor} · {formatWhen(session.startIso, session.endIso)}
                   </div>
-                  {session.status === 'completed' && (
+                  {session.status === 'completed' && !review && (
                     <p className="text-xs text-muted-foreground">Done — deliver the review.</p>
+                  )}
+                  {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
+                  {session.status === 'completed' && !review && (
+                    <ReviewForm sessionId={session.id} />
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -104,6 +120,7 @@ export async function StudentHome() {
                   {(session.status === 'booked' || session.status === 'confirmed') && (
                     <CancelSessionButton sessionId={session.id} />
                   )}
+                  {session.status === 'booked' && <RescheduleForm sessionId={session.id} />}
                 </div>
               </CardContent>
             </Card>
