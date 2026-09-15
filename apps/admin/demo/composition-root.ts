@@ -16,8 +16,8 @@ import type {
   TutorApplication,
   TutorProfileRepository,
 } from '@mojo/tutor-profile/domain';
-import { PrismaClient } from '@prisma/client';
 import { PrismaApplicationRepository, PrismaTutorProfileRepository } from './prisma-repos';
+import { sharedAdminPrismaClient } from './prisma-client';
 import {
   type ApplicationProfileStore,
   InMemoryAnalyticsRepository,
@@ -136,6 +136,7 @@ export function getAdmin(): AdminApp {
         try {
           const response = await fetch(`${hubBaseUrl}/api/applications`, {
             headers: bridgeHeaders,
+            signal: AbortSignal.timeout(5000),
           });
           if (!response.ok) return fallback();
           const data = (await response.json()) as { applications?: unknown };
@@ -155,22 +156,18 @@ export function getAdmin(): AdminApp {
           audit(`application.${decision}`, applicationId);
           return updated;
         }
+        let response: Response;
         try {
-          const response = await fetch(`${hubBaseUrl}/api/applications/${applicationId}/review`, {
+          response = await fetch(`${hubBaseUrl}/api/applications/${applicationId}/review`, {
             method: 'POST',
             headers: { 'content-type': 'application/json', ...bridgeHeaders },
             body: JSON.stringify({ decision }),
+            signal: AbortSignal.timeout(5000),
           });
-          const data = await response.json();
-          if (!response.ok) {
-            throw new Error(
-              typeof data?.error === 'string' ? data.error : 'The hub rejected this review.',
-            );
-          }
-          audit(`application.${decision}`, applicationId);
-          return data.application as TutorApplication;
         } catch {
-          // Fall back to the shared store when the hub is unreachable.
+          // Hub unreachable — fall back to the shared store so the admin app
+          // stays usable in the demo. Hub rejections (!ok) below never fall
+          // back: writing locally after the hub refused would double-apply.
           const updated = await reviewApplication({
             applicationId,
             decision,
@@ -179,6 +176,16 @@ export function getAdmin(): AdminApp {
           audit(`application.${decision}`, applicationId);
           return updated;
         }
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(
+            typeof (data as { error?: unknown })?.error === 'string'
+              ? (data as { error: string }).error
+              : 'The hub rejected this review.',
+          );
+        }
+        audit(`application.${decision}`, applicationId);
+        return (data as { application: TutorApplication }).application;
       },
     },
     profiles: {
@@ -245,7 +252,7 @@ function buildApplicationProfileRepos(
       profiles: new InMemoryTutorProfileRepository(shared),
     };
   }
-  const prisma = new PrismaClient();
+  const prisma = sharedAdminPrismaClient();
   return {
     applications: new PrismaApplicationRepository(prisma),
     profiles: new PrismaTutorProfileRepository(prisma),

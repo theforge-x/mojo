@@ -45,6 +45,10 @@ export const mojoAliases: Record<string, string> = {
   ),
   '@mojo/mojo-plus/domain': path.resolve(repoRoot, 'libs/mojo-plus/src/domain/index.ts'),
   '@mojo/mojo-plus/application': path.resolve(repoRoot, 'libs/mojo-plus/src/application/index.ts'),
+  '@mojo/mojo-plus/infrastructure': path.resolve(
+    repoRoot,
+    'libs/mojo-plus/src/infrastructure/index.ts',
+  ),
   '@mojo/payments/domain': path.resolve(repoRoot, 'libs/payments/src/domain/index.ts'),
   '@mojo/payments/application': path.resolve(repoRoot, 'libs/payments/src/application/index.ts'),
   '@mojo/payments/infrastructure': path.resolve(

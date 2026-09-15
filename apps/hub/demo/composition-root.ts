@@ -94,6 +94,7 @@ import {
   PrismaDisputeRepository,
   PrismaInterestRepository,
   PrismaMessageRepository,
+  PrismaMojoPlusRepository,
   PrismaRecapRepository,
   PrismaReferralRepository,
   PrismaReviewRepository,
@@ -106,6 +107,7 @@ import {
   PrismaWalletRepository,
   WhatsAppDispatcher,
 } from './prisma-repos';
+import { sharedPrismaClient } from './prisma-client';
 import {
   demoTranscriptSummarizer,
   InMemoryApplicationRepository,
@@ -312,7 +314,7 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
 }
 
 function buildPrismaRepositories(state: DemoState): Repositories {
-  const prisma = new PrismaClient();
+  const prisma = sharedPrismaClient();
 
   const userRepo = new PrismaUserRepository(prisma);
   const availability = new PrismaAvailabilityRepository(prisma);
@@ -334,8 +336,7 @@ function buildPrismaRepositories(state: DemoState): Repositories {
     wallets: new PrismaWalletRepository(prisma),
     rail: new PaystackPayoutRail(process.env.PAYSTACK_SECRET_KEY ?? ''),
     performances: new PrismaTutorPerformanceRepository(prisma),
-    // mojo-plus has no Prisma adapter yet — in-memory keeps the switch honest.
-    mojoPlus: new InMemoryMojoPlusRepository(state),
+    mojoPlus: new PrismaMojoPlusRepository(prisma),
     notifications: externalDispatchers(),
     recaps: new PrismaRecapRepository(prisma),
     summarizer: demoTranscriptSummarizer,
