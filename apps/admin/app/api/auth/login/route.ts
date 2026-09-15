@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
-import { compare } from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
+import { compare } from 'bcryptjs';
+import { NextResponse } from 'next/server';
+import { checkRateLimit, clientIp } from '../../../../lib/rate-limit';
 
 function cookieOptions() {
   return {
@@ -18,6 +19,13 @@ function cookieOptions() {
  * validates against the shared database directly.
  */
 export async function POST(request: Request) {
+  const limited = checkRateLimit(`login:${clientIp(request)}`, 10, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: `Too many attempts — try again in ${limited.retryAfterSeconds}s.` },
+      { status: 429 },
+    );
+  }
   const body = await request.json().catch(() => ({}));
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const password = typeof body.password === 'string' ? body.password : '';
@@ -41,10 +49,7 @@ export async function POST(request: Request) {
         error?: string;
       };
       if (!response.ok || !data.ok || data.role !== 'admin') {
-        return NextResponse.json(
-          { ok: false, error: 'Admin sign-in required.' },
-          { status: 401 },
-        );
+        return NextResponse.json({ ok: false, error: 'Admin sign-in required.' }, { status: 401 });
       }
       const out = NextResponse.json({ ok: true });
       const setCookie = response.headers.getSetCookie?.() ?? [];

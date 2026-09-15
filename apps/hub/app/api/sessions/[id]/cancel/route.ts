@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireUser } from '../../../../../lib/session';
 import { getHub } from '../../../../../demo/composition-root';
+import { requireUser } from '../../../../../lib/session';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -20,7 +20,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         ? await hub.scheduling.sessionsByTutor(user.id)
         : await hub.scheduling.sessionsByStudent(user.id);
     if (!mine.some((s) => s.id === id)) {
-      return NextResponse.json({ ok: false, error: 'You are not on this booking.' }, { status: 403 });
+      return NextResponse.json(
+        { ok: false, error: 'You are not on this booking.' },
+        { status: 403 },
+      );
     }
   }
   const cancelledBy = user.role === 'tutor' ? 'tutor' : user.role === 'admin' ? 'admin' : 'student';

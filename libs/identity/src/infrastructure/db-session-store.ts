@@ -21,8 +21,12 @@ export class PrismaSessionStore implements SessionStore {
     });
   }
 
-  async findUser(input: { tokenHash: string }): Promise<{ userId: string; expiresAt: string } | null> {
-    const row = await this.prisma.sessionToken.findUnique({ where: { tokenHash: input.tokenHash } });
+  async findUser(input: {
+    tokenHash: string;
+  }): Promise<{ userId: string; expiresAt: string } | null> {
+    const row = await this.prisma.sessionToken.findUnique({
+      where: { tokenHash: input.tokenHash },
+    });
     if (!row) return null;
     return { userId: row.userId, expiresAt: row.expiresAt.toISOString() };
   }

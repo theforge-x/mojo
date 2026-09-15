@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireUser } from '../../../../../lib/session';
 import { getHub } from '../../../../../demo/composition-root';
+import { requireUser } from '../../../../../lib/session';
 
 /**
  * Moves a booking to a new slot: books the new time first (so availability,
@@ -18,7 +18,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const startIso = typeof body.startIso === 'string' ? body.startIso : '';
   const endIso = typeof body.endIso === 'string' ? body.endIso : '';
   if (!startIso || !endIso) {
-    return NextResponse.json({ ok: false, error: 'Pick a new start and end time.' }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: 'Pick a new start and end time.' },
+      { status: 400 },
+    );
   }
 
   const hub = getHub();

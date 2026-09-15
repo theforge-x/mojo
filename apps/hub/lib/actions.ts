@@ -1,15 +1,26 @@
 'use server';
 
 import { WeakPasswordError } from '@mojo/identity/application';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getHub } from '../demo/composition-root';
+import { checkRateLimit } from './rate-limit';
 import { sessionCookieOptions } from './session';
+
+async function actionIp(): Promise<string> {
+  const forwarded = (await headers()).get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0]?.trim() || 'unknown';
+  return 'unknown';
+}
 
 export async function loginWithDemo(input: {
   email: string;
   password: string;
 }): Promise<{ redirectTo: string }> {
+  const limited = checkRateLimit(`login:${await actionIp()}`, 10, 60_000);
+  if (!limited.ok) {
+    throw new Error(`Too many attempts — try again in ${limited.retryAfterSeconds}s.`);
+  }
   const { token, role, user } = await getHub().identity.authenticate(input.email, input.password);
 
   const store = await cookies();
@@ -48,6 +59,10 @@ export async function signupWithDemo(input: {
   locale: string;
 }): Promise<{ redirectTo: string } | { error: string }> {
   try {
+    const limited = checkRateLimit(`signup:${await actionIp()}`, 5, 600_000);
+    if (!limited.ok) {
+      return { error: `Too many attempts — try again in ${limited.retryAfterSeconds}s.` };
+    }
     await getHub().identity.register({
       name: input.name,
       email: input.email,

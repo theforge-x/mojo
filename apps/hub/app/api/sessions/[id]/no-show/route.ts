@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireUser } from '../../../../../lib/session';
 import { getHub } from '../../../../../demo/composition-root';
+import { requireUser } from '../../../../../lib/session';
 
 /** Tutor (or student) marks the other party as a no-show on their booking. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -27,7 +27,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
-    await hub.booking.markNoShow(id, user.role === 'tutor' ? 'student' : 'tutor', new Date().toISOString());
+    await hub.booking.markNoShow(
+      id,
+      user.role === 'tutor' ? 'student' : 'tutor',
+      new Date().toISOString(),
+    );
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(

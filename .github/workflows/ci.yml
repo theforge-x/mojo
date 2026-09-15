@@ -31,6 +31,9 @@ jobs:
       - name: Module & clean-architecture boundaries
         run: npm run lint:boundaries
 
+      - name: Format & lint (biome)
+        run: npx biome check .
+
       - name: Unit tests
         run: npx vitest run
 

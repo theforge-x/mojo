@@ -1,8 +1,17 @@
 import { NextResponse } from 'next/server';
-import { sessionCookieOptions } from '../../../../lib/session';
 import { getHub } from '../../../../demo/composition-root';
+import { checkRateLimit, clientIp } from '../../../../lib/rate-limit';
+import { sessionCookieOptions } from '../../../../lib/session';
 
 export async function POST(request: Request) {
+  const limited = checkRateLimit(`login:${clientIp(request)}`, 10, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: false, error: `Too many attempts — try again in ${limited.retryAfterSeconds}s.` },
+      { status: 429 },
+    );
+  }
+
   const body = await request.json().catch(() => ({}));
   const email = typeof body.email === 'string' ? body.email : '';
   const password = typeof body.password === 'string' ? body.password : '';

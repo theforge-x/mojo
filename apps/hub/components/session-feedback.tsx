@@ -171,15 +171,19 @@ export function RescheduleForm({ sessionId }: { sessionId: string }) {
   );
 }
 
-export function RecapCard({ summary, focusAreas }: { summary: string; focusAreas: readonly string[] }) {
+export function RecapCard({
+  summary,
+  focusAreas,
+}: {
+  summary: string;
+  focusAreas: readonly string[];
+}) {
   return (
     <div className="mt-2 w-full rounded-md border border-border bg-muted/40 p-3 text-sm">
       <p className="font-medium">Session recap</p>
       <p className="mt-1 text-muted-foreground">{summary}</p>
       {focusAreas.length > 0 && (
-        <p className="mt-1 text-xs text-muted-foreground">
-          Focus areas: {focusAreas.join(', ')}
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">Focus areas: {focusAreas.join(', ')}</p>
       )}
     </div>
   );

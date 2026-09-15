@@ -3,11 +3,35 @@ import type { Weekday } from '@mojo/scheduling/domain';
 import { isValidTimezone } from '@mojo/shared/util';
 import type { AvailabilityWindow } from '@mojo/tutor-profile/domain';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getHub } from '../../../demo/composition-root';
 import { isBridgeRequest } from '../../../lib/bridge';
 import { sessionCookieOptions } from '../../../lib/session';
-import { getHub } from '../../../demo/composition-root';
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Estimates the upload weight of a photo URL. `data:` URLs carry the bytes
+ * inline (base64 ≈ 4/3 overhead); remote URLs are measured as transmitted
+ * text — the previous check compared `string.length` to a byte budget, so a
+ * 6MB data-URL photo sailed through.
+ */
+function photoByteSize(photoUrl: string): number {
+  if (photoUrl.startsWith('data:')) {
+    const comma = photoUrl.indexOf(',');
+    const payload = comma >= 0 ? photoUrl.slice(comma + 1) : '';
+    return Math.floor(payload.length * 0.75);
+  }
+  return new TextEncoder().encode(photoUrl).length;
+}
+
+function isAllowedPhotoUrl(photoUrl: string): boolean {
+  if (photoUrl.startsWith('data:image/')) return true;
+  try {
+    return new URL(photoUrl).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
 
 function parseWindows(raw: unknown): AvailabilityWindow[] {
   if (!Array.isArray(raw)) return [];
@@ -98,11 +122,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (photoUrl.length > 0 && photoUrl.length > MAX_PHOTO_BYTES) {
-    return NextResponse.json(
-      { ok: false, error: 'That photo is too large — use a smaller image.' },
-      { status: 413 },
-    );
+  if (photoUrl.length > 0) {
+    if (!isAllowedPhotoUrl(photoUrl)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'That photo URL looks unsafe — use an https: link or an image upload.',
+        },
+        { status: 422 },
+      );
+    }
+    if (photoByteSize(photoUrl) > MAX_PHOTO_BYTES) {
+      return NextResponse.json(
+        { ok: false, error: 'That photo is too large — use a smaller image.' },
+        { status: 413 },
+      );
+    }
   }
 
   if (user?.role === 'tutor') {

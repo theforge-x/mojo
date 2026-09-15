@@ -16,6 +16,7 @@ import type {
   TutorApplication,
   TutorProfileRepository,
 } from '@mojo/tutor-profile/domain';
+import { sharedAdminPrismaClient } from './prisma-client';
 import {
   PrismaAnalyticsRepository,
   PrismaApplicationRepository,
@@ -26,7 +27,6 @@ import {
   PrismaSubjectTaxonomyRepository,
   PrismaTutorProfileRepository,
 } from './prisma-repos';
-import { sharedAdminPrismaClient } from './prisma-client';
 import {
   type ApplicationProfileStore,
   InMemoryAnalyticsRepository,
@@ -93,14 +93,18 @@ export function getAdmin(): AdminApp {
 
   const { applications, profiles } = buildApplicationProfileRepos(isDemoMode, shared);
   const prisma = isDemoMode ? null : sharedAdminPrismaClient();
-  const disputes = prisma ? new PrismaDisputeRepository(prisma) : new InMemoryDisputeRepository(state);
+  const disputes = prisma
+    ? new PrismaDisputeRepository(prisma)
+    : new InMemoryDisputeRepository(state);
   const analytics = prisma
     ? new PrismaAnalyticsRepository(prisma)
     : new InMemoryAnalyticsRepository(state);
   const flags = prisma
     ? new PrismaFeatureFlagRepository(prisma)
     : new InMemoryFeatureFlagRepository(state);
-  const logRepo = prisma ? new PrismaAuditLogRepository(prisma) : new InMemoryAuditLogRepository(state);
+  const logRepo = prisma
+    ? new PrismaAuditLogRepository(prisma)
+    : new InMemoryAuditLogRepository(state);
   const taxonomy = prisma
     ? new PrismaSubjectTaxonomyRepository(prisma)
     : new InMemorySubjectTaxonomyRepository(state);

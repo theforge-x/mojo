@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireUser } from '../../../../../lib/session';
 import { getHub } from '../../../../../demo/composition-root';
+import { requireUser } from '../../../../../lib/session';
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();

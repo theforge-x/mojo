@@ -23,7 +23,10 @@ export class SessionNotBookedError extends Error {
  * pricing at the composition root). Trials publish a zero rate, which is
  * how downstream `recordSessionCompletion` detects the trial lesson.
  */
-export function makeConfirmDelivery(deps: { bookings: BookingRepository; rates: SegmentRateReader }) {
+export function makeConfirmDelivery(deps: {
+  bookings: BookingRepository;
+  rates: SegmentRateReader;
+}) {
   return async function confirmDelivery(input: ConfirmDeliveryInput): Promise<void> {
     const session = await deps.bookings.findById(input.sessionId);
     if (!session) throw new SessionNotBookedError(input.sessionId);

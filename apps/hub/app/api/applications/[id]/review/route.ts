@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { isBridgeRequest } from '../../../../../lib/bridge';
 import { getHub } from '../../../../../demo/composition-root';
+import { isBridgeRequest } from '../../../../../lib/bridge';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -148,9 +148,7 @@ export function SiteFooter({ user }: { user: SiteHeaderUser }) {
             </p>
             <form className="mt-4 flex gap-2">
               <Input type="email" placeholder="you@email.com" aria-label="Email address" />
-              <Button type="submit">
-                Join
-              </Button>
+              <Button type="submit">Join</Button>
             </form>
           </div>
         </div>

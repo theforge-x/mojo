@@ -48,9 +48,7 @@ export async function requireUser(): Promise<CurrentUser | null> {
 }
 
 /** API-route guard — returns the user only when their DB role matches. */
-export async function requireRole(
-  ...roles: CurrentUser['role'][]
-): Promise<CurrentUser | null> {
+export async function requireRole(...roles: CurrentUser['role'][]): Promise<CurrentUser | null> {
   const user = await currentUser();
   if (!user || !roles.includes(user.role)) return null;
   return user;

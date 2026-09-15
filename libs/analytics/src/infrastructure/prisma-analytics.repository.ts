@@ -20,7 +20,8 @@ export class PrismaAnalyticsRepository implements AnalyticsRepository {
     return result._sum.amountMinor ?? 0;
   }
 
-  async listLeaderboardCandidates(): Promise<LeaderboardCandidate[]> {    const profiles = await this.prisma.tutorProfile.findMany();
+  async listLeaderboardCandidates(): Promise<LeaderboardCandidate[]> {
+    const profiles = await this.prisma.tutorProfile.findMany();
     if (profiles.length === 0) return [];
 
     const performances = await this.prisma.tutorPerformance.findMany({

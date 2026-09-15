@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireRole } from '../../../lib/session';
 import { getHub } from '../../../demo/composition-root';
+import { requireRole } from '../../../lib/session';
 
 /**
  * Student reviews unlock only after the session completes, one per session.

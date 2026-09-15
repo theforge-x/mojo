@@ -85,9 +85,7 @@ export async function StudentHome() {
                     ? await hub.reviews.reviewForSession(session.id)
                     : null,
                 recap:
-                  session.status === 'completed'
-                    ? await hub.recaps.latestFor(session.id)
-                    : null,
+                  session.status === 'completed' ? await hub.recaps.latestFor(session.id) : null,
               })),
             )
           ).map(({ session, tutor, review, recap }) => (

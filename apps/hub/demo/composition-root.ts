@@ -1,6 +1,10 @@
 import { makeGenerateRecap } from '@mojo/ai-learning/application';
 import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
-import { type ConfirmDeliveryInput, makeConfirmDelivery, makeMarkNoShow } from '@mojo/booking/application';
+import {
+  type ConfirmDeliveryInput,
+  makeConfirmDelivery,
+  makeMarkNoShow,
+} from '@mojo/booking/application';
 import type { BookingRepository } from '@mojo/booking/domain';
 import {
   clearSharedDemoState,
@@ -90,7 +94,8 @@ import type {
   TutorApplication,
   TutorProfileRepository,
 } from '@mojo/tutor-profile/domain';
-import { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
+import { sharedPrismaClient } from './prisma-client';
 import {
   EmailDispatcher,
   PaystackPayoutRail,
@@ -114,7 +119,6 @@ import {
   summarizerFromEnv,
   WhatsAppDispatcher,
 } from './prisma-repos';
-import { sharedPrismaClient } from './prisma-client';
 import {
   demoTranscriptSummarizer,
   InMemoryApplicationRepository,

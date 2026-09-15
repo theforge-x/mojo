@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireRole } from '../../../lib/session';
 import { getHub } from '../../../demo/composition-root';
+import { requireRole } from '../../../lib/session';
 
 export async function POST(request: Request) {
   const user = await requireRole('student');

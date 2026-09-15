@@ -10,9 +10,9 @@ import {
   EmptyTitle,
 } from '@mojo/shared/ui';
 import type { TutorApplication } from '@mojo/tutor-profile/domain';
+import { redirect } from 'next/navigation';
 import { ReviewButtons } from '../../../components/review-buttons';
 import { getAdmin } from '../../../demo/composition-root';
-import { redirect } from 'next/navigation';
 import { requireAdmin } from '../../../lib/session';
 
 export default async function ApplicationQueuePage() {

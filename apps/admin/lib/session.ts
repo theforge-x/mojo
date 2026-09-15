@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { cookies } from 'next/headers';
 import { PrismaClient } from '@prisma/client';
+import { cookies } from 'next/headers';
 
 export interface AdminUser {
   readonly id: string;
@@ -10,10 +10,9 @@ export interface AdminUser {
 
 function hubBaseUrl(): string {
   if (process.env.USE_PRISMA === 'true') return '';
-  return (process.env.HUB_URL === undefined ? 'http://localhost:3003' : process.env.HUB_URL).replace(
-    /\/$/,
-    '',
-  );
+  return (
+    process.env.HUB_URL === undefined ? 'http://localhost:3003' : process.env.HUB_URL
+  ).replace(/\/$/, '');
 }
 
 /** Resolves the signed-in admin via the hub (demo bridge) or the shared DB. */

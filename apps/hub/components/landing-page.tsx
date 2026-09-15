@@ -1,5 +1,33 @@
 import { Badge, Button, Card, CardContent } from '@mojo/shared/ui';
-import { BadgeCheck, BookOpen, Bot, CalendarCheck2, CalendarClock, CheckCircle2, Eye, GraduationCap, Heart, HeartHandshake, Languages, Mic, MonitorPlay, Music, PartyPopper, PhoneOff, Plus, Rocket, Sparkles, Star, Target, Timer, TrendingUp, Users, Video, Wallet, Zap } from 'lucide-react';
+import {
+  BadgeCheck,
+  BookOpen,
+  Bot,
+  CalendarCheck2,
+  CalendarClock,
+  CheckCircle2,
+  Eye,
+  GraduationCap,
+  Heart,
+  HeartHandshake,
+  Languages,
+  Mic,
+  MonitorPlay,
+  Music,
+  PartyPopper,
+  PhoneOff,
+  Plus,
+  Rocket,
+  Sparkles,
+  Star,
+  Target,
+  Timer,
+  TrendingUp,
+  Users,
+  Video,
+  Wallet,
+  Zap,
+} from 'lucide-react';
 import Link from 'next/link';
 
 export interface SubjectCategory {
@@ -9,74 +37,188 @@ export interface SubjectCategory {
 
 export const SUBJECT_CATEGORIES: SubjectCategory[] = [
   {
-    label: "Languages",
+    label: 'Languages',
     subjects: [
-      "English", "Spanish", "French", "German", "Mandarin", "Cantonese", "Arabic",
-      "Japanese", "Korean", "Portuguese", "Italian", "Russian", "Hindi", "Bengali",
-      "Dutch", "Turkish", "Polish", "Ukrainian", "Romanian", "Greek", "Swedish",
-      "Thai", "Vietnamese", "Indonesian", "Malay", "Tagalog", "Swahili", "Urdu",
-      "Persian", "Hebrew", "Czech", "Hungarian", "Finnish", "Norwegian", "Danish",
+      'English',
+      'Spanish',
+      'French',
+      'German',
+      'Mandarin',
+      'Cantonese',
+      'Arabic',
+      'Japanese',
+      'Korean',
+      'Portuguese',
+      'Italian',
+      'Russian',
+      'Hindi',
+      'Bengali',
+      'Dutch',
+      'Turkish',
+      'Polish',
+      'Ukrainian',
+      'Romanian',
+      'Greek',
+      'Swedish',
+      'Thai',
+      'Vietnamese',
+      'Indonesian',
+      'Malay',
+      'Tagalog',
+      'Swahili',
+      'Urdu',
+      'Persian',
+      'Hebrew',
+      'Czech',
+      'Hungarian',
+      'Finnish',
+      'Norwegian',
+      'Danish',
     ],
   },
   {
-    label: "Maths & Science",
+    label: 'Maths & Science',
     subjects: [
-      "Mathematics", "Algebra", "Geometry", "Calculus", "Statistics", "Trigonometry",
-      "Physics", "Chemistry", "Biology", "Environmental Science", "Astronomy",
-      "Logic", "Discrete Mathematics", "Linear Algebra", "Number Theory",
+      'Mathematics',
+      'Algebra',
+      'Geometry',
+      'Calculus',
+      'Statistics',
+      'Trigonometry',
+      'Physics',
+      'Chemistry',
+      'Biology',
+      'Environmental Science',
+      'Astronomy',
+      'Logic',
+      'Discrete Mathematics',
+      'Linear Algebra',
+      'Number Theory',
     ],
   },
   {
-    label: "Arts & Music",
+    label: 'Arts & Music',
     subjects: [
-      "Drawing", "Painting", "Sculpture", "Photography", "Graphic Design",
-      "Music Theory", "Piano", "Guitar", "Violin", "Drums", "Singing",
-      "Creative Writing", "Poetry", "Drama", "Acting", "Dance",
-      "Film Making", "Animation", "Interior Design", "Fashion Design",
+      'Drawing',
+      'Painting',
+      'Sculpture',
+      'Photography',
+      'Graphic Design',
+      'Music Theory',
+      'Piano',
+      'Guitar',
+      'Violin',
+      'Drums',
+      'Singing',
+      'Creative Writing',
+      'Poetry',
+      'Drama',
+      'Acting',
+      'Dance',
+      'Film Making',
+      'Animation',
+      'Interior Design',
+      'Fashion Design',
     ],
   },
   {
-    label: "Business",
+    label: 'Business',
     subjects: [
-      "Marketing", "Digital Marketing", "SEO", "Content Marketing",
-      "Finance", "Accounting", "Bookkeeping", "Financial Analysis",
-      "Entrepreneurship", "Business Strategy", "Management", "Leadership",
-      "Human Resources", "Project Management", "Sales", "Negotiation",
-      "Public Speaking", "Presentation Skills", "Business Writing",
+      'Marketing',
+      'Digital Marketing',
+      'SEO',
+      'Content Marketing',
+      'Finance',
+      'Accounting',
+      'Bookkeeping',
+      'Financial Analysis',
+      'Entrepreneurship',
+      'Business Strategy',
+      'Management',
+      'Leadership',
+      'Human Resources',
+      'Project Management',
+      'Sales',
+      'Negotiation',
+      'Public Speaking',
+      'Presentation Skills',
+      'Business Writing',
     ],
   },
   {
-    label: "Technology",
+    label: 'Technology',
     subjects: [
-      "Programming", "Web Development", "Mobile Development", "Data Science",
-      "Machine Learning", "Artificial Intelligence", "Cybersecurity",
-      "Cloud Computing", "DevOps", "Database Design", "UI/UX Design",
-      "Blockchain", "Game Development", "Python", "JavaScript", "TypeScript",
-      "React", "Node.js", "SQL", "Excel", "Google Sheets",
+      'Programming',
+      'Web Development',
+      'Mobile Development',
+      'Data Science',
+      'Machine Learning',
+      'Artificial Intelligence',
+      'Cybersecurity',
+      'Cloud Computing',
+      'DevOps',
+      'Database Design',
+      'UI/UX Design',
+      'Blockchain',
+      'Game Development',
+      'Python',
+      'JavaScript',
+      'TypeScript',
+      'React',
+      'Node.js',
+      'SQL',
+      'Excel',
+      'Google Sheets',
     ],
   },
   {
-    label: "Social Sciences",
+    label: 'Social Sciences',
     subjects: [
-      "Psychology", "Sociology", "Anthropology", "History", "Philosophy",
-      "Political Science", "Economics", "Geography", "Cultural Studies",
-      "International Relations", "Social Work", "Communication Studies",
-      "Media Studies", "Journalism", "Law", "Criminology",
+      'Psychology',
+      'Sociology',
+      'Anthropology',
+      'History',
+      'Philosophy',
+      'Political Science',
+      'Economics',
+      'Geography',
+      'Cultural Studies',
+      'International Relations',
+      'Social Work',
+      'Communication Studies',
+      'Media Studies',
+      'Journalism',
+      'Law',
+      'Criminology',
     ],
   },
   {
-    label: "Hobbies",
+    label: 'Hobbies',
     subjects: [
-      "Cooking", "Baking", "Gardening", "Chess", "Board Games",
-      "Crafts", "Knitting", "Woodworking", "Pottery",
-      "Fitness", "Yoga", "Meditation", "Martial Arts",
-      "Hiking", "Camping", "Fishing", "Bird Watching",
-      "Pet Care", "Astronomy", "Magic Tricks", "Origami",
+      'Cooking',
+      'Baking',
+      'Gardening',
+      'Chess',
+      'Board Games',
+      'Crafts',
+      'Knitting',
+      'Woodworking',
+      'Pottery',
+      'Fitness',
+      'Yoga',
+      'Meditation',
+      'Martial Arts',
+      'Hiking',
+      'Camping',
+      'Fishing',
+      'Bird Watching',
+      'Pet Care',
+      'Astronomy',
+      'Magic Tricks',
+      'Origami',
     ],
   },
 ];
-
-
 
 type Tutor = {
   name: string;
@@ -91,41 +233,41 @@ type Tutor = {
 
 const TUTORS: Tutor[] = [
   {
-    name: "Amara O.",
-    initials: "AO",
-    tint: "bg-[color-mix(in_oklab,var(--primary)_28%,var(--background))]",
-    tagline: "Make math click — from fractions to calculus",
-    subjects: ["Math", "SAT Prep"],
+    name: 'Amara O.',
+    initials: 'AO',
+    tint: 'bg-[color-mix(in_oklab,var(--primary)_28%,var(--background))]',
+    tagline: 'Make math click — from fractions to calculus',
+    subjects: ['Math', 'SAT Prep'],
     rating: 4.9,
     reviews: 214,
     segmentsCents: 1800,
   },
   {
-    name: "Diego R.",
-    initials: "DR",
-    tint: "bg-[color-mix(in_oklab,var(--secondary)_22%,var(--background))]",
-    tagline: "Conversational Spanish from day one",
-    subjects: ["Spanish"],
+    name: 'Diego R.',
+    initials: 'DR',
+    tint: 'bg-[color-mix(in_oklab,var(--secondary)_22%,var(--background))]',
+    tagline: 'Conversational Spanish from day one',
+    subjects: ['Spanish'],
     rating: 5.0,
     reviews: 168,
     segmentsCents: 1500,
   },
   {
-    name: "Priya S.",
-    initials: "PS",
-    tint: "bg-[color-mix(in_oklab,var(--tertiary)_38%,var(--background))]",
-    tagline: "Physics without the fear — clear, visual, patient",
-    subjects: ["Physics", "Calculus"],
+    name: 'Priya S.',
+    initials: 'PS',
+    tint: 'bg-[color-mix(in_oklab,var(--tertiary)_38%,var(--background))]',
+    tagline: 'Physics without the fear — clear, visual, patient',
+    subjects: ['Physics', 'Calculus'],
     rating: 4.8,
     reviews: 97,
     segmentsCents: 2200,
   },
   {
-    name: "Tom W.",
-    initials: "TW",
-    tint: "bg-[color-mix(in_oklab,var(--primary)_20%,var(--secondary)_10%,var(--background))]",
-    tagline: "Piano fundamentals for busy teens & adults",
-    subjects: ["Piano", "Music Theory"],
+    name: 'Tom W.',
+    initials: 'TW',
+    tint: 'bg-[color-mix(in_oklab,var(--primary)_20%,var(--secondary)_10%,var(--background))]',
+    tagline: 'Piano fundamentals for busy teens & adults',
+    subjects: ['Piano', 'Music Theory'],
     rating: 4.9,
     reviews: 143,
     segmentsCents: 2000,
@@ -136,36 +278,36 @@ const TESTIMONIALS = [
   {
     quote:
       "My daughter went from dreading algebra to asking for extra sessions. Being charged by the segment means we never pay for time we don't use.",
-    name: "Rachel M.",
-    detail: "parent of a 9th-grader",
+    name: 'Rachel M.',
+    detail: 'parent of a 9th-grader',
   },
   {
     quote:
-      "I booked my first Spanish lesson on a Sunday night and was speaking in full sentences within three weeks. The scheduling just works.",
-    name: "Kevin L.",
-    detail: "learner since January",
+      'I booked my first Spanish lesson on a Sunday night and was speaking in full sentences within three weeks. The scheduling just works.',
+    name: 'Kevin L.',
+    detail: 'learner since January',
   },
   {
     quote:
       "As a tutor, verification gave me instant credibility. Lessons auto-publish once I'm approved, and payouts land after every completed session.",
-    name: "Diego R.",
-    detail: "verified tutor",
+    name: 'Diego R.',
+    detail: 'verified tutor',
   },
 ];
 
 const FALLBACK_CATEGORIES = [
-  { icon: Languages, label: "Spanish" },
-  { icon: Languages, label: "English" },
-  { icon: GraduationCap, label: "Math" },
-  { icon: Rocket, label: "Physics" },
-  { icon: Music, label: "Piano" },
-  { icon: Video, label: "Robotics" },
+  { icon: Languages, label: 'Spanish' },
+  { icon: Languages, label: 'English' },
+  { icon: GraduationCap, label: 'Math' },
+  { icon: Rocket, label: 'Physics' },
+  { icon: Music, label: 'Piano' },
+  { icon: Video, label: 'Robotics' },
 ];
 
 const AVATAR_TINTS = [
-  "bg-[color-mix(in_oklab,var(--primary)_45%,var(--background))]",
-  "bg-[color-mix(in_oklab,var(--secondary)_40%,var(--background))]",
-  "bg-[color-mix(in_oklab,var(--tertiary)_55%,var(--background))]",
+  'bg-[color-mix(in_oklab,var(--primary)_45%,var(--background))]',
+  'bg-[color-mix(in_oklab,var(--secondary)_40%,var(--background))]',
+  'bg-[color-mix(in_oklab,var(--tertiary)_55%,var(--background))]',
 ];
 
 /** Best-effort icon per known subject; anything else gets the graduation cap.
@@ -224,12 +366,12 @@ const STEPS = [
 ];
 
 const goals = [
-  { label: "Hold a 10-minute conversation", done: true },
-  { label: "Order confidently on a trip", done: true },
-  { label: "Watch a film without subtitles", done: false },
+  { label: 'Hold a 10-minute conversation', done: true },
+  { label: 'Order confidently on a trip', done: true },
+  { label: 'Watch a film without subtitles', done: false },
 ];
 
-function Stars({ className = "" }: { className?: string }) {
+function Stars({ className = '' }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-0.5 ${className}`}>
       {[0, 1, 2, 3, 4].map((i) => (
@@ -243,7 +385,7 @@ function Stars({ className = "" }: { className?: string }) {
 function AvatarStack() {
   return (
     <div className="flex -space-x-2">
-      {["KL", "RM", "JT", "AS"].map((initials, i) => (
+      {['KL', 'RM', 'JT', 'AS'].map((initials, i) => (
         <span
           key={initials}
           className={`grid size-9 place-items-center rounded-full border-2 border-background text-xs font-semibold text-headline ${AVATAR_TINTS[i % AVATAR_TINTS.length]}`}
@@ -274,7 +416,10 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
       </div>
       <ul className="mt-4 flex flex-wrap gap-1.5">
         {tutor.subjects.map((s) => (
-          <li key={s} className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground">
+          <li
+            key={s}
+            className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground"
+          >
             {s}
           </li>
         ))}
@@ -287,7 +432,8 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
             <span className="text-xs text-muted-foreground">({tutor.reviews})</span>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            <strong className="text-base text-headline">${tutor.segmentsCents / 100}</strong> per segment
+            <strong className="text-base text-headline">${tutor.segmentsCents / 100}</strong> per
+            segment
           </p>
         </div>
         <Button asChild variant="outline" size="sm" className="rounded-full">
@@ -320,8 +466,8 @@ export function LandingPage() {
           </h1>
 
           <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
-            Real tutors, real time slots, real progress. Book a session in minutes and pay only for the time you actually
-            spend learning.
+            Real tutors, real time slots, real progress. Book a session in minutes and pay only for
+            the time you actually spend learning.
           </p>
 
           <form action="/signup" className="mx-auto mt-8 flex max-w-xl flex-col gap-2 sm:flex-row">
@@ -461,7 +607,6 @@ export function LandingPage() {
         </div>
       </section>
 
-
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
@@ -472,14 +617,23 @@ export function LandingPage() {
               One click from curious to <em className="text-secondary italic">confident</em>
             </h2>
             <p className="mt-4 max-w-md text-lg text-muted-foreground">
-              Create a free account, browse verified tutors, and book your first live session in minutes. You only ever
-              pay for the minutes you learn.
+              Create a free account, browse verified tutors, and book your first live session in
+              minutes. You only ever pay for the minutes you learn.
             </p>
             <ul className="mt-6 space-y-3">
               {[
-                { icon: BadgeCheck, text: "Every tutor identity-checked before their lesson goes live" },
-                { icon: CalendarCheck2, text: "Real time slots with instant, conflict-free confirmation" },
-                { icon: Wallet, text: "Charged per 15-minute segment — only after class actually happens" },
+                {
+                  icon: BadgeCheck,
+                  text: 'Every tutor identity-checked before their lesson goes live',
+                },
+                {
+                  icon: CalendarCheck2,
+                  text: 'Real time slots with instant, conflict-free confirmation',
+                },
+                {
+                  icon: Wallet,
+                  text: 'Charged per 15-minute segment — only after class actually happens',
+                },
               ].map(({ icon: Icon, text }) => (
                 <li key={text} className="flex mt-0.5 items-start gap-3">
                   <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary/20">
@@ -499,7 +653,10 @@ export function LandingPage() {
             </div>
           </div>
 
-          <div aria-hidden className="relative mx-auto hidden aspect-square w-full max-w-md sm:block">
+          <div
+            aria-hidden
+            className="relative mx-auto hidden aspect-square w-full max-w-md sm:block"
+          >
             <div className="absolute inset-0 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--primary)_22%,transparent),transparent)] blur-xl" />
 
             <div className="absolute inset-x-8 top-10 bottom-16 rounded-lg border border-border bg-card p-4 shadow-lg animate-mupta-float">
@@ -514,7 +671,9 @@ export function LandingPage() {
                 <span className="font-display grid size-24 animate-mupta-ring place-items-center rounded-full bg-[color-mix(in_oklab,var(--primary)_28%,var(--background))] text-2xl font-semibold text-headline">
                   AR
                 </span>
-                <p className="mt-3 text-sm text-muted-foreground">Amara is teaching present perfect…</p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Amara is teaching present perfect…
+                </p>
                 <div className="mt-3 flex h-6 items-end gap-1" aria-hidden>
                   {[
                     [0.9, 1],
@@ -548,12 +707,14 @@ export function LandingPage() {
 
             <div className="absolute -top-1 right-0 flex max-w-52 items-start gap-2 rounded-lg rounded-br-sm border border-border bg-popover p-3 shadow-md animate-mupta-bubble">
               <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" />
-              <p className="text-xs leading-snug text-foreground">“I have lived here for three years.” Perfect!</p>
+              <p className="text-xs leading-snug text-foreground">
+                “I have lived here for three years.” Perfect!
+              </p>
             </div>
 
             <div
               className="absolute top-40 -left-4 flex items-center gap-2 rounded-full border border-border bg-popover px-3 py-2 shadow-md animate-mupta-float"
-              style={{ animationDelay: "1.2s" }}
+              style={{ animationDelay: '1.2s' }}
             >
               <Wallet className="size-4 text-secondary" />
               <span className="text-xs font-medium text-headline">+$4.50 · 3 segments</span>
@@ -561,7 +722,7 @@ export function LandingPage() {
 
             <div
               className="absolute right-4 -bottom-2 flex items-center gap-2 rounded-full border border-border bg-popover px-3 py-2 shadow-md animate-mupta-bubble"
-              style={{ animationDelay: "3s" }}
+              style={{ animationDelay: '3s' }}
             >
               <Timer className="size-4 text-primary" />
               <span className="text-xs font-medium text-headline">Segment 3 of 4</span>
@@ -610,12 +771,16 @@ export function LandingPage() {
                   <span className="grid size-8 place-items-center rounded-full bg-muted text-muted-foreground">
                     <Bot className="size-4" />
                   </span>
-                  <p className="text-xs font-medium text-muted-foreground">Any learning app · instant</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Any learning app · instant
+                  </p>
                 </div>
                 <p className="mt-2.5 line-through decoration-secondary/70 text-sm text-muted-foreground">
                   “Here is a list of 20 rules about the present perfect…”
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">Same answer for everyone. No one notices you.</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Same answer for everyone. No one notices you.
+                </p>
               </div>
 
               <div className="relative rounded-lg border border-primary/40 bg-popover p-4 shadow-lg animate-mupta-float">
@@ -625,7 +790,9 @@ export function LandingPage() {
                   </span>
                   <div>
                     <p className="text-xs font-semibold text-headline">Amara · your tutor</p>
-                    <p className="text-[11px] text-muted-foreground">live in session · segment 3 of 4</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      live in session · segment 3 of 4
+                    </p>
                   </div>
                 </div>
 
@@ -640,7 +807,8 @@ export function LandingPage() {
                 </div>
 
                 <p className="mt-2 animate-mupta-bubble text-sm leading-snug text-foreground">
-                  “Almost! Try <strong>“I’ve been living here”</strong> — say it once more, I’m listening.”
+                  “Almost! Try <strong>“I’ve been living here”</strong> — say it once more, I’m
+                  listening.”
                 </p>
               </div>
             </div>
@@ -659,7 +827,7 @@ export function LandingPage() {
 
             <div
               className="absolute top-8 -left-2 flex items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 shadow-md animate-mupta-float"
-              style={{ animationDelay: "0.8s" }}
+              style={{ animationDelay: '0.8s' }}
             >
               <Eye className="size-3.5 text-secondary" />
               <span className="text-[11px] font-medium text-headline">Notices hesitation</span>
@@ -671,17 +839,28 @@ export function LandingPage() {
               <HeartHandshake className="size-3.5 text-secondary" /> Why mupta works
             </span>
             <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight text-headline sm:text-5xl">
-              The fastest way to learn will always be <em className="text-secondary italic">human</em>
+              The fastest way to learn will always be{' '}
+              <em className="text-secondary italic">human</em>
             </h2>
             <p className="mt-4 max-w-md text-lg text-muted-foreground">
-              Apps can drill you forever without moving the needle, because they never ask why you’re stuck. A great tutor
-              hears the hesitation, names the mistake, and fixes it with you — in real time.
+              Apps can drill you forever without moving the needle, because they never ask why
+              you’re stuck. A great tutor hears the hesitation, names the mistake, and fixes it with
+              you — in real time.
             </p>
             <ul className="mt-6 space-y-3">
               {[
-                { icon: Eye, text: "A tutor notices what an algorithm can’t — habits, gaps, and false confidence" },
-                { icon: Zap, text: "Feedback lands the second you make the mistake, not at the end of a quiz" },
-                { icon: HeartHandshake, text: "Someone expects you next Tuesday — accountability no streak can replace" },
+                {
+                  icon: Eye,
+                  text: 'A tutor notices what an algorithm can’t — habits, gaps, and false confidence',
+                },
+                {
+                  icon: Zap,
+                  text: 'Feedback lands the second you make the mistake, not at the end of a quiz',
+                },
+                {
+                  icon: HeartHandshake,
+                  text: 'Someone expects you next Tuesday — accountability no streak can replace',
+                },
               ].map(({ icon: Icon, text }) => (
                 <li key={text} className="flex mt-0.5 items-start gap-3">
                   <span className="grid size-6 shrink-0 place-items-center rounded-full bg-secondary/15">
@@ -698,7 +877,6 @@ export function LandingPage() {
         </div>
       </section>
 
-
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
@@ -706,18 +884,28 @@ export function LandingPage() {
               <Heart className="size-3.5 fill-secondary text-secondary" /> Humans, not bots
             </span>
             <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight text-headline sm:text-5xl">
-              Instead of cold AI bots, we champion <em className="text-secondary italic">human tutors</em> who are as
-              invested in your learning journey as you are.
+              Instead of cold AI bots, we champion{' '}
+              <em className="text-secondary italic">human tutors</em> who are as invested in your
+              learning journey as you are.
             </h2>
             <p className="mt-4 max-w-md text-lg text-muted-foreground">
-              Your tutor learns your goals, remembers where you struggled last week, and rebuilds the plan when life gets
-              busy. Progress isn’t a dashboard to them — it’s personal.
+              Your tutor learns your goals, remembers where you struggled last week, and rebuilds
+              the plan when life gets busy. Progress isn’t a dashboard to them — it’s personal.
             </p>
             <ul className="mt-6 space-y-3">
               {[
-                { icon: Target, text: "Goals are tracked by a person who adjusts them with you, not a streak counter" },
-                { icon: CalendarCheck2, text: "Check-ins between sessions — “how did the presentation go?”" },
-                { icon: PartyPopper, text: "Wins get celebrated by someone who watched you earn them" },
+                {
+                  icon: Target,
+                  text: 'Goals are tracked by a person who adjusts them with you, not a streak counter',
+                },
+                {
+                  icon: CalendarCheck2,
+                  text: 'Check-ins between sessions — “how did the presentation go?”',
+                },
+                {
+                  icon: PartyPopper,
+                  text: 'Wins get celebrated by someone who watched you earn them',
+                },
               ].map(({ icon: Icon, text }) => (
                 <li key={text} className="flex mt-0.5 items-start gap-3">
                   <span className="grid size-6 shrink-0 place-items-center rounded-full bg-secondary/15">
@@ -757,7 +945,9 @@ export function LandingPage() {
                     ) : (
                       <span className="size-4.5 shrink-0 rounded-full border-2 border-dashed border-muted-foreground/40" />
                     )}
-                    <span className={goal.done ? "text-headline" : "text-muted-foreground"}>{goal.label}</span>
+                    <span className={goal.done ? 'text-headline' : 'text-muted-foreground'}>
+                      {goal.label}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -769,7 +959,7 @@ export function LandingPage() {
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full w-full origin-left rounded-full bg-secondary animate-mupta-grow"
-                    style={{ animationDuration: "6s" }}
+                    style={{ animationDuration: '6s' }}
                   />
                 </div>
               </div>
@@ -798,15 +988,19 @@ export function LandingPage() {
             {/* Encouragement, unprompted */}
             <div className="absolute top-40 right-0 flex max-w-52 items-start gap-2 rounded-lg rounded-br-sm border border-border bg-popover p-3 shadow-md animate-mupta-bubble">
               <PartyPopper className="mt-0.5 size-4 shrink-0 text-secondary" />
-              <p className="text-xs leading-snug text-foreground">That was the hardest tense yet — you nailed it.</p>
+              <p className="text-xs leading-snug text-foreground">
+                That was the hardest tense yet — you nailed it.
+              </p>
             </div>
 
             <div
               className="absolute bottom-24 right-2 flex items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 shadow-md animate-mupta-float"
-              style={{ animationDelay: "1.6s" }}
+              style={{ animationDelay: '1.6s' }}
             >
               <CalendarCheck2 className="size-3.5 text-primary" />
-              <span className="text-[11px] font-medium text-headline">Moved Thursday’s slot — no charge</span>
+              <span className="text-[11px] font-medium text-headline">
+                Moved Thursday’s slot — no charge
+              </span>
             </div>
           </div>
         </div>
@@ -825,7 +1019,7 @@ export function LandingPage() {
             </div>
             <Link href="/signup">
               <Button size="default" variant="outline">
-                  <Plus /> See all tutors
+                <Plus /> See all tutors
               </Button>
             </Link>
           </div>
@@ -845,9 +1039,11 @@ export function LandingPage() {
           {TESTIMONIALS.map((t) => (
             <figure key={t.name} className="rounded-lg border border-border bg-card p-6">
               <Stars />
-              <blockquote className="mt-3 text-sm leading-relaxed text-foreground">“{t.quote}”</blockquote>
+              <blockquote className="mt-3 text-sm leading-relaxed text-foreground">
+                “{t.quote}”
+              </blockquote>
               <figcaption className="mt-4 text-sm">
-                <span className="font-semibold text-headline">{t.name}</span>{" "}
+                <span className="font-semibold text-headline">{t.name}</span>{' '}
                 <span className="text-muted-foreground">· {t.detail}</span>
               </figcaption>
             </figure>
