@@ -73,7 +73,17 @@ export async function POST(request: Request) {
     if (!ok) {
       return NextResponse.json({ ok: false, error: 'Admin sign-in required.' }, { status: 401 });
     }
-    const token = `demo-${user.id}-${crypto.randomUUID().replace(/-/g, '')}`;
+    // DB-backed opaque session (same format the hub issues in Prisma mode).
+    const token = `mojo_${crypto.randomUUID().replace(/-/g, '')}`;
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const { createHash } = await import('node:crypto');
+    await prisma.sessionToken.create({
+      data: {
+        tokenHash: createHash('sha256').update(token).digest('hex'),
+        userId: user.id,
+        expiresAt,
+      },
+    });
     const out = NextResponse.json({ ok: true });
     out.cookies.set('mojo_user', token, cookieOptions());
     out.cookies.set('mojo_role', 'admin', cookieOptions());

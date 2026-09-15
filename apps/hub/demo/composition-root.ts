@@ -16,8 +16,13 @@ import type {
   TutorSearchResult,
 } from '@mojo/discovery/domain';
 import { makeAuthenticateUser, makeRegisterUser } from '@mojo/identity/application';
-import type { TokenIssuer, User, UserRepository } from '@mojo/identity/domain';
-import { bcryptPasswordHasher } from '@mojo/identity/infrastructure';
+import type { SessionStore, TokenIssuer, User, UserRepository } from '@mojo/identity/domain';
+import {
+  bcryptPasswordHasher,
+  DbTokenIssuer,
+  hashSessionToken,
+  PrismaSessionStore,
+} from '@mojo/identity/infrastructure';
 import {
   makeListThread,
   makeListTutorInterests,
@@ -105,6 +110,7 @@ import {
   PrismaTutorSearchIndex,
   PrismaUserRepository,
   PrismaWalletRepository,
+  summarizerFromEnv,
   WhatsAppDispatcher,
 } from './prisma-repos';
 import { sharedPrismaClient } from './prisma-client';
@@ -122,6 +128,7 @@ import {
   InMemoryReferralRepository,
   InMemoryReviewRepository,
   InMemorySessionRepository,
+  InMemorySessionStore,
   InMemoryTutorLevelReader,
   InMemoryTutorPerformanceRepository,
   InMemoryTutorProfileRepository,
@@ -135,6 +142,7 @@ import { seedDemo } from './seed';
 interface Repositories {
   users: UserRepository;
   tokens: TokenIssuer;
+  tokenStore: SessionStore;
   availability: AvailabilityRepository;
   sessions: SessionRepository & {
     listByTutor(tutorId: string): Promise<ScheduledSession[]>;
@@ -285,6 +293,7 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
   return {
     users,
     tokens: new MemTokenIssuer(),
+    tokenStore: new InMemorySessionStore(),
     availability,
     sessions: {
       getBookedSessions: (t, a, b) => sessions.getBookedSessions(t, a, b),
@@ -301,7 +310,7 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
     mojoPlus: new InMemoryMojoPlusRepository(state),
     notifications: inMemoryDispatchers(state),
     recaps: new InMemoryRecapRepository(state),
-    summarizer: demoTranscriptSummarizer,
+    summarizer: summarizerFromEnv(demoTranscriptSummarizer),
     reviews: new InMemoryReviewRepository(state),
     referrals: new InMemoryReferralRepository(state),
     disputes: new InMemoryDisputeRepository(state),
@@ -319,10 +328,12 @@ function buildPrismaRepositories(state: DemoState): Repositories {
   const userRepo = new PrismaUserRepository(prisma);
   const availability = new PrismaAvailabilityRepository(prisma);
   const sessions = new PrismaSessionRepository(prisma);
+  const tokenStore = new PrismaSessionStore(prisma);
 
   return {
     users: userRepo,
-    tokens: new MemTokenIssuer(),
+    tokens: new DbTokenIssuer(tokenStore),
+    tokenStore,
     availability,
     sessions: {
       getBookedSessions: (t, a, b) => sessions.getBookedSessions(t, a, b),
@@ -339,7 +350,7 @@ function buildPrismaRepositories(state: DemoState): Repositories {
     mojoPlus: new PrismaMojoPlusRepository(prisma),
     notifications: externalDispatchers(),
     recaps: new PrismaRecapRepository(prisma),
-    summarizer: demoTranscriptSummarizer,
+    summarizer: summarizerFromEnv(demoTranscriptSummarizer),
     reviews: new PrismaReviewRepository(prisma),
     referrals: new PrismaReferralRepository(prisma),
     disputes: new PrismaDisputeRepository(prisma),
@@ -560,6 +571,15 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     identity: {
       userById: (id) => repos.users.findById(id),
       userByToken: async (token) => {
+        // DB-backed `mojo_` sessions (Prisma mode): the user id is only
+        // recoverable through the stored hash — never embedded in the token.
+        if (token.startsWith('mojo_')) {
+          const hit = await repos.tokenStore.findUser({ tokenHash: hashSessionToken(token) });
+          if (!hit || Date.parse(hit.expiresAt) < Date.now()) return null;
+          const user = await repos.users.findById(hit.userId);
+          if (!user || user.suspendedAt) return null;
+          return user;
+        }
         // The issued-tokens map is a per-module-instance cache, so it can't
         // be the only way to resolve a cookie (Next compiles pages and
         // route-handlers into separate bundles, and the map resets on

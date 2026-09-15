@@ -11,7 +11,7 @@ import {
   type TutorSearchResult,
   tutorMatchesFilters,
 } from '@mojo/discovery/domain';
-import type { Role, TokenIssuer, User, UserRepository } from '@mojo/identity/domain';
+import type { Role, SessionStore, TokenIssuer, User, UserRepository } from '@mojo/identity/domain';
 import type {
   InterestRepository,
   Message,
@@ -83,6 +83,24 @@ export class MemTokenIssuer implements TokenIssuer {
       token: `demo-${userId}-${crypto.randomUUID().replace(/-/g, '')}`,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
+  }
+}
+
+export class InMemorySessionStore implements SessionStore {
+  private readonly sessions = new Map<string, { userId: string; expiresAt: string }>();
+
+  async create(input: { tokenHash: string; userId: string; expiresAt: string }): Promise<void> {
+    this.sessions.set(input.tokenHash, { userId: input.userId, expiresAt: input.expiresAt });
+  }
+
+  async findUser(input: {
+    tokenHash: string;
+  }): Promise<{ userId: string; expiresAt: string } | null> {
+    return this.sessions.get(input.tokenHash) ?? null;
+  }
+
+  async revoke(tokenHash: string): Promise<void> {
+    this.sessions.delete(tokenHash);
   }
 }
 

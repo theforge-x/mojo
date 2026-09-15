@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { PrismaClient } from '@prisma/client';
 
@@ -22,12 +23,20 @@ export async function currentAdmin(): Promise<AdminUser | null> {
   if (!token) return null;
 
   if (process.env.USE_PRISMA === 'true') {
-    // Shared-database path: tokens are `demo-<userId>-<nonce>`.
-    if (!token.startsWith('demo-')) return null;
-    const userId = token.slice('demo-'.length).split('-')[0];
-    if (!userId) return null;
     const prisma = new PrismaClient();
     try {
+      // DB-backed `mojo_` sessions first; legacy `demo-` tokens resolve via
+      // the embedded user id for backwards compatibility.
+      let userId: string | null = null;
+      if (token.startsWith('mojo_')) {
+        const tokenHash = createHash('sha256').update(token).digest('hex');
+        const session = await prisma.sessionToken.findUnique({ where: { tokenHash } });
+        if (!session || session.expiresAt.getTime() < Date.now()) return null;
+        userId = session.userId;
+      } else if (token.startsWith('demo-')) {
+        userId = token.slice('demo-'.length).split('-')[0] ?? null;
+      }
+      if (!userId) return null;
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user || user.role !== 'admin' || user.suspendedAt) return null;
       return { id: user.id, email: user.email, role: 'admin' };

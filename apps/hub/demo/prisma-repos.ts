@@ -3,6 +3,7 @@
 // (in-memory) path never pulls Prisma-dependent code into its bundle.
 
 export { PrismaRecapRepository } from '@mojo/ai-learning/infrastructure';
+export { summarizerFromEnv } from '@mojo/ai-learning/infrastructure';
 export { PrismaBookingRepository } from '@mojo/booking/infrastructure';
 export { PrismaTutorSearchIndex } from '@mojo/discovery/infrastructure';
 export { PrismaUserRepository } from '@mojo/identity/infrastructure';

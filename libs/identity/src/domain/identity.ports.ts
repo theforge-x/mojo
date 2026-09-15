@@ -19,3 +19,14 @@ export interface PasswordHasher {
 export interface TokenIssuer {
   issue(userId: string): Promise<{ token: string; expiresAt: string }>;
 }
+
+/**
+ * Server-side session record. Demo mode keeps sessions in the
+ * composition-root's issued-tokens map; Prisma mode persists a hash of each
+ * opaque token so any app server can resolve and expire it.
+ */
+export interface SessionStore {
+  create(input: { tokenHash: string; userId: string; expiresAt: string }): Promise<void>;
+  findUser(input: { tokenHash: string }): Promise<{ userId: string; expiresAt: string } | null>;
+  revoke(tokenHash: string): Promise<void>;
+}

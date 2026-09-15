@@ -22,6 +22,19 @@ export async function loginWithDemo(input: {
 
 export async function logout(): Promise<void> {
   const store = await cookies();
+  const token = store.get('mojo_user')?.value;
+  // Revoke the DB-backed session in Prisma mode so the token can't be reused.
+  if (token?.startsWith('mojo_') && process.env.USE_PRISMA === 'true') {
+    try {
+      const { sharedPrismaClient } = await import('../demo/prisma-client');
+      const { createHash } = await import('node:crypto');
+      await sharedPrismaClient().sessionToken.deleteMany({
+        where: { tokenHash: createHash('sha256').update(token).digest('hex') },
+      });
+    } catch {
+      // Cookie clearing below still signs the browser out.
+    }
+  }
   store.delete('mojo_user');
   store.delete('mojo_role');
   redirect('/');

@@ -40,8 +40,23 @@ model User {
   sessionsAsStudent Session[] @relation("StudentSessions")
   reviewsWritten Review[]     @relation("ReviewAuthor")
   auditLogEntries AuditLogEntry[]
+  sessionTokens SessionToken[]
 
   @@map("users")
+}
+
+// ---------- session tokens (DB-backed sessions, Prisma mode) ----------
+
+model SessionToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("session_tokens")
 }
 
 // ---------- tutor-profile ----------
