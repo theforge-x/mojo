@@ -38,7 +38,12 @@ import type {
   SessionRepository,
 } from '@mojo/scheduling/domain';
 import { type Money, money, type TutorLevel } from '@mojo/shared/domain';
-import type { Dispute, DisputeRepository } from '@mojo/trust-safety/domain';
+import type {
+  Dispute,
+  DisputeRepository,
+  Suspension,
+  SuspensionRepository,
+} from '@mojo/trust-safety/domain';
 import type { TutorPerformance, TutorPerformanceRepository } from '@mojo/tutor-performance/domain';
 import type {
   ApplicationRepository,
@@ -262,6 +267,25 @@ export class InMemoryWalletRepository implements WalletRepository {
   async savePayoutRequest(request: PayoutRequest): Promise<void> {
     this.state.payoutRequests.push(request);
   }
+
+  async debit(
+    tutorId: string,
+    amount: Money,
+    relatedSessionId: string | null,
+  ): Promise<WalletTransaction> {
+    const current = this.state.walletBalancesMinor.get(tutorId) ?? 0;
+    this.state.walletBalancesMinor.set(tutorId, current - amount.amountMinor);
+    const transaction: WalletTransaction = {
+      id: demoId('tx'),
+      tutorId,
+      kind: 'payout',
+      amount,
+      relatedSessionId,
+      createdAt: new Date().toISOString(),
+    };
+    this.state.walletTransactions.push(transaction);
+    return transaction;
+  }
 }
 
 export class InMemoryPayoutRail implements PayoutRail {
@@ -352,6 +376,18 @@ export class InMemoryDisputeRepository implements DisputeRepository {
 
   async save(dispute: Dispute): Promise<void> {
     this.state.disputes.set(dispute.id, dispute);
+  }
+}
+
+export class InMemorySuspensionRepository implements SuspensionRepository {
+  constructor(private readonly state: DemoState) {}
+
+  async findByUser(userId: string): Promise<Suspension | null> {
+    return this.state.suspensions.get(userId) ?? null;
+  }
+
+  async save(suspension: Suspension): Promise<void> {
+    this.state.suspensions.set(suspension.userId, suspension);
   }
 }
 

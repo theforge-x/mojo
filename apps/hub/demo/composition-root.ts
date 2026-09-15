@@ -43,7 +43,7 @@ import {
 import { makeReleasePayout, type ReleasePayoutInput } from '@mojo/payments/application';
 import type { PayoutRail, WalletRepository } from '@mojo/payments/domain';
 import { makeRecordSessionCompletion } from '@mojo/pricing/application';
-import type { TutorLevelReader } from '@mojo/pricing/domain';
+import { DEFAULT_SEGMENT_RATE_NGN, type TutorLevelReader } from '@mojo/pricing/domain';
 import type { ReferralRepository } from '@mojo/referrals/domain';
 import type { ReviewRepository } from '@mojo/reviews/domain';
 import {
@@ -450,7 +450,16 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const updateSchedulingSettings = makeUpdateSchedulingSettings({
     availability: repos.availability,
   });
-  const confirmDelivery = makeConfirmDelivery({ bookings: repos.bookings });
+  const confirmDelivery = makeConfirmDelivery({
+    bookings: repos.bookings,
+    rates: {
+      perSegmentMinor: async (tutorId) => {
+        const custom = await repos.levels.getCustomRateMinor(tutorId);
+        if (custom !== null) return custom;
+        return DEFAULT_SEGMENT_RATE_NGN[await repos.levels.getLevel(tutorId)];
+      },
+    },
+  });
   const searchTutors = makeSearchTutors({ index: repos.searchIndex });
   const submitApplication = makeSubmitApplication({ applications: repos.applications });
   const reviewApplication = makeReviewApplication({

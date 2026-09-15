@@ -35,6 +35,30 @@ export class PrismaWalletRepository implements WalletRepository {
     };
   }
 
+  async debit(
+    tutorId: string,
+    amount: Money,
+    relatedSessionId: string | null,
+  ): Promise<WalletTransaction> {
+    const [, tx] = await this.prisma.$transaction([
+      this.prisma.wallet.update({
+        where: { tutorId },
+        data: { balanceMinor: { decrement: amount.amountMinor } },
+      }),
+      this.prisma.walletTransaction.create({
+        data: { tutorId, kind: 'payout', amountMinor: amount.amountMinor, relatedSessionId },
+      }),
+    ]);
+    return {
+      id: tx.id,
+      tutorId,
+      kind: 'payout',
+      amount,
+      relatedSessionId,
+      createdAt: tx.createdAt.toISOString(),
+    };
+  }
+
   async savePayoutRequest(request: PayoutRequest): Promise<void> {
     await this.prisma.payoutRequest.create({
       data: {

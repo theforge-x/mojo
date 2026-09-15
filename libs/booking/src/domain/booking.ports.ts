@@ -7,3 +7,12 @@ export interface BookingRepository {
   markNoShow(sessionId: string, by: 'student' | 'tutor', at: string): Promise<void>;
   saveConfirmation(confirmation: DeliveryConfirmation): Promise<void>;
 }
+
+/**
+ * Per-segment rate for a tutor in minor units. Lives in booking's domain so
+ * the use-case never hardcodes a price and never reaches into pricing's
+ * module — the composition root implements it from the pricing reader.
+ */
+export interface SegmentRateReader {
+  perSegmentMinor(tutorId: string): Promise<number>;
+}

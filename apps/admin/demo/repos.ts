@@ -125,6 +125,21 @@ export class InMemoryAnalyticsRepository implements AnalyticsRepository {
     return this.state.walletCreditsMinor;
   }
 
+  async trialToPaidConversionRate(): Promise<number> {
+    const trial = new Set<string>();
+    const paid = new Set<string>();
+    for (const session of this.state.sessions.values()) {
+      if (session.isTrial) trial.add(session.studentId);
+      else paid.add(session.studentId);
+    }
+    if (trial.size === 0) return 0;
+    let converted = 0;
+    for (const studentId of trial) {
+      if (paid.has(studentId)) converted += 1;
+    }
+    return converted / trial.size;
+  }
+
   async listLeaderboardCandidates(): Promise<LeaderboardCandidate[]> {
     const state = this.state;
     const perTutor = new Map<string, { tutorId: string; sessions: number; cancelled: number }>();

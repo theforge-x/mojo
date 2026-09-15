@@ -8,6 +8,11 @@ export interface WalletRepository {
     amount: Money,
     relatedSessionId: string | null,
   ): Promise<WalletTransaction>;
+  debit(
+    tutorId: string,
+    amount: Money,
+    relatedSessionId: string | null,
+  ): Promise<WalletTransaction>;
   savePayoutRequest(request: PayoutRequest): Promise<void>;
 }
 

@@ -14,7 +14,7 @@ import type {
   SchedulingSettings,
 } from '@mojo/scheduling/domain';
 import type { Money } from '@mojo/shared/domain';
-import type { Dispute } from '@mojo/trust-safety/domain';
+import type { Dispute, Suspension } from '@mojo/trust-safety/domain';
 import type { TutorPerformance } from '@mojo/tutor-performance/domain';
 import type { TutorApplication, TutorProfile } from '@mojo/tutor-profile/domain';
 
@@ -67,6 +67,7 @@ export class DemoState {
   readonly referralLinks = new Map<string, ReferralLink>();
   readonly referralConversions: ReferralConversion[] = [];
   readonly disputes = new Map<string, Dispute>();
+  readonly suspensions = new Map<string, Suspension>();
   readonly messages = new Map<string, Message>();
   readonly tutorInterests = new Map<string, TutorInterest>();
   readonly notifications: SentNotification[] = [];
