@@ -10,6 +10,7 @@
       "!**/node_modules",
       "!**/coverage",
       "!**/*.gen.ts",
+      "!**/next-env.d.ts",
       "!**/docs/**/*.html",
       "!**/public/**/*.svg"
     ]

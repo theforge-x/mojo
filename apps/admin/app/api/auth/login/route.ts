@@ -71,7 +71,7 @@ export async function POST(request: Request) {
   const prisma = new PrismaClient();
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== 'admin' || user.suspendedAt) {
+    if (user?.role !== 'admin' || user?.suspendedAt) {
       return NextResponse.json({ ok: false, error: 'Admin sign-in required.' }, { status: 401 });
     }
     const ok = await compare(password, user.passwordHash);

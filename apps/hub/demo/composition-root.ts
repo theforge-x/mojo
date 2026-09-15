@@ -333,7 +333,7 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
   };
 }
 
-function buildPrismaRepositories(state: DemoState): Repositories {
+function buildPrismaRepositories(_state: DemoState): Repositories {
   const prisma = sharedPrismaClient();
 
   const userRepo = new PrismaUserRepository(prisma);

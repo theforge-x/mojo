@@ -12,7 +12,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!isBridgeRequest(request)) {
     const token = request.cookies.get('mojo_user')?.value;
     const user = token ? await hub.identity.userByToken(token) : null;
-    if (!user || user.role !== 'admin') {
+    if (user?.role !== 'admin') {
       return NextResponse.json({ ok: false, error: 'Admin sign-in required.' }, { status: 401 });
     }
   }

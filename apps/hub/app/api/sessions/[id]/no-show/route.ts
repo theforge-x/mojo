@@ -3,7 +3,7 @@ import { getHub } from '../../../../../demo/composition-root';
 import { requireUser } from '../../../../../lib/session';
 
 /** Tutor (or student) marks the other party as a no-show on their booking. */
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   if (!user || (user.role !== 'tutor' && user.role !== 'student')) {
     return NextResponse.json({ ok: false, error: 'Sign-in required.' }, { status: 401 });

@@ -37,7 +37,7 @@ export async function currentAdmin(): Promise<AdminUser | null> {
       }
       if (!userId) return null;
       const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (!user || user.role !== 'admin' || user.suspendedAt) return null;
+      if (user?.role !== 'admin' || user?.suspendedAt) return null;
       return { id: user.id, email: user.email, role: 'admin' };
     } catch {
       return null;
@@ -55,7 +55,7 @@ export async function currentAdmin(): Promise<AdminUser | null> {
     });
     if (!response.ok) return null;
     const data = (await response.json()) as { user?: { id: string; email: string; role: string } };
-    if (!data.user || data.user.role !== 'admin') return null;
+    if (data.user?.role !== 'admin') return null;
     return { id: data.user.id, email: data.user.email, role: 'admin' };
   } catch {
     return null;
