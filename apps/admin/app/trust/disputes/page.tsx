@@ -7,7 +7,7 @@ import { requireAdmin } from '../../../lib/session';
 export default async function DisputesPage() {
   const adminUser = await requireAdmin();
   if (!adminUser) redirect('/login');
-  const disputes = getAdmin().disputes.list();
+  const disputes = await getAdmin().disputes.list();
 
   return (
     <main className="mx-auto max-w-6xl p-6">

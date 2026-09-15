@@ -16,7 +16,16 @@ import type {
   TutorApplication,
   TutorProfileRepository,
 } from '@mojo/tutor-profile/domain';
-import { PrismaApplicationRepository, PrismaTutorProfileRepository } from './prisma-repos';
+import {
+  PrismaAnalyticsRepository,
+  PrismaApplicationRepository,
+  PrismaAuditLogRepository,
+  PrismaDisputeRepository,
+  PrismaFeatureFlagRepository,
+  PrismaReviewRepository,
+  PrismaSubjectTaxonomyRepository,
+  PrismaTutorProfileRepository,
+} from './prisma-repos';
 import { sharedAdminPrismaClient } from './prisma-client';
 import {
   type ApplicationProfileStore,
@@ -46,7 +55,7 @@ export interface AdminApp {
     byTutor(tutorId: string): Promise<{ displayName: string } | null>;
   };
   disputes: {
-    list(): Dispute[];
+    list(): Promise<Dispute[]>;
     file(input: { sessionId: string; filedBy: string; reason: string }): Promise<void>;
   };
   analytics: {
@@ -59,10 +68,10 @@ export interface AdminApp {
     subjects(): Promise<SubjectTaxonomyEntry[]>;
   };
   reviews: {
-    list(): Review[];
+    list(): Promise<Review[]>;
   };
   log: {
-    list(): AuditLogEntry[];
+    list(): Promise<AuditLogEntry[]>;
   };
 }
 
@@ -82,12 +91,19 @@ export function getAdmin(): AdminApp {
   }
 
   const { applications, profiles } = buildApplicationProfileRepos(isDemoMode, shared);
-  const disputes = new InMemoryDisputeRepository(state);
-  const analytics = new InMemoryAnalyticsRepository(state);
-  const flags = new InMemoryFeatureFlagRepository(state);
-  const logRepo = new InMemoryAuditLogRepository(state);
-  const taxonomy = new InMemorySubjectTaxonomyRepository(state);
-  const reviews = new InMemoryReviewRepository(state);
+  const prisma = isDemoMode ? null : sharedAdminPrismaClient();
+  const disputes = prisma ? new PrismaDisputeRepository(prisma) : new InMemoryDisputeRepository(state);
+  const analytics = prisma
+    ? new PrismaAnalyticsRepository(prisma)
+    : new InMemoryAnalyticsRepository(state);
+  const flags = prisma
+    ? new PrismaFeatureFlagRepository(prisma)
+    : new InMemoryFeatureFlagRepository(state);
+  const logRepo = prisma ? new PrismaAuditLogRepository(prisma) : new InMemoryAuditLogRepository(state);
+  const taxonomy = prisma
+    ? new PrismaSubjectTaxonomyRepository(prisma)
+    : new InMemorySubjectTaxonomyRepository(state);
+  const reviews = prisma ? new PrismaReviewRepository(prisma) : new InMemoryReviewRepository(state);
 
   const reviewApplication = makeReviewApplication({ applications, profiles });
   const fileDispute = makeFileDispute({ disputes });
@@ -195,7 +211,7 @@ export function getAdmin(): AdminApp {
       },
     },
     disputes: {
-      list: () => disputes.list(),
+      list: async () => disputes.list(),
       file: async ({ sessionId, filedBy, reason }) => {
         await fileDispute({
           id: `d_${crypto.randomUUID().slice(0, 8)}`,
@@ -222,10 +238,10 @@ export function getAdmin(): AdminApp {
       subjects: () => listSubjects(),
     },
     reviews: {
-      list: () => reviews.list(),
+      list: async () => reviews.list(),
     },
     log: {
-      list: () => logRepo.list(),
+      list: async () => logRepo.list(),
     },
   };
 

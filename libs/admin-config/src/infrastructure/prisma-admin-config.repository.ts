@@ -47,6 +47,17 @@ export class PrismaAuditLogRepository implements AuditLogRepository {
       },
     });
   }
+
+  async list(): Promise<AuditLogEntry[]> {
+    const rows = await this.prisma.auditLogEntry.findMany({ orderBy: { at: 'desc' } });
+    return rows.map((r) => ({
+      id: r.id,
+      adminId: r.adminId,
+      action: r.action,
+      targetId: r.targetId,
+      at: r.at.toISOString(),
+    }));
+  }
 }
 
 export class PrismaSubjectTaxonomyRepository implements SubjectTaxonomyRepository {

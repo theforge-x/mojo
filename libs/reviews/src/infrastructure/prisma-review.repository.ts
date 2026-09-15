@@ -34,6 +34,11 @@ export class PrismaReviewRepository implements ReviewRepository {
     });
   }
 
+  async list(): Promise<Review[]> {
+    const rows = await this.prisma.review.findMany({ orderBy: { createdAt: 'desc' } });
+    return rows.map((row) => this.toDomain(row));
+  }
+
   private toDomain(row: {
     id: string;
     sessionId: string;
