@@ -18,6 +18,7 @@ import {
   Calendar,
   ChevronDown,
   Compass,
+  CreditCard,
   Home,
   LogOut,
   type LucideIcon,
@@ -41,7 +42,10 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
 
 const AUTH_NAV: Record<'tutor' | 'student', NavItem[]> = {
   tutor: [{ href: '/tutor/availability', label: 'Availability', icon: Calendar }],
-  student: [{ href: '/tutors', label: 'Find a tutor', icon: Calendar }],
+  student: [
+    { href: '/tutors', label: 'Find a tutor', icon: Calendar },
+    { href: '/payments', label: 'Payments', icon: CreditCard },
+  ],
 };
 
 const ANON_NAV: NavItem[] = [
@@ -60,7 +64,10 @@ const profileItems = (
     },
     { href: '/messages', label: 'Messages', icon: MessageSquare },
   ] as const;
-  const studentOnly = [{ href: '/saved-tutors', label: 'Saved tutors', icon: Bookmark }] as const;
+  const studentOnly = [
+    { href: '/saved-tutors', label: 'Saved tutors', icon: Bookmark },
+    { href: '/payments', label: 'Payments', icon: CreditCard },
+  ] as const;
   const tutorOnly = [
     { href: '/tutor/availability', label: 'Availability', icon: Calendar },
     { href: '/tutor/outreach', label: 'Outreach', icon: Sparkles },

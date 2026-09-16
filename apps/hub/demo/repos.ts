@@ -20,8 +20,13 @@ import type {
 } from '@mojo/messaging/domain';
 import type { MojoPlusRepository, MojoPlusSubscription } from '@mojo/mojo-plus/domain';
 import type {
+  ChargeRefund,
+  ChargeRepository,
   PayoutRail,
   PayoutRequest,
+  StudentCharge,
+  StudentPaymentMethod,
+  StudentPaymentMethodRepository,
   Wallet,
   WalletRepository,
   WalletTransaction,
@@ -309,6 +314,67 @@ export class InMemoryWalletRepository implements WalletRepository {
 export class InMemoryPayoutRail implements PayoutRail {
   async send(tutorId: string, _amount: Money): Promise<{ externalRef: string }> {
     return { externalRef: `demo-${tutorId}-${Math.random().toString(36).slice(2)}` };
+  }
+}
+
+export class InMemoryChargeRepository implements ChargeRepository {
+  constructor(private readonly state: DemoState) {}
+
+  async save(charge: StudentCharge): Promise<void> {
+    this.state.studentCharges.set(charge.id, charge);
+  }
+
+  async findById(chargeId: string): Promise<StudentCharge | null> {
+    return this.state.studentCharges.get(chargeId) ?? null;
+  }
+
+  async findBySession(sessionId: string): Promise<StudentCharge | null> {
+    for (const charge of this.state.studentCharges.values()) {
+      if (charge.sessionId === sessionId) return charge;
+    }
+    return null;
+  }
+
+  async listByStudent(studentId: string): Promise<StudentCharge[]> {
+    return [...this.state.studentCharges.values()]
+      .filter((charge) => charge.studentId === studentId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async saveRefund(refund: ChargeRefund): Promise<void> {
+    this.state.chargeRefunds.push(refund);
+  }
+
+  async listRefundsByStudent(studentId: string): Promise<ChargeRefund[]> {
+    return this.state.chargeRefunds
+      .filter((refund) => refund.studentId === studentId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+}
+
+export class InMemoryStudentPaymentMethodRepository implements StudentPaymentMethodRepository {
+  constructor(private readonly state: DemoState) {}
+
+  async findByStudent(studentId: string): Promise<StudentPaymentMethod[]> {
+    return [...this.state.paymentMethods.values()].filter(
+      (method) => method.studentId === studentId,
+    );
+  }
+
+  async findDefault(studentId: string): Promise<StudentPaymentMethod | null> {
+    const methods = await this.findByStudent(studentId);
+    return methods.find((method) => method.isDefault) ?? null;
+  }
+
+  async save(method: StudentPaymentMethod): Promise<void> {
+    if (method.isDefault) {
+      for (const existing of this.state.paymentMethods.values()) {
+        if (existing.studentId === method.studentId && existing.isDefault) {
+          this.state.paymentMethods.set(existing.id, { ...existing, isDefault: false });
+        }
+      }
+    }
+    this.state.paymentMethods.set(method.id, method);
   }
 }
 

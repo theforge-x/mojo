@@ -35,6 +35,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       withinNoticeWindow: body.withinNoticeWindow !== false,
       nowIso: new Date().toISOString(),
     });
+    // A cancelled booking keeps no money: settle the student's charge back
+    // in full. Refund failure must not fail the cancellation itself.
+    await hub.billing.refundForSession(id, 'cancelled', new Date().toISOString()).catch(() => {});
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(

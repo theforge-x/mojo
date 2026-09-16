@@ -38,9 +38,14 @@ export async function StudentHome() {
         <h1 className="font-display text-2xl font-bold text-headline">
           Hi {user.name.split(' ')[0] || user.email.split('@')[0]}
         </h1>
-        <Link href="/tutors">
-          <Button>Find a tutor</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/payments">
+            <Button variant="outline">Payments</Button>
+          </Link>
+          <Link href="/tutors">
+            <Button>Find a tutor</Button>
+          </Link>
+        </div>
       </div>
 
       {next ? (

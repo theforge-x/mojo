@@ -283,6 +283,44 @@ model LessonSubscription {
   @@map("lesson_subscriptions")
 }
 
+model StudentCharge {
+  id                 String   @id @default(cuid())
+  studentId          String
+  tutorId            String
+  sessionId          String   @unique
+  segments           Int
+  perSegmentMinor    Int
+  standardTotalMinor Int
+  trialDiscountMinor Int      @default(0)
+  totalMinor         Int
+  currency           String   @default("NGN")
+  isTrial            Boolean  @default(false)
+  level              String // entry | established | expert
+  isCustomRate       Boolean  @default(false)
+  paymentMethodId    String
+  status             String   @default("captured") // captured | partially_refunded | refunded
+  createdAt          DateTime @default(now())
+
+  refunds ChargeRefund[]
+
+  @@index([studentId])
+  @@map("student_charges")
+}
+
+model ChargeRefund {
+  id          String   @id @default(cuid())
+  chargeId    String
+  charge      StudentCharge @relation(fields: [chargeId], references: [id])
+  studentId   String
+  amountMinor Int
+  currency    String   @default("NGN")
+  reason      String // cancelled | dispute | no_show | goodwill
+  createdAt   DateTime @default(now())
+
+  @@index([studentId])
+  @@map("charge_refunds")
+}
+
 // ---------- engagement ----------
 
 model Message {

@@ -1,3 +1,4 @@
+import { TRIAL_PRICE_PERCENT } from '@mojo/payments/domain';
 import { tutorLocalTime } from '@mojo/scheduling/domain';
 import { Badge, Button, Card, CardContent, Empty, EmptyDescription } from '@mojo/shared/ui';
 import Link from 'next/link';
@@ -24,16 +25,22 @@ export default async function TutorDetailPage({
   const todayKey = tutorLocalTime(new Date().toISOString(), settings.timezone).dateKey;
   const weekEndKey = dateKeyPlus(todayKey, 7);
 
-  const [tutors, rules, sessions, exceptions, profile, tutorReviews] = await Promise.all([
-    hub.discovery.search({}),
-    hub.scheduling.availabilityRules(tutorId),
-    hub.scheduling.sessionsByTutor(tutorId),
-    hub.scheduling.exceptions(tutorId, todayKey, weekEndKey),
-    hub.profile.byTutor(tutorId),
-    hub.reviews.forTutor(tutorId),
-  ]);
+  const [tutors, rules, sessions, exceptions, profile, tutorReviews, myCharges] = await Promise.all(
+    [
+      hub.discovery.search({}),
+      hub.scheduling.availabilityRules(tutorId),
+      hub.scheduling.sessionsByTutor(tutorId),
+      hub.scheduling.exceptions(tutorId, todayKey, weekEndKey),
+      hub.profile.byTutor(tutorId),
+      hub.reviews.forTutor(tutorId),
+      hub.billing.chargesByStudent(user.id),
+    ],
+  );
   const tutor = tutors.find((t) => t.tutorId === tutorId);
   if (!tutor) notFound();
+  const trialUsed = myCharges.some(
+    (charge) => charge.tutorId === tutorId && charge.isTrial && charge.status !== 'refunded',
+  );
 
   hub.interests.record({ studentId: user.id, tutorId, source: 'view' }).catch(() => {});
 
@@ -67,6 +74,11 @@ export default async function TutorDetailPage({
           <span>{formatMinor(tutor.perSegmentMinor)}/segment</span>
           {tutor.rating > 0 && <span>{tutor.rating.toFixed(1)}★</span>}
         </div>
+        {!trialUsed && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            First lesson trial — {100 - TRIAL_PRICE_PERCENT}% off any slot below.
+          </p>
+        )}
         {profile?.bio && (
           <p className="mt-3 max-w-prose text-sm text-muted-foreground">{profile.bio}</p>
         )}
@@ -107,6 +119,8 @@ export default async function TutorDetailPage({
                   studentId={user.id}
                   startIso={slot.startIso}
                   endIso={slot.endIso}
+                  perSegmentMinor={tutor.perSegmentMinor}
+                  trialUsed={trialUsed}
                 />
               </CardContent>
             </Card>

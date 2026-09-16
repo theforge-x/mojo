@@ -49,8 +49,27 @@ import {
   type NotificationDispatcher,
   type NotificationPreferences,
 } from '@mojo/notifications/domain';
-import { makeReleasePayout, type ReleasePayoutInput } from '@mojo/payments/application';
-import type { PayoutRail, WalletRepository } from '@mojo/payments/domain';
+import {
+  type ChargeStudentInput,
+  makeChargeStudent,
+  makeQuoteSessionCharge,
+  makeRefundCharge,
+  makeReleasePayout,
+  type QuoteSessionChargeInput,
+  type RefundChargeInput,
+  type ReleasePayoutInput,
+} from '@mojo/payments/application';
+import type {
+  ChargeQuote,
+  ChargeRefund,
+  ChargeRepository,
+  PayoutRail,
+  RefundReason,
+  StudentCharge,
+  StudentPaymentMethod,
+  StudentPaymentMethodRepository,
+  WalletRepository,
+} from '@mojo/payments/domain';
 import { makeRecordSessionCompletion } from '@mojo/pricing/application';
 import { DEFAULT_SEGMENT_RATE_NGN, type TutorLevelReader } from '@mojo/pricing/domain';
 import type { ReferralRepository } from '@mojo/referrals/domain';
@@ -102,10 +121,12 @@ import {
   PrismaApplicationRepository,
   PrismaAvailabilityRepository,
   PrismaBookingRepository,
+  PrismaChargeRepository,
   PrismaDisputeRepository,
   PrismaInterestRepository,
   PrismaMessageRepository,
   PrismaMojoPlusRepository,
+  PrismaPaymentMethodRepository,
   PrismaRecapRepository,
   PrismaReferralRepository,
   PrismaReviewRepository,
@@ -124,6 +145,7 @@ import {
   InMemoryApplicationRepository,
   InMemoryAvailabilityRepository,
   InMemoryBookingRepository,
+  InMemoryChargeRepository,
   InMemoryDisputeRepository,
   InMemoryInterestRepository,
   InMemoryMessageRepository,
@@ -134,6 +156,7 @@ import {
   InMemoryReviewRepository,
   InMemorySessionRepository,
   InMemorySessionStore,
+  InMemoryStudentPaymentMethodRepository,
   InMemoryTutorLevelReader,
   InMemoryTutorPerformanceRepository,
   InMemoryTutorProfileRepository,
@@ -157,6 +180,8 @@ interface Repositories {
   levels: TutorLevelReader;
   wallets: WalletRepository;
   rail: PayoutRail;
+  charges: ChargeRepository;
+  methods: StudentPaymentMethodRepository;
   performances: TutorPerformanceRepository;
   mojoPlus: MojoPlusRepository;
   notifications: Record<'email' | 'whatsapp', NotificationDispatcher>;
@@ -218,6 +243,21 @@ export interface HubApp {
   wallet: {
     forTutor(tutorId: string): Promise<{ tutorId: string; balance: Money }>;
     releasePayout(input: ReleasePayoutInput): Promise<void>;
+  };
+  billing: {
+    quote(input: QuoteSessionChargeInput): Promise<ChargeQuote>;
+    defaultMethod(studentId: string): Promise<StudentPaymentMethod | null>;
+    /** Demo stub card — throws outside demo mode, where a real rail intent belongs. */
+    provisionDemoMethod(studentId: string): Promise<StudentPaymentMethod>;
+    charge(input: ChargeStudentInput): Promise<StudentCharge>;
+    chargesByStudent(studentId: string): Promise<StudentCharge[]>;
+    refundsByStudent(studentId: string): Promise<ChargeRefund[]>;
+    refund(input: RefundChargeInput): Promise<{ refund: ChargeRefund; charge: StudentCharge }>;
+    refundForSession(
+      sessionId: string,
+      reason: RefundReason,
+      nowIso: string,
+    ): Promise<ChargeRefund | null>;
   };
   performance: {
     byTutor(tutorId: string): Promise<TutorPerformance | null>;
@@ -317,6 +357,8 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
     levels: new InMemoryTutorLevelReader(state),
     wallets: new InMemoryWalletRepository(state),
     rail: new InMemoryPayoutRail(),
+    charges: new InMemoryChargeRepository(state),
+    methods: new InMemoryStudentPaymentMethodRepository(state),
     performances: new InMemoryTutorPerformanceRepository(state),
     mojoPlus: new InMemoryMojoPlusRepository(state),
     notifications: inMemoryDispatchers(state),
@@ -357,6 +399,8 @@ function buildPrismaRepositories(_state: DemoState): Repositories {
     levels: new PrismaTutorLevelReader(prisma),
     wallets: new PrismaWalletRepository(prisma),
     rail: new PaystackPayoutRail(process.env.PAYSTACK_SECRET_KEY ?? ''),
+    charges: new PrismaChargeRepository(prisma),
+    methods: new PrismaPaymentMethodRepository(prisma),
     performances: new PrismaTutorPerformanceRepository(prisma),
     mojoPlus: new PrismaMojoPlusRepository(prisma),
     notifications: externalDispatchers(),
@@ -494,6 +538,17 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const generateRecap = makeGenerateRecap({ recaps: repos.recaps, summarizer: repos.summarizer });
   const submitReview = makeSubmitReview({ reviews: repos.reviews });
   const releasePayout = makeReleasePayout({ wallets: repos.wallets, rail: repos.rail });
+  const quoteSessionCharge = makeQuoteSessionCharge({
+    rates: repos.levels,
+    defaults: DEFAULT_SEGMENT_RATE_NGN,
+  });
+  const chargeStudent = makeChargeStudent({
+    charges: repos.charges,
+    methods: repos.methods,
+    rates: repos.levels,
+    defaults: DEFAULT_SEGMENT_RATE_NGN,
+  });
+  const refundCharge = makeRefundCharge({ charges: repos.charges });
   const dispatchNotification = makeDispatchNotification({ dispatchers: repos.notifications });
   const sendMessage = makeSendMessage({ messages: repos.messages });
   const listThread = makeListThread({ messages: repos.messages });
@@ -673,6 +728,39 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
         return { tutorId: wallet.tutorId, balance: wallet.balance };
       },
       releasePayout: (input) => releasePayout(input),
+    },
+    billing: {
+      quote: (input) => quoteSessionCharge(input),
+      defaultMethod: (studentId) => repos.methods.findDefault(studentId),
+      provisionDemoMethod: async (studentId) => {
+        if (!isDemoMode) {
+          throw new Error('Add a Paystack or Flutterwave card to book.');
+        }
+        const method: StudentPaymentMethod = {
+          id: crypto.randomUUID(),
+          studentId,
+          rail: 'paystack',
+          last4: '0000',
+          isDefault: true,
+        };
+        await repos.methods.save(method);
+        return method;
+      },
+      charge: (input) => chargeStudent(input),
+      chargesByStudent: (studentId) => repos.charges.listByStudent(studentId),
+      refundsByStudent: (studentId) => repos.charges.listRefundsByStudent(studentId),
+      refund: (input) => refundCharge(input),
+      refundForSession: async (sessionId, reason, nowIso) => {
+        const charge = await repos.charges.findBySession(sessionId);
+        if (!charge || charge.status === 'refunded') return null;
+        const { refund } = await refundCharge({
+          chargeId: charge.id,
+          studentId: charge.studentId,
+          reason,
+          nowIso,
+        });
+        return refund;
+      },
     },
     performance: {
       byTutor: (tutorId) => repos.performances.findByTutorId(tutorId),

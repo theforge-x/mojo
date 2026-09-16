@@ -4,7 +4,13 @@ import type { User } from '@mojo/identity/domain';
 import type { Message, TutorInterest } from '@mojo/messaging/domain';
 import type { MojoPlusSubscription } from '@mojo/mojo-plus/domain';
 import type { NotificationPreferences } from '@mojo/notifications/domain';
-import type { PayoutRequest, WalletTransaction } from '@mojo/payments/domain';
+import type {
+  ChargeRefund,
+  PayoutRequest,
+  StudentCharge,
+  StudentPaymentMethod,
+  WalletTransaction,
+} from '@mojo/payments/domain';
 import type { ReferralConversion, ReferralLink } from '@mojo/referrals/domain';
 import type { Review } from '@mojo/reviews/domain';
 import type {
@@ -62,6 +68,9 @@ export class DemoState {
   readonly walletBalancesMinor = new Map<string, number>();
   readonly walletTransactions: WalletTransaction[] = [];
   readonly payoutRequests: PayoutRequest[] = [];
+  readonly paymentMethods = new Map<string, StudentPaymentMethod>();
+  readonly studentCharges = new Map<string, StudentCharge>();
+  readonly chargeRefunds: ChargeRefund[] = [];
   readonly recaps = new Map<string, LessonRecap>();
   readonly reviews = new Map<string, Review>();
   readonly referralLinks = new Map<string, ReferralLink>();
