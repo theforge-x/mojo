@@ -156,7 +156,7 @@ Apps (`apps/**`) are the composition root and are exempt from the layer rule.
   reads the tutor's **current** level/Mojo+ state at completion event time (the
   roadmap's "price locked at booking time" is not yet enforced in code — see §5.7).
 
-### 4.5 Payments (`release-payout`, `wallet.types.ts`)
+### 4.5 Payments (`release-payout`, `charge-student`, `quote-session-charge`, `refund-charge`)
 
 - **W1** `releasePayout` throws `InsufficientBalanceError` if
   `wallet.balance.amountMinor < amount.amountMinor`.
@@ -165,6 +165,18 @@ Apps (`apps/**`) are the composition root and are exempt from the layer rule.
   `rail: externalRef`.
 - **W3** `WalletRepository.credit` applies the wallet increment and the ledger row
   atomically in a Prisma `$transaction`.
+- **W4** `chargeStudent` requires a payment method (`NoPaymentMethodError`),
+  rejects a second charge for the same session (`DuplicateChargeError`), and
+  rejects a second non-refunded trial for the same student+tutor
+  (`TrialAlreadyUsedError`). Amounts come from `quoteSessionCharge`
+  (segments × rate, `TRIAL_PRICE_PERCENT = 50` when `isTrial`); the saved
+  `StudentCharge` starts `captured`.
+- **W5** `refundCharge` enforces ownership (`ChargeNotFoundError`), rejects
+  `refunded` charges (`ChargeNotRefundableError`), and rejects over-refunds
+  (`OverRefundError`); full-remaining refunds flip the charge to `refunded`,
+  partial ones to `partially_refunded`.
+- **W6** `StudentCharge`/`ChargeRefund` money is `Int` minor units
+  (`totalMinor`, `amountMinor`); `sessionId` is unique on `StudentCharge`.
 
 ### 4.6 Mojo+ (`subscribe-mojo-plus`)
 
@@ -196,9 +208,11 @@ Apps (`apps/**`) are the composition root and are exempt from the layer rule.
 5. **Dispute** states: `open → upheld | dismissed`.
 6. **Lesson subscription** states: `active → paused | cancelled`.
 7. The **event catalog** is the **15 events** in `events.types.ts` (publisher →
-   subscriber mapping in [04-behavioral §11](04-behavioral.md#11-event-catalog-as-defined-in-code)). Two
-   of them (`SessionNoShow`, `DisputeResolved`) are typed but not yet published.
-   The only roadmap event absent from the catalog is `SessionRescheduled`.
+   subscriber mapping in [04-behavioral §11](04-behavioral.md#11-event-catalog-as-defined-in-code)).
+   `SessionNoShow` (`booking/mark-no-show`) and `DisputeResolved`
+   (`trust-safety/resolve-dispute`) are now published. The only roadmap event
+   absent from the catalog is `SessionRescheduled` (the thin
+   `POST /api/sessions/[id]/reschedule` re-books + cancels with no event).
 
 ---
 
@@ -226,53 +240,64 @@ All secrets/keys come from `process.env` (see `.env.example`):
 | `shared/events` | ✅ EventBus + 15-event catalog | — | — | — | ✅ `event-bus.spec` | full |
 | `shared/ui` | — | — | — | ✅ 5 components | — | full |
 | `shared/util` | — | — | — | — | ✅ | full |
-| `identity` | ✅ | ✅ register/authenticate | ✅ prisma + bcrypt | ✅ login-form | ✅ 2 specs | full |
-| `scheduling` | ✅ | ✅ book/cancel/set-availability | ✅ prisma | ✅ calendar/editor | ✅ 2 specs | full |
+| `identity` | ✅ | ✅ register/authenticate | ✅ prisma + bcrypt | ✅ login-form | ✅ 3 specs | full |
+| `scheduling` | ✅ | ✅ book/cancel/confirm/set-availability (+ thin route-level reschedule, no use-case) | ✅ prisma | ✅ calendar/editor | ✅ 5 specs | full |
 | `pricing` | ✅ | ✅ record-session-completion | ✅ prisma tutor-level | — | ✅ 2 specs | full |
-| `booking` | ✅ | ✅ confirm-delivery | ✅ prisma | — | ✅ 1 spec | full |
+| `booking` | ✅ | ✅ confirm-delivery + mark-no-show | ✅ prisma | — | ✅ 1 spec | full |
 | `lab` | ✅ | — | ✅ livekit | ✅ lab-room | ✅ 1 spec | full |
-| `payments` | ✅ | ✅ release-payout | ✅ prisma + paystack | — | ✅ 1 spec | full |
-| `mojo-plus` | ✅ | ✅ 3 use-cases | ❌ none | — | ✅ 1 spec | full (no infra) |
-| `tutor-profile` | ✅ | ✅ submit-application | ✅ prisma | — | ✅ 1 spec | full |
+| `payments` | ✅ charges + wallet | ✅ release-payout + charge/quote/refund | ✅ prisma (wallet + charge) + paystack | — | ✅ 3 specs | full |
+| `mojo-plus` | ✅ | ✅ 3 use-cases | ✅ prisma | — | ✅ 1 spec | full |
+| `tutor-profile` | ✅ | ✅ submit/review-application | ✅ prisma | — | ✅ 2 specs | full |
 | `tutor-performance` | ✅ | ✅ recompute-level | ✅ prisma | — | ✅ 2 specs | full |
-| `discovery` | ✅ | ✅ search-tutors | ✅ prisma search index | — | ✅ 1 spec | full |
-| `billing` | ✅ | ✅ manage-subscription | ✅ prisma | — | ✅ 1 spec | full |
-| `messaging` | ✅ | ✅ send-message | ✅ prisma | — | ✅ 1 spec | full |
+| `discovery` | ✅ filters + availability-window | ✅ search-tutors | ✅ prisma + in-memory (both filter) | — | ✅ 3 specs | full |
+| `billing` | ✅ | ✅ manage-subscription | ✅ prisma (methods + subscriptions) | — | ✅ 1 spec | full |
+| `messaging` | ✅ | ✅ send/list-thread/record-interest | ✅ prisma | — | ✅ 3 specs | full |
 | `reviews` | ✅ | ✅ submit-review | ✅ prisma | — | ✅ 1 spec | full |
 | `referrals` | ✅ | ✅ track-referral | ✅ prisma | — | ✅ 1 spec | full |
-| `trust-safety` | ✅ | ✅ file-dispute | ✅ prisma | — | ✅ 1 spec | full |
+| `trust-safety` | ✅ | ✅ file/resolve-dispute | ✅ prisma | — | ✅ 2 specs | full |
 | `ai-learning` | ✅ | ✅ generate-recap | ✅ prisma | — | ✅ 1 spec | full |
-| `notifications` | ✅ | ✅ dispatch-notification | ✅ email + whatsapp | — | ✅ 1 spec | full |
+| `notifications` | ✅ + scheduled-reminders | ✅ dispatch-notification | ✅ email + whatsapp | — | ✅ 2 specs | full |
 | `admin-config` | ✅ | ✅ set-flag/list-subjects/append-audit-log | ✅ prisma | — | ✅ 1 spec | full |
 | `analytics` | ✅ | ✅ compute-metrics/build-leaderboard | ✅ prisma | — | ✅ 1 spec | full |
 
-**Key** — ✅ present in the tree; ❌ absent. All 12 domain modules plus the three
-service modules (`notifications`, `admin-config`, `analytics`) are now **full-depth**:
-each has use-cases + real `infrastructure/` repositories/adapters + specs, earning a
-`vitest.config.ts` (the workspace-test opt-in list in `vitest.workspace.ts`).
-`mojo-plus` is full-depth on tests but its persistence rides on pricing's
-`TutorLevelReader` (no own infra). The two domain-only gaps that remain are
-module-internal (`mojo-plus` infra, `PaymentMethod` writing) — the architectural
-layer rules in §2 apply uniformly and are enforced by `lint:boundaries`.
+**Key** — ✅ present in the tree; ❌ absent. All modules are **full-depth** with
+38 spec files / 141 tests (`npx vitest run`). The workspace-test opt-in list is
+`vitest.config.ts` `test.projects` (root registry; every lib with a
+`vitest.config.ts` opts in). Reschedule remains the one route-level-only flow
+(no domain use-case, no `SessionRescheduled` event); the architectural layer
+rules in §2 apply uniformly and are enforced by `lint:boundaries`.
 
 ---
 
 ## 8. Composition root & gaps
 
-The use-cases that publish/subscribe only work once the application **composition
-root** (in `apps/`) calls `eventBus.subscribe` with the relevant handlers and wires
-ports to Prisma adapters. In the current tree:
+The use-cases publish/subscribe through the application **composition
+root** (`apps/hub/demo/composition-root.ts`, `apps/admin/demo/composition-root.ts`),
+which wires ports to InMemory (demo) or Prisma (`USE_PRISMA=true`) adapters and
+subscribes event handlers (`SessionBooked/Cancelled/Completed`,
+`ReviewSubmitted`, `TutorLevelChanged`, …). In the current tree:
 
-- `apps/hub` wires `bookSession`/`cancelSession`-style orchestration only to the
-  extent shown in thin server components (e.g. `(tutor)/home/page.tsx` returns
-  hard-coded sessions; the lab page composes the `@mojo/lab/feature` `LabRoom` with
-  `LiveKitLabProvider`).
+- `apps/hub` wires the full student loop: `scheduling.book` + `billing.charge`
+  (`POST /api/sessions`), `scheduling.cancel` + `billing.refundForSession`
+  (`POST /api/sessions/[id]/cancel`), `scheduling.confirmSession`
+  (`POST …/start`), `booking.confirmDelivery` (`POST …/confirm`),
+  `booking.markNoShow` (`POST …/no-show`), messaging (`/api/messages`),
+  reviews (`/api/reviews`), charges/refunds (`/api/charges`), payouts
+  (`/api/payouts`), availability, applications, notifications prefs + manual
+  reminders. Event subscribers for pricing (commission split), payments (wallet
+  credit), tutor-performance (recompute), and ai-learning (recap) all run on
+  `SessionCompleted`.
 - `apps/admin` renders `TutorApplication` rows from the hub-backed application
   queue (`getAdmin().applications.list()` — over the `HUB_URL` bridge in demo
   mode, Prisma directly otherwise); approve/reject posts back through the same
-  path and publishes a `TutorProfile` on approval.
-- **No module's use-case is wired to a real HTTP/session flow yet.** The event
-  subscribers for `pricing`, `payments`, `tutor-performance`, etc. are not present.
+  path and publishes a `TutorProfile` on approval. Dispute file/resolve +
+  `/trust/disputes` are admin-only.
+- **Remaining gaps:** reschedule is route-level only (no use-case, no
+  `SessionRescheduled` event, no charge move); hub-side dispute filing has no
+  route/view; Mojo+ subscribe/custom-rate and payout history/threshold have
+  use-cases + repos but no hub UI/API; reminders have no cron/worker and no
+  calendar sync; completion is student-confirm only (no tutor complete /
+  auto-confirm worker).
 - Conformance caveats with the planning docs are flagged in
   [01-structural §3](01-structural.md#3-clean-architecture-layering-inside-a-module),
   [03-data-model §3](03-data-model.md#3-model-inventory-by-owning-module), and

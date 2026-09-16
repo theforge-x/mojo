@@ -1,6 +1,6 @@
 # Mojo — Phase 1 MVP: what's left and how to finish it
 
-Status snapshot taken against `dev` @ `119d303` (2026-08-29). Legend used through
+Status snapshot taken against `dev` @ `a08eca7` (2026-09-16). Legend used through
 this doc and the roadmap / roles-features checklists:
 
 | Mark | Meaning |
@@ -19,22 +19,23 @@ that loop.
 
 | Mechanic | Built | What exists | What's missing |
 |---|---|---|---|
-| Tutor profile & application | `[x]` | 6-step wizard (`apply-form.tsx`) — subjects, bio, experience/certs, intro video, account; photo, education, timezone and availability captured; submission stored via `tutor-profile/submit-application`; review → live hand-off wired (admin queue reads the hub over `HUB_URL`, approval publishes a searchable profile) | Applicant status view; download/edit of an already-approved profile |
-| Tutor search & discovery | `[~]` | `TutorSearchFilters` domain (subject, level, language, minRating, availableWithinHours); `/tutors` page + cards (photo, level, rating, price/segment, response time) | **The demo index ignores every filter** — `InMemoryTutorSearchIndex.search` returns all profiles. UI exposes only subject + level. No filters on language / rating / availability window. No intro-video thumbnail on cards |
-| Trial lesson + booking | `[~]` | `isTrial` bookings against live availability (min-notice + conflict validation); booked→confirmed→completed with timestamped `statusHistory`; trial charge (tutor keeps ₦0); segment pricing + commission split on completion; cancel with UI | Reschedule (no use-case, no route, no UI); free replacement lesson guarantee; student-side checkout / payment capture |
-| Virtual lab | `[x]` | LiveKit per-request participant tokens, room per session; video + whiteboard + text chat + file sharing (in-browser in demo); both-role join guards | (none for MVP scope) |
-| Payments — Nigeria-first | `[~]` | 15-min segments as the pricing atom; level-fixed segment rates; internal wallet ledger; wallet credit on `SessionCompleted`; payout request + release via `/api/payouts` | **Nothing collects money from students** — no payment method, no charge at booking, no receipts, no refund path. Mojo+ subscribe / custom pricing use-cases exist but are unwired. No payout threshold / history view |
-| Messaging | `[ ]` | `send-message` use-case in the lib; `/messages` shows threads derived from sessions | No hub facade method, no API, no composer — pre-booking chat is not functional |
-| Reviews | `[ ]` | `submit-review` use-case in the lib; seeded reviews feed aggregate ratings on tutor cards | No submit UI, no unlock-after-complete rule, no per-review list on a tutor's profile |
-| Notifications | `[~]` | Event-driven dispatchers (email + whatsapp, in-memory by default, `RESEND_API_KEY` switches a real email channel); subscribers on book/complete/cancel/submit events | Scheduled reminders (calendar-based), calendar sync, per-channel preferences |
+| Tutor profile & application | `[x]` | 8-step wizard (`apply-form.tsx`) — displayName, photo (5MB validated), education, timezone, availability, subjects, languages, bio, certs, intro video; submission stored via `tutor-profile/submit-application`; review → live hand-off wired (admin queue reads the hub over `HUB_URL`, approval publishes a searchable profile); applicant status view (`/apply`) | Rejected → resubmit dead-end (no edit form, no reason surfaced); `in_review` unreachable; no download/edit of an already-approved profile; admin card hides languages/certs/video |
+| Tutor search & discovery | `[x]` | `TutorSearchFilters` (subject, level, language, minRating, availableWithinHours) implemented in **both** `InMemoryTutorSearchIndex` and `PrismaTutorSearchIndex`; `/tutors` filter bar exposes all five; cards show photo, level, rating, price/segment, response time | No intro-video thumbnail on cards/detail (`introVideoUrl` lives only on `TutorApplication`, dropped in `profileFromApplication`); no sort/pagination |
+| Trial lesson + booking | `[~]` | `isTrial` bookings against live availability (min-notice + conflict validation); booked→confirmed→completed with timestamped `statusHistory`; **charge at booking** via `billing.charge` (segments × rate, 50% trial off, one-trial-per-tutor guard, rollback on failure); trial banner + totals in `BookButton`; thin `POST /api/sessions/[id]/reschedule` (book-then-cancel) + student `RescheduleForm`; cancel with UI + auto-refund | No domain `reschedule-session` use-case, no `SessionRescheduled` event, no charge move on reschedule, `booked`-only, no tutor-side UI; free replacement lesson guarantee entirely missing; no `GET` quote endpoint (UI duplicates `TRIAL_PRICE_PERCENT` math); stub capture only (`provisionDemoMethod`, no Paystack/Flutterwave intent) |
+| Virtual lab | `[x]` | LiveKit per-request participant tokens, room per session; video + whiteboard + text chat + file sharing (in-browser in demo); both-role join guards | (none for MVP scope — deep-link status gate and 3h token refresh are polish) |
+| Payments — Nigeria-first | `[x]` | 15-min segments as the pricing atom; level-fixed segment rates; `StudentCharge`/`ChargeRefund` ledger (demo + Prisma); charge at booking, auto-refund on cancel, student-initiated refund for cancelled sessions; `/payments` receipts with segment/trial/refund breakdown; internal wallet ledger; payout request + release via `/api/payouts` | Stub rail only (no real Paystack/Flutterwave collect); Mojo+ subscribe / custom pricing use-cases exist but are unwired (no UI/API); no payout threshold / history view |
+| Messaging | `[x]` | Hub facade `messaging.send/threadBetween/threadsFor/markRead`; `POST/GET /api/messages` + `POST /api/messages/read`; `/messages` thread list + `MessageChat` composer (4s poll, read receipts); pre-booking gating (student→real tutor, tutor→interest/session); entry via **Message tutor** button | No attachments, no moderation/report UI, no search |
+| Reviews | `[x]` | `POST /api/reviews` gated to student-of-record + `completed` + one-per-session; `ReviewForm` on student home; review list (first 10) on tutor profile; aggregate rating on cards | No edit/delete, no tutor reply, no flag/moderation UI |
+| Notifications | `[~]` | Event-driven dispatchers (email + whatsapp, in-memory by default, `RESEND_API_KEY` switches a real email channel); subscribers on book/complete/cancel/submit events; per-channel prefs (`GET/PUT /api/notifications/preferences`, `/settings`); manual reminder fire (`POST /api/notifications/reminders`, `dueSessionReminders` day-before + T-30) | No cron/worker (reminders only fire on manual button); no calendar sync (ics/Google), only `CalendarView` |
 
 ## Phase 0 leftovers that block Phase 1
 
 The calendar foundation is complete — recurring rules, one-off exceptions,
 inter-session buffer, minimum notice, pause-new-bookings, and conflict
 detection are built and validated at book time. What remains is operational:
-- **Reminder scheduling** — notification dispatch is still purely event-driven;
-  nothing fires on a time basis.
+- **Reminder scheduling** — `dueSessionReminders` (day-before + T-30) + prefs +
+  `POST /api/notifications/reminders` exist, but nothing fires on a time basis
+  (no cron/worker; manual "Check reminders" only).
 
 ## The application → live loop (was the biggest blocker; now wired)
 
@@ -47,114 +48,132 @@ upserts a `TutorProfile` on approval) and is wired through both apps:
   so an approval lands on the same application and publishes a live profile.
 - `InMemoryTutorSearchIndex` reads straight off `state.profiles` — a saved
   profile appears in search at the default Entry rate.
+- The wizard now captures real profile fields (displayName, photo with 5MB
+  validation, education, timezone, availability persisted to scheduling in the
+  same request) and `/apply` shows pending / approved / rejected + submittedAt.
 
-Still open: an applicant-facing status read (`/apply` or `/tutor` showing
-pending / approved-with-link / rejected), and richer profile capture (photo and
-display name land as placeholders today).
-
-Secondary, related gap: `profileFromApplication` publishes a placeholder
-(`displayName` derived from subjects, empty `photoUrl`), so the wizard should capture
-display name + photo for the profile that lands on the live listing.
+Still open: rejected → resubmit is a dead-end (copy promises edit-and-resubmit
+but the status card short-circuits with no form and no reason surfaced);
+`in_review` is unreachable (`review-application` only allows
+`pending → approved|rejected`); no download/edit of an already-approved profile;
+admin cards hide languages/certs/intro video so reviewers can't assess them.
+`profileFromApplication` still drops `introVideoUrl` (lives only on
+`TutorApplication`).
 
 ---
 
 ## The plan — ordered steps to complete Phase 1
 
-### Step 1 — Close the application → live loop (do this first)
-The MVP is not real until a non-seeded tutor can be found and booked.
-1. Extend the application (`tutor-profile` domain + wizard) so the approval can
-   publish a decent profile: capture display name, photo (with fallback avatar),
-   education, timezone, and the applicant's availability & timezone through the
-   scheduling engine in the same submission.
-2. Wire `makeReviewApplication` into the hub facade (`profile.review`) and give the
-   admin app's review route a hub-backed store, so an approve/reject decision lands
-   on the same application the hub submitted (single shared `DemoState` for the
-   demo; real repository wiring in the Prisma path).
-3. Add an applicant-facing status read — `/apply` or `/tutor` shows pending /
-   approved-with-link-to-profile / rejected-with-reason.
-4. Acceptance: submit an application as a fresh student-signup tutor → approve it
-   from the admin queue → the tutor appears in `/tutors` at the Entry rate with
-   their photo and bio, and their `/tutor` surface recognises an approved profile.
+### Step 1 — Application → live polish (core loop done, edges remain) ✅ mostly done
+The MVP is real — a non-seeded tutor can apply, get approved, and be booked.
+Capture (displayName, photo, education, timezone, availability), hub-backed
+review, and `/apply` status are all wired. Left: rejected → resubmit form +
+reason, `in_review` or remove it, edit-approved-profile (triggers re-review),
+and surfacing languages/certs/video in the admin queue.
+- Acceptance (passes today): fresh tutor applies → admin approves → tutor
+  appears in `/tutors` at Entry with photo/bio.
 
-### Step 2 — Make discovery actually filter (nobody can find a tutor otherwise)
-1. Implement the filters in `InMemoryTutorSearchIndex` (subject, level, language,
-   minRating, availableWithinHours) — today it ignores them.
-2. Expose language, min-rating, and availability-window controls on `/tutors`, plus
-   the intro-video thumbnail on tutor cards.
-3. Acceptance: each filter provably changes results against the seeded data; a tutor
-   with no availability in the chosen window drops out.
+### Step 2 — Discovery filters ✅ done except video thumbnail
+All five filters work in both indexes and the `/tutors` filter bar; each filter
+provably changes results against seeded data. Left: carry `introVideoUrl`
+(`TutorApplication` → `TutorProfile` → `TutorSearchResult` → both indexes) and
+render thumbnails on cards + detail. Sort/pagination are deliberate deferrals.
 
-### Step 3 — Trial, reschedule, and the free-replacement guarantee
-1. Add `reschedule-session` in `scheduling` (re-validates availability + policy
-   through the same engine), with routes + UI for both roles.
+### Step 3 — Trial, reschedule, and the free-replacement guarantee ◐ partial
+Trial charge at booking (50% off, banner + totals, one-per-tutor guard) and a
+thin `POST /api/sessions/[id]/reschedule` + student `RescheduleForm` exist.
+Left:
+1. Promote reschedule to a domain `reschedule-session` use-case (same engine
+   validation + policy window/limits), emit `SessionRescheduled`, support
+   `confirmed`, add tutor-side UI + availability-aware picker, and move/refund
+   the charge (today the re-book creates no charge and orphans the old one).
 2. Model the **free replacement lesson** as a booking-level entitlement on trial
-   sessions: a failed-fit trial entitles the student to one replacement lesson that
-   doesn't consume payment; enforce it in the pricing/completion path.
-3. Make the **trial discount explicit at checkout** (displayed segment price vs.
-   trial price) so the mechanic is visible before the student commits.
+   sessions: a failed-fit trial entitles the student to one replacement that
+   doesn't consume payment; enforce single-use in pricing/completion.
+3. Add a `GET` quote (reuse `makeQuoteSessionCharge`) so checkout shows
+   standard vs. trial vs. total instead of duplicating `TRIAL_PRICE_PERCENT`
+   math in `BookButton`.
 4. Acceptance: student books trial → tutor runs it in the lab → student confirms →
-   tutor's wallet credits correctly; a rescheduled session re-conflicts; a
-   replacement tray cancelled trial is honoured once.
+   tutor's wallet credits correctly; a rescheduled session re-conflicts and keeps
+   exactly one charge; a replacement for a cancelled trial is honoured once.
 
-### Step 4 — Student-side money (bill the student, not just the tutor)
-1. Capture a payment method at booking (demo: stub ledger entries; prod: Paystack /
-   Flutterwave intent), compute the expected charge up front (segments × rate, trial
-   discount applied), and record a charge against the student.
-2. Perspective them in a student payments view — receipts, segment breakdowns, and
-   a refund/credit path (used by the free-replacement and dispute flows).
-3. Surface Mojo+ subscribe + custom per-segment pricing for tutors (use-cases exist
-   in `mojo-plus` and `pricing`; they just aren't wired), plus a payout history view.
-4. Acceptance: booking a session produces a predictable student charge and the tutor
-   payout math still matches (segments × take-home on completion).
+### Step 4 — Student-side money (collect done, rail + Mojo+ remain) ✅/◐
+Charge at booking (`provisionDemoMethod` stub in demo), `/payments` receipts
+with segment/trial/refund breakdown, auto-refund on cancel, cancelled-only
+student refund, and tutor payout math (segments × take-home on completion,
+trial ₦0) all work. Left:
+1. Real collect (Paystack/Flutterwave intent where `provisionDemoMethod` stubs).
+2. Surface Mojo+ subscribe + custom per-segment pricing (use-cases exist in
+   `mojo-plus`/`pricing`; no UI/API) plus a payout history/threshold view.
+3. Acceptance: booking produces a predictable student charge and the tutor
+   payout math still matches.
 
-### Step 5 — Reviews end to end
-1. Wire `submit-review` through a UI + `POST /api/reviews` on a completed session,
-   gated by the student-of-record and completion status.
-2. Show the review list on the tutor's profile (and per-review unlock flows through
-   the existing aggregate rating so cards stay consistent).
-3. Acceptance: only the student of a completed session can review once; the tutor's
-   new rating moves their card aggregate.
+### Step 5 — Reviews end to end ✅ done (minimal)
+`submit-review` is wired through `POST /api/reviews` (student-of-record +
+`completed` + one-per-session) with `ReviewForm` UI, and the tutor profile
+shows the review list (first 10) feeding the card aggregate.
+Acceptance passes: only the student of a completed session can review once; the
+new rating moves the card. Left (polish, not MVP-blocking): edit/delete, tutor
+reply, flag/moderation UI.
 
-### Step 6 — Pre-booking messaging end to end
-1. Expose `send-message` on the hub facade, add `POST /api/messages`, and build the
-   composer + conversation page off the existing `/messages` thread derivation.
-2. Gate to authenticated users (tutor and student). Keep lab realtime chat separate.
-3. Acceptance: two demo accounts hold a pre-booking conversation and the start
-   session shows in both inboxes.
+### Step 6 — Pre-booking messaging end to end ✅ done
+`send-message` is exposed on the hub facade with `POST /api/messages` (+ read
+route) and the `/messages` thread derivation + `MessageChat` composer, gated to
+authenticated users (tutor/student, lab chat stays separate).
+Acceptance passes: two demo accounts hold a pre-booking conversation visible in
+both inboxes. Left: attachments, moderation/report, search.
 
-### Step 7 — Notification polish needed by the loop
-1. Time-based reminder scheduling in `notifications` (e.g. session T-minus 30min and
-   day-before), plus very basic per-channel preferences.
-2. (The scheduling side of this step is done — exceptions block a slot in view and
-   at book time, and availability shows buffer around booked slots.)
+### Step 7 — Notification polish needed by the loop ◐ partial
+Event dispatch (book/complete/cancel/submit), per-channel prefs
+(`GET/PUT /api/notifications/preferences`, `/settings`), and
+`dueSessionReminders` (day-before + T-30) with manual fire
+(`POST /api/notifications/reminders`) are done; scheduling exceptions/buffers
+already block slots in view and at book time. Left: a cron/worker so reminders
+fire on time, plus calendar sync (ics/Google export).
 
-### Step 8 — Tutor teaching actions + recap surfaced
-1. Tutor-side mark-complete / no-show / cancel from the lab; today completion is
-   student-confirm only and there's no no-show state anywhere.
-2. Display the generated post-lesson recap on the student and tutor session views —
-   the recap is produced on `SessionCompleted` but nothing renders it.
-3. Acceptance: both sides can close a session; the recap the AI generated on the
-   completion event is readable in the UI.
+### Step 8 — Tutor teaching actions + recap surfaced ◐ partial
+Tutor cancel / no-show / start + student confirm + `RecapCard` on both homes
+(generated on `SessionCompleted` via `makeGenerateRecap`) are wired. Left:
+1. Tutor-side complete and/or auto-confirm (today completion is
+   student-confirm only — `confirm` hardcodes `confirmedBy: 'student'`, no
+   `AUTO_CONFIRM_WINDOW_HOURS` worker — so a silent student stalls payout +
+   recap); student-side no-show button in UI (route allows it).
+2. Hub-side dispute filing (`file-dispute`/`resolve-dispute` + admin
+   `/trust/disputes` exist, but `apps/hub` has no file button/route/view).
+3. Acceptance: both sides can close a session; the recap is readable in the UI;
+   a disputed/cancelled session settles through a visible refund path.
 
 ---
 
 ## MVP-complete check — run this list before calling Phase 1 done
 
-- [ ] A brand-new tutor can complete the full application, get approved by admin,
+- [x] A brand-new tutor can complete the full application, get approved by admin,
       and appear in search at the Entry rate with a real profile.
-- [ ] Discovery filters (subject, level, language, rating, availability) actually
+      (Edges left: rejected-resubmit, edit-approved-profile.)
+- [x] Discovery filters (subject, level, language, rating, availability) actually
       filter in the demo and in the Prisma search index.
-- [ ] A student can find → message → book a paid trial against live availability,
+      (Left: intro-video thumbnails.)
+- [x] A student can find → message → book a paid trial against live availability,
       with the discount visible at checkout.
-- [ ] Both participants can join the in-platform lab; the session status timeline
-      stays truthful (booked → confirmed → completed/cancelled).
-- [ ] On completion: segments × rate charges the student's recorded payment method,
-      the wallet credits the tutor's take-home, and the recap is generated + visible.
+      (Charge-at-booking + trial banner/totals + `/payments` receipts done;
+      quote endpoint + real rail remain.)
+- [x] Both participants can join the in-platform lab; the session status timeline
+      stays truthful (booked → confirmed → completed/cancelled/no_show).
+- [x] On booking: segments × rate charges the student's recorded payment method;
+      on completion: the wallet credits the tutor's take-home, and the recap is
+      generated + visible.
+      (Completion is student-confirm only — no tutor complete / auto-confirm yet.)
 - [ ] The free-replacement entitlement and reschedule/cancel policy hold for trials.
-- [ ] Reviews unlock only after a completed lesson and surface on the tutor profile.
+      (Cancel + auto-refund done; reschedule is thin with no charge move; replacement
+      missing entirely — **the biggest MVP gap**.)
+- [x] Reviews unlock only after a completed lesson and surface on the tutor profile.
 - [ ] Notifications cover the whole loop, including time-based reminders.
-- [ ] No demos-only seat left — every flow works against the Prisma repositories too
-      (each use-case above already goes through both repository sets).
+      (Events + prefs + manual fire done; cron/worker + calendar sync missing.)
+- [ ] No demos-only seat left — every flow works against the Prisma repositories too.
+      (`StudentCharge`/`ChargeRefund`, search, sessions, messaging, reviews all have
+      Prisma repos; hub dispute filing and Mojo+ UI have neither path wired.)
+- [ ] Hub dispute filing is wired (file from session cards, status visible to the
+      student) — today disputes are admin-only.
 
 ## Demo caveats to keep in mind while closing these
 

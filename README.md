@@ -16,7 +16,7 @@ README covers running it.
   bounded module; see `docs/mojo-modules.md` for what each owns
 
 Modules are implemented at **full depth** — domain logic, use-cases, Prisma
-repositories, and Vitest tests (25 spec files / 80 tests). Boundaries are
+repositories, and Vitest tests (38 spec files / 141 tests). Boundaries are
 **machine-enforced**: `npm run lint:boundaries` runs the Nx module-scope rule
 plus a custom clean-architecture layer rule (domains depend only on
 `@mojo/shared/*`; cross-module access is restricted to `domain` contract types
@@ -32,7 +32,7 @@ cp .env.example .env        # defaults are demo-mode: no infra required
 npm run dev:hub             # http://localhost:3003
 npm run dev:admin           # http://localhost:3000
 
-npm test                    # npx vitest run (25 files / 80 tests)
+npm test                    # npx vitest run (38 files / 141 tests)
 npm run lint:boundaries     # module + clean-architecture boundaries
 npm run lint                # biome check + lint:boundaries
 npm run build               # lint:boundaries + nx run-many --target=build --all
@@ -66,21 +66,37 @@ The `admin@mojo.dev` account belongs to the **admin app**; the hub's
 
 ## The core flow
 
-Auth → find a tutor → book → start/join the lab → charge on completion is
-wired end to end through the composition roots. Walk it step by step in
-`docs/mojo-flow.md`; in short:
+Auth → find a tutor → book (charged) → start/join the lab → confirm delivery
+→ tutor payout is wired end to end through the composition roots. Walk it step
+by step in `docs/mojo-flow.md`; in short:
 
 1. **Sign in** via server action `loginWithDemo`; httpOnly cookies
    (`mojo_user` token + `mojo_role`) gate `/tutor/*`, `/tutors/*`, `/lab/*`.
-2. **Find a tutor** (`/tutors`) via `makeSearchTutors`.
-3. **Book** a slot (`POST /api/sessions`) via `makeBookSession` → status `booked`.
-4. **Start the lab** — tutor taps **Start live lab** (`makeConfirmSession`,
+2. **Find a tutor** (`/tutors`) via `makeSearchTutors` — subject, level,
+   language, rating, and availability-window filters all apply in both the
+   demo and Prisma indexes.
+3. **Book** a slot (`POST /api/sessions`) via `makeBookSession` → status `booked`,
+   then `billing.charge` (`makeChargeStudent`) captures the student charge
+   immediately (segments × rate, 50% trial discount when `isTrial`, one trial
+   per student+tutor). Charge failure rolls the booking back to `cancelled`.
+   Trial pricing is visible pre-book on the tutor page and post-book on
+   `/payments`. Cancel (`POST /api/sessions/[id]/cancel`) auto-refunds via
+   `billing.refundForSession`; a student can also refund a cancelled session
+   from `/payments` (`POST /api/charges/[id]/refund`).
+4. **Message / review around the booking** — pre-booking chat (`POST
+   /api/messages`, `/messages`) and post-lesson reviews (`POST /api/reviews`,
+   gated to `completed`, one per session, listed on the tutor profile) are
+   wired.
+5. **Start the lab** — tutor taps **Start live lab** (`makeConfirmSession`,
    `booked → confirmed`) then opens `/tutor/lab/[sessionId]`; the student joins
    the same LiveKit room from `/lab/[sessionId]`.
-5. **Charge** — student confirms delivery (`makeConfirmDelivery` →
-   `SessionCompleted`): the hub credits the tutor wallet, recomputes level,
-   generates an AI recap, and marks the payout eligible; the tutor withdraws
-   via `POST /api/payouts` (`makeReleasePayout`).
+6. **Confirm delivery** — student confirms (`makeConfirmDelivery` →
+   `SessionCompleted`): the hub credits the tutor wallet (trial take-home ₦0),
+   recomputes level, generates an AI recap (rendered on both homes via
+   `RecapCard`), and marks the payout eligible; the tutor withdraws
+   via `POST /api/payouts` (`makeReleasePayout`). Reschedule is a thin
+   `POST /api/sessions/[id]/reschedule` (book-then-cancel, student `booked`
+   sessions only); the free-replacement guarantee is still missing.
 
 ## CI/CD & deployment
 

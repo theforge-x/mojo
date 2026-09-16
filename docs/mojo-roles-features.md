@@ -4,9 +4,9 @@ A companion to the phased roadmap, organized by who uses each feature instead of
 it ships. Written as checklists — pull items into whichever phase they belong to as
 you build.
 
-Status as of 2026-08-29 (`dev` @ `119d303`): `[x]` built & wired · `[~]` partial
+Status as of 2026-09-16 (`dev` @ `a08eca7`): `[x]` built & wired · `[~]` partial
 (exists but incomplete or unwired) · `[ ]` not started. The completion plan for the
-Phase 1 loop is `docs/phase1-mvp-todo.md`.
+Phase 1 loop is `docs/next-steps.md`.
 
 ---
 
@@ -15,9 +15,12 @@ Phase 1 loop is `docs/phase1-mvp-todo.md`.
 **Account & access**
 - [x] Sign up / log in (email + password via `@mojo/identity`; **no** OAuth yet)
 - [ ] Password reset / account recovery
-- [~] Profile photo, display name, timezone, locale settings — display name at signup
-      and a photo fallback exist; timezone & locale are not modeled
-- [ ] Notification channel preferences (email vs. WhatsApp, per notification type)
+- [~] Profile photo, display name, timezone, locale settings — display name +
+      photo (5MB validated) + timezone captured on the tutor application and
+      surfaced on profiles; generic timezone & locale prefs are not modeled
+- [x] Notification channel preferences (email vs. WhatsApp, per notification type)
+      — `GET/PUT /api/notifications/preferences` + `/settings` (reminders, recap,
+      marketing); no cron yet so timed reminders only fire manually
 - [ ] Help center / support contact access
 - [ ] Delete account / export personal data
 
@@ -81,11 +84,13 @@ Phase 1 loop is `docs/phase1-mvp-todo.md`.
 ## Tutor
 
 **Onboarding & profile**
-- [~] Multi-section application — wizard covers subjects, bio, certifications/experience,
-      intro video, and account (with signup); **missing** photo, education,
-      availability & timezone capture. Level/price intentionally not set — Entry by default
-- [ ] View application status
-- [ ] Edit profile post-approval (triggers re-review)
+- [x] Multi-section application — 8-step wizard covers displayName, photo, education,
+      timezone, availability, subjects, languages, bio, certifications/experience,
+      intro video, and account (with signup); approval publishes a live searchable
+      profile at Entry. Level/price intentionally not set — Entry by default
+- [x] View application status (`/apply`: pending / approved / rejected + submittedAt)
+- [ ] Edit profile post-approval (triggers re-review) — rejected-resubmit is also a
+      dead-end (no form, no reason surfaced)
 - [ ] Adjust subjects taught over time
 
 **Availability & scheduling**
@@ -95,20 +100,26 @@ Phase 1 loop is `docs/phase1-mvp-todo.md`.
       pause-new-bookings mode (slots hidden and bookings rejected while paused)
 - [x] View calendar (week view of upcoming and past sessions)
 - [~] Reschedule or cancel a session, subject to the cancellation policy — cancel is
-      built; **reschedule** is not (no use-case, route, or UI)
+      built with auto-refund; **reschedule** is a thin `POST
+      /api/sessions/[id]/reschedule` (book-then-cancel, student `booked` only, no
+      charge move, no domain use-case/event, no tutor-side UI)
 
 **Teaching**
 - [x] Access the in-platform virtual lab (video, whiteboard, chat, file sharing)
-- [~] Mark a lesson complete, cancelled, or no-show — completion is student-confirm
-      only (`POST /api/sessions/[id]/confirm`); no tutor-side action and no no-show state
+- [~] Mark a lesson complete, cancelled, or no-show — student `Confirm delivery`
+      (`POST /api/sessions/[id]/confirm`), tutor cancel + `NoShowButton`
+      (`POST /api/sessions/[id]/no-show`), tutor `Start live lab`; no tutor-side
+      complete and no auto-confirm worker (student-confirm only stalls payout/recap)
 - [ ] Add private notes on a lesson or student
-- [~] Review and edit the AI-generated post-lesson recap before it's sent — recap is
-      generated on `SessionCompleted` but not yet rendered anywhere
+- [x] Review the AI-generated post-lesson recap — generated on `SessionCompleted`
+      and rendered both sides via `RecapCard` (no tutor edit-before-send)
 - [ ] Assign daily practice or scenario drills tied to a lesson
 
 **Students & messaging**
-- [ ] View student roster and per-student lesson history
-- [ ] Pre-booking chat with prospective students (use-case exists; not wired)
+- [ ] View student roster and per-student lesson history (tutor row shows a
+      `studentId` placeholder, no real name)
+- [x] Pre-booking chat with prospective students (`POST/GET /api/messages`,
+      `/messages` + `MessageChat` composer, auth-gated)
 - [ ] Respond to incoming trial lesson requests
 
 **Earnings & payouts**
@@ -127,7 +138,8 @@ Phase 1 loop is `docs/phase1-mvp-todo.md`.
 - [~] View own ranking-relevant stats — response time, trial-to-paid conversion,
       cancellation rate — performance card on tutor home; conversion/cancellation split
       is partial
-- [~] View reviews and ratings received — aggregate rating badge only; no per-review list
+- [~] View reviews and ratings received — aggregate badge + first-10 review list on
+      the tutor profile; no edit/delete/reply/moderation
 - [ ] Access personal referral link and track referral rewards
 - [ ] See guidance on what would improve profile ranking
 
@@ -138,36 +150,41 @@ Phase 1 loop is `docs/phase1-mvp-todo.md`.
 **Discovery & booking**
 - [~] Set learning goals / subject / proficiency level at signup, to shortlist
       relevant tutors — captured at signup; not yet surfaced as a shortlist
-- [~] Search and filter tutors — subject + level only in the UI; the demo search
-      index ignores filters, and language / availability / rating aren't exposed
-- [~] View a tutor's full profile — bio, level, price/segment, avatar, and basic
-      stats shown; intro video, review list, and certifications are not surfaced
+- [x] Search and filter tutors — subject, level, language, rating,
+      availability-window all filter in demo + Prisma + UI (only intro-video
+      thumbnails missing)
+- [~] View a tutor's full profile — bio, level, price/segment, avatar, languages,
+      stats, and first-10 reviews shown; intro video and certifications are not
+      surfaced
 - [x] Save / shortlist favorite tutors
-- [~] Book a trial lesson at the discounted rate — `isTrial` bookings exist; the
-      discounted price isn't shown at checkout (no student checkout at all yet)
+- [x] Book a trial lesson at the discounted rate — `isTrial` bookings charge at
+      booking (50% off, one-per-tutor guard, banner + totals pre-book, receipt on
+      `/payments`); stub capture only, no quote endpoint
 - [ ] Request a free replacement lesson if the trial isn't a fit
 - [ ] Start, adjust, or cancel a recurring subscription with a chosen tutor
 - [~] Reschedule or cancel an upcoming lesson, subject to the cancellation policy —
-      cancel only; reschedule isn't built
+      cancel + auto-refund done; reschedule is student `booked`-only with no charge move
 
 **Learning**
 - [x] Access the in-platform virtual lab
-- [~] View full lesson history — sessions list on student home; no dedicated page or
-      recap
-- [ ] View the AI-generated post-lesson recap after each session (generated, not rendered)
+- [x] View full lesson history + AI recap — sessions list on student home with
+      `RecapCard` on `completed` (no dedicated lessons page)
+- [x] View the AI-generated post-lesson recap after each session
 - [ ] Complete assigned daily practice and scenario drills
 - [ ] Track progress over time
 
 **Payments & subscription**
-- [ ] Manage payment method (Paystack/Flutterwave, card)
+- [~] Manage payment method (demo stub via `provisionDemoMethod`; no real
+      Paystack/Flutterwave card UI)
 - [ ] Adjust lesson frequency on an active subscription
-- [ ] View payment history and receipts
+- [x] View payment history and receipts (`/payments`: totals, segment/trial/refund
+      breakdown, cancelled-only `Refund`)
 - [ ] Pause or cancel a subscription
 
 **Community & trust**
-- [ ] Leave a public rating and written review after a completed lesson (use-case
-      exists; not wired)
-- [ ] Message a tutor before booking (use-case exists; not wired)
+- [x] Leave a public rating and written review after a completed lesson (gated to
+      `completed`, one per session)
+- [x] Message a tutor before booking (`/messages` + composer)
 - [ ] Access personal referral link and track rewards
 
 ---

@@ -43,20 +43,20 @@ backfilling it once levels, payouts, and rankings are all already reading from i
 The goal of this phase alone: a tutor can be found, booked for a trial, and paid for a
 completed lesson. Nothing else matters until this loop works end to end.
 
-**Status as of 2026-08-29** (`dev` @ `119d303`). Legend: `[x]` built · `[~]` partial
-· `[ ]` missing. The concrete work list is `docs/phase1-mvp-todo.md`; the table below
+**Status as of 2026-09-16** (`dev` @ `a08eca7`). Legend: `[x]` built · `[~]` partial
+· `[ ]` missing. The concrete work list is `docs/next-steps.md`; the table below
 is the at-a-glance view.
 
 | Mechanic | Status | One-line delta |
 |---|---|---|
-| Tutor profile & application | `[~]` | Wizard done; photo/education/timezone/availability capture and the review→live hand-off are missing |
-| Tutor search & discovery | `[~]` | Demo index ignores all filters; UI exposes subject + level only |
-| Trial lesson + booking | `[~]` | Trial flag, segments, cancel done; no reschedule, no free-replacement guarantee, no student checkout |
+| Tutor profile & application | `[x]` | Wizard captures photo/displayName/education/timezone/availability; review → live wired; applicant status view done — rejected-resubmit and edit-approved-profile still missing |
+| Tutor search & discovery | `[x]` | All 5 filters (subject/level/language/rating/availability-window) work in demo + Prisma + UI; only intro-video thumbnails missing |
+| Trial lesson + booking | `[~]` | Trial charge at booking (50% off, one-per-tutor guard), cancel + auto-refund, thin reschedule route; no free-replacement guarantee, no quote endpoint, stub capture only |
 | Virtual lab | `[x]` | LiveKit video/whiteboard/chat/files, both role joins — complete for MVP scope |
-| Payments — Nigeria-first | `[~]` | Segments, wallet, commission, payouts done; nothing collects money from students yet |
-| Messaging | `[ ]` | `send-message` use-case exists; not wired, no composer |
-| Reviews | `[ ]` | `submit-review` use-case exists; not wired, no submit UI |
-| Notifications | `[~]` | Event dispatchers wired; no scheduled reminders, calendar sync, or channel prefs |
+| Payments — Nigeria-first | `[~]` | Charge/refund ledger + `/payments` receipts + wallet/payout done; stub rail only, no Mojo+ UI, no payout history/threshold view |
+| Messaging | `[x]` | Pre-booking chat wired (`POST /api/messages`, `/messages` + composer, auth-gated) |
+| Reviews | `[x]` | Submit gated to `completed` (one per session) + list on tutor profile; no edit/moderation |
+| Notifications | `[~]` | Event dispatchers + prefs + manual reminders wired; no cron/worker, no calendar sync |
 
 **Tutor profile & application**
 A multi-section application — photo, intro video, certifications, education, written
