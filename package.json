@@ -13,7 +13,11 @@
     "lint:boundaries": "eslint \"libs/**/*.{ts,tsx,js,jsx}\" \"apps/**/*.{ts,tsx,js,jsx}\"",
     "format": "biome format --write .",
     "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
-    "prisma:migrate": "prisma migrate dev --schema=prisma/schema.prisma"
+    "prisma:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
+    "prisma:seed": "node prisma/seed.mjs"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.11",
