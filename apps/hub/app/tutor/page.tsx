@@ -1,19 +1,33 @@
 import { CalendarView } from '@mojo/scheduling/feature';
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
-import { Handshake } from 'lucide-react';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import { CalendarDays, Handshake, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { LevelBadge } from '../../components/level-badge';
 import { RequestPayoutButton } from '../../components/request-payout-button';
 import { CancelSessionButton, StartSessionButton } from '../../components/session-actions';
+import {
+  parseSessionView,
+  SessionGridCard,
+  SessionListCard,
+  toneForStatus,
+} from '../../components/session-cards';
 import { NoShowButton, RecapCard } from '../../components/session-feedback';
 import { SessionStatusBadge } from '../../components/session-status-badge';
+import { SessionViewToggle } from '../../components/session-view-toggle';
 import { getHub } from '../../demo/composition-root';
-import { formatMinor, formatWhen } from '../../lib/format';
+import { formatMinor } from '../../lib/format';
 import { currentUser } from '../../lib/session';
 
-export default async function TutorHome() {
+export default async function TutorHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const user = await currentUser();
   if (user?.role !== 'tutor') return null;
+
+  const params = await searchParams;
+  const view = parseSessionView(params.view);
 
   const hub = getHub();
   const [sessions, performance, wallet, interests] = await Promise.all([
@@ -96,48 +110,69 @@ export default async function TutorHome() {
         </Link>
       </div>
 
-      <h2 className="mb-3 font-display text-lg font-bold text-headline">Sessions</h2>
-      <div className="mb-6 flex flex-col gap-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold text-headline">
+          <CalendarDays className="size-5 text-primary" aria-hidden />
+          Sessions
+          <span className="text-sm font-medium text-muted-foreground">({sessions.length})</span>
+        </h2>
+        <SessionViewToggle view={view} />
+      </div>
+      <div className="mb-6">
         {sessions.length === 0 && <p className="text-sm text-muted-foreground">No sessions yet.</p>}
-        {
-          await Promise.all(
-            sessions.map(async (session) => {
-              const recap =
-                session.status === 'completed' ? await hub.recaps.latestFor(session.id) : null;
-              return (
-                <Card key={session.id}>
-                  <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
-                    <div>
-                      <div className="text-sm">
-                        {formatWhen(session.startIso, session.endIso)} · student{' '}
-                        {session.studentId.at(-1)}
-                        {session.isTrial ? ' · trial' : ''}
-                      </div>
-                      <div className="mt-1 flex items-center gap-2">
-                        <SessionStatusBadge status={session.status} />
-                      </div>
-                      {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {(session.status === 'booked' || session.status === 'confirmed') && (
-                        <>
-                          <CancelSessionButton sessionId={session.id} />
-                          <NoShowButton sessionId={session.id} />
-                        </>
-                      )}
-                      {session.status === 'booked' && <StartSessionButton sessionId={session.id} />}
-                      {session.status === 'confirmed' && (
-                        <Link href={`/tutor/lab/${session.id}`}>
-                          <Button size="sm">Open lab</Button>
-                        </Link>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            }),
-          )
-        }
+        {view === 'grid' ? (
+          <div className="columns-1 gap-4 sm:columns-2 xl:columns-3">
+            {(
+              await Promise.all(
+                sessions.map(async (session) => ({
+                  session,
+                  student: (await hub.identity.userById(session.studentId))?.name ?? 'Your student',
+                  recap:
+                    session.status === 'completed' ? await hub.recaps.latestFor(session.id) : null,
+                })),
+              )
+            ).map(({ session, student, recap }) => (
+              <SessionGridCard
+                key={session.id}
+                startIso={session.startIso}
+                endIso={session.endIso}
+                tone={toneForStatus(session.status)}
+                title={student}
+                subtitle={session.isTrial ? 'Trial lesson' : undefined}
+                badges={<TutorSessionBadges status={session.status} isTrial={session.isTrial} />}
+                actions={<TutorSessionActions session={session} />}
+              >
+                {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
+              </SessionGridCard>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {(
+              await Promise.all(
+                sessions.map(async (session) => ({
+                  session,
+                  student: (await hub.identity.userById(session.studentId))?.name ?? 'Your student',
+                  recap:
+                    session.status === 'completed' ? await hub.recaps.latestFor(session.id) : null,
+                })),
+              )
+            ).map(({ session, student, recap }) => (
+              <SessionListCard
+                key={session.id}
+                startIso={session.startIso}
+                endIso={session.endIso}
+                tone={toneForStatus(session.status)}
+                title={student}
+                subtitle={session.isTrial ? 'Trial lesson' : undefined}
+                badges={<TutorSessionBadges status={session.status} isTrial={session.isTrial} />}
+                actions={<TutorSessionActions session={session} />}
+              >
+                {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
+              </SessionListCard>
+            ))}
+          </div>
+        )}
       </div>
 
       <h2 className="mb-3 font-display text-lg font-bold text-headline">This week</h2>
@@ -150,4 +185,39 @@ export default async function TutorHome() {
 
 function formatHours(hours: number): string {
   return hours >= 1000 ? `${(hours / 1000).toFixed(1)}k h` : `${hours.toFixed(0)} h`;
+}
+
+function TutorSessionBadges({ status, isTrial }: { status: string; isTrial: boolean }) {
+  return (
+    <>
+      <SessionStatusBadge status={status} />
+      {isTrial && (
+        <Badge variant="secondary" className="gap-1">
+          <Sparkles className="size-3" aria-hidden />
+          Trial
+        </Badge>
+      )}
+    </>
+  );
+}
+
+function TutorSessionActions({ session }: { session: { id: string; status: string } }) {
+  return (
+    <>
+      {(session.status === 'booked' || session.status === 'confirmed') && (
+        <>
+          <CancelSessionButton sessionId={session.id} />
+          <NoShowButton sessionId={session.id} />
+        </>
+      )}
+      {session.status === 'booked' && <StartSessionButton sessionId={session.id} />}
+      {session.status === 'confirmed' && (
+        <Link href={`/tutor/lab/${session.id}`} className="w-full sm:w-auto">
+          <Button size="sm" className="w-full">
+            Open lab
+          </Button>
+        </Link>
+      )}
+    </>
+  );
 }

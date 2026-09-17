@@ -1,25 +1,34 @@
 import { CalendarView } from '@mojo/scheduling/feature';
 import {
+  Badge,
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   Empty,
   EmptyDescription,
   EmptyTitle,
 } from '@mojo/shared/ui';
+import { CalendarDays, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { CancelSessionButton, ConfirmDeliveryButton } from '../../components/session-actions';
+import {
+  dayLabel,
+  SessionDateTile,
+  SessionGridCard,
+  SessionListCard,
+  type SessionView,
+  toneForStatus,
+} from '../../components/session-cards';
 import { RecapCard, RescheduleForm, ReviewForm } from '../../components/session-feedback';
 import { SessionStatusBadge } from '../../components/session-status-badge';
+import { SessionViewToggle } from '../../components/session-view-toggle';
 import { getHub } from '../../demo/composition-root';
 import { formatWhen } from '../../lib/format';
 import { currentUser } from '../../lib/session';
 
 /** The student home lives in the `(student)` route group but resolves to `/`. */
 
-export async function StudentHome() {
+export async function StudentHome({ view }: { view: SessionView }) {
   const user = await currentUser();
   if (user?.role !== 'student') return null;
 
@@ -31,6 +40,17 @@ export async function StudentHome() {
     .filter((s) => s.status === 'booked' || s.status === 'confirmed')
     .sort((a, b) => a.startIso.localeCompare(b.startIso));
   const next = upcoming[0] ?? null;
+  const nextTutor = next ? await label(next.tutorId) : null;
+
+  const enriched = await Promise.all(
+    sessions.map(async (session) => ({
+      session,
+      tutor: await label(session.tutorId),
+      review:
+        session.status === 'completed' ? await hub.reviews.reviewForSession(session.id) : null,
+      recap: session.status === 'completed' ? await hub.recaps.latestFor(session.id) : null,
+    })),
+  );
 
   return (
     <main className="mx-auto max-w-6xl p-6">
@@ -48,18 +68,26 @@ export async function StudentHome() {
         </div>
       </div>
 
-      {next ? (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Next lesson</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center justify-between gap-3">
-            <span>
-              {await label(next.tutorId)} — {formatWhen(next.startIso, next.endIso)}
-            </span>
-            <SessionStatusBadge status={next.status} />
-            <CancelSessionButton sessionId={next.id} />
-          </CardContent>
+      {next && nextTutor ? (
+        <Card className="mb-6 overflow-hidden">
+          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-3">
+              <SessionDateTile startIso={next.startIso} tone={toneForStatus(next.status)} />
+              <div>
+                <p className="text-xs font-bold tracking-[0.14em] text-primary uppercase">
+                  Next lesson · {dayLabel(next.startIso)}
+                </p>
+                <p className="mt-0.5 font-display text-xl font-bold text-headline">{nextTutor}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {formatWhen(next.startIso, next.endIso)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 sm:ms-auto">
+              <SessionStatusBadge status={next.status} />
+              <CancelSessionButton sessionId={next.id} />
+            </div>
+          </div>
         </Card>
       ) : (
         <Card className="mb-6">
@@ -72,61 +100,61 @@ export async function StudentHome() {
         </Card>
       )}
 
-      <h2 className="mb-3 font-display text-lg font-bold text-headline">Your sessions</h2>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold text-headline">
+          <CalendarDays className="size-5 text-primary" aria-hidden />
+          Your sessions
+          <span className="text-sm font-medium text-muted-foreground">({sessions.length})</span>
+        </h2>
+        <SessionViewToggle view={view} />
+      </div>
       {sessions.length === 0 ? (
         <Empty>
           <EmptyTitle>Nothing here yet</EmptyTitle>
           <EmptyDescription>Head to Find a tutor to get started.</EmptyDescription>
         </Empty>
+      ) : view === 'grid' ? (
+        <div className="columns-1 gap-4 sm:columns-2 xl:columns-3">
+          {enriched.map(({ session, tutor, review, recap }) => (
+            <SessionGridCard
+              key={session.id}
+              startIso={session.startIso}
+              endIso={session.endIso}
+              tone={toneForStatus(session.status)}
+              title={tutor}
+              subtitle={session.isTrial ? 'Trial lesson' : undefined}
+              badges={<StudentSessionBadges status={session.status} isTrial={session.isTrial} />}
+              actions={<StudentSessionActions session={session} />}
+            >
+              <StudentSessionExtras
+                status={session.status}
+                sessionId={session.id}
+                hasReview={review !== null}
+                recap={recap}
+              />
+            </SessionGridCard>
+          ))}
+        </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {(
-            await Promise.all(
-              sessions.map(async (session) => ({
-                session,
-                tutor: await label(session.tutorId),
-                review:
-                  session.status === 'completed'
-                    ? await hub.reviews.reviewForSession(session.id)
-                    : null,
-                recap:
-                  session.status === 'completed' ? await hub.recaps.latestFor(session.id) : null,
-              })),
-            )
-          ).map(({ session, tutor, review, recap }) => (
-            <Card key={session.id}>
-              <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
-                <div>
-                  <div className="text-sm">
-                    {tutor} · {formatWhen(session.startIso, session.endIso)}
-                  </div>
-                  {session.status === 'completed' && !review && (
-                    <p className="text-xs text-muted-foreground">Done — deliver the review.</p>
-                  )}
-                  {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
-                  {session.status === 'completed' && !review && (
-                    <ReviewForm sessionId={session.id} />
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <SessionStatusBadge status={session.status} />
-                  {session.status === 'confirmed' && (
-                    <Link href={`/lab/${session.id}`}>
-                      <Button size="sm" variant="outline">
-                        Join lab
-                      </Button>
-                    </Link>
-                  )}
-                  {session.status === 'confirmed' && (
-                    <ConfirmDeliveryButton sessionId={session.id} />
-                  )}
-                  {(session.status === 'booked' || session.status === 'confirmed') && (
-                    <CancelSessionButton sessionId={session.id} />
-                  )}
-                  {session.status === 'booked' && <RescheduleForm sessionId={session.id} />}
-                </div>
-              </CardContent>
-            </Card>
+        <div className="flex flex-col gap-4">
+          {enriched.map(({ session, tutor, review, recap }) => (
+            <SessionListCard
+              key={session.id}
+              startIso={session.startIso}
+              endIso={session.endIso}
+              tone={toneForStatus(session.status)}
+              title={tutor}
+              subtitle={session.isTrial ? 'Trial lesson' : undefined}
+              badges={<StudentSessionBadges status={session.status} isTrial={session.isTrial} />}
+              actions={<StudentSessionActions session={session} />}
+            >
+              <StudentSessionExtras
+                status={session.status}
+                sessionId={session.id}
+                hasReview={review !== null}
+                recap={recap}
+              />
+            </SessionListCard>
           ))}
         </div>
       )}
@@ -136,5 +164,60 @@ export async function StudentHome() {
         sessions={sessions.filter((s) => s.status !== 'cancelled' && s.status !== 'no_show')}
       />
     </main>
+  );
+}
+
+function StudentSessionBadges({ status, isTrial }: { status: string; isTrial: boolean }) {
+  return (
+    <>
+      <SessionStatusBadge status={status} />
+      {isTrial && (
+        <Badge variant="secondary" className="gap-1">
+          <Sparkles className="size-3" aria-hidden />
+          Trial
+        </Badge>
+      )}
+    </>
+  );
+}
+
+function StudentSessionActions({ session }: { session: { id: string; status: string } }) {
+  return (
+    <>
+      {session.status === 'confirmed' && (
+        <Link href={`/lab/${session.id}`} className="w-full">
+          <Button size="sm" variant="outline" className="w-full">
+            Join lab
+          </Button>
+        </Link>
+      )}
+      {session.status === 'confirmed' && <ConfirmDeliveryButton sessionId={session.id} />}
+      {(session.status === 'booked' || session.status === 'confirmed') && (
+        <CancelSessionButton sessionId={session.id} />
+      )}
+      {session.status === 'booked' && <RescheduleForm sessionId={session.id} />}
+    </>
+  );
+}
+
+function StudentSessionExtras({
+  status,
+  sessionId,
+  hasReview,
+  recap,
+}: {
+  status: string;
+  sessionId: string;
+  hasReview: boolean;
+  recap: { summary: string; focusAreas: readonly string[] } | null;
+}) {
+  return (
+    <>
+      {status === 'completed' && !hasReview && (
+        <p className="text-xs text-muted-foreground">Done — deliver the review.</p>
+      )}
+      {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
+      {status === 'completed' && !hasReview && <ReviewForm sessionId={sessionId} />}
+    </>
   );
 }

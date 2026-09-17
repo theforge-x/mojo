@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { LandingPage } from '../components/landing-page';
+import { parseSessionView } from '../components/session-cards';
 import { TutorDirectory } from '../components/tutor-directory';
 import { getHub } from '../demo/composition-root';
 import { currentUser } from '../lib/session';
@@ -10,7 +11,11 @@ import { StudentHome } from './(student)/student-home';
  * A student starts at the filterable tutor list until they complete their first
  * lesson — only then does the overview become the default view.
  */
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const user = await currentUser();
   if (!user) return <LandingPage />;
   if (user.role === 'tutor') redirect('/tutor');
@@ -19,7 +24,10 @@ export default async function HomePage() {
   const hub = getHub();
   const sessions = await hub.scheduling.sessionsByStudent(user.id);
   const hasCompletedLesson = sessions.some((session) => session.status === 'completed');
-  if (hasCompletedLesson) return <StudentHome />;
+  if (hasCompletedLesson) {
+    const params = await searchParams;
+    return <StudentHome view={parseSessionView(params.view)} />;
+  }
 
   return (
     <main className="mx-auto max-w-6xl p-6">

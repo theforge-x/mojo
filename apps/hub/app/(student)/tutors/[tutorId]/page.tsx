@@ -1,25 +1,37 @@
 import { TRIAL_PRICE_PERCENT } from '@mojo/payments/domain';
 import { tutorLocalTime } from '@mojo/scheduling/domain';
 import { Badge, Button, Card, CardContent, Empty, EmptyDescription } from '@mojo/shared/ui';
+import { segmentsBetween } from '@mojo/shared/util';
+import { CalendarDays, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { BookButton } from '../../../../components/book-button';
 import { SaveTutorButton } from '../../../../components/save-tutor-button';
+import {
+  durationMinutes,
+  parseSessionView,
+  SessionGridCard,
+  SessionListCard,
+} from '../../../../components/session-cards';
+import { SessionViewToggle } from '../../../../components/session-view-toggle';
 import { getHub } from '../../../../demo/composition-root';
-import { formatMinor, formatWhen } from '../../../../lib/format';
+import { formatMinor } from '../../../../lib/format';
 import { currentUser } from '../../../../lib/session';
 import { bookableSlots } from '../../../../lib/slots';
 
 export default async function TutorDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ tutorId: string }>;
+  searchParams: Promise<{ view?: string }>;
 }) {
   const user = await currentUser();
   if (!user) redirect('/');
   if (user.role !== 'student') redirect('/tutor');
 
-  const { tutorId } = await params;
+  const [{ tutorId }, query] = await Promise.all([params, searchParams]);
+  const view = parseSessionView(query.view);
   const hub = getHub();
   const settings = await hub.scheduling.settings(tutorId);
   const todayKey = tutorLocalTime(new Date().toISOString(), settings.timezone).dateKey;
@@ -56,7 +68,9 @@ export default async function TutorDetailPage({
           <h1 className="font-display text-2xl font-bold text-headline">{tutor.displayName}</h1>
           <div className="flex items-center gap-2">
             <Link href={`/messages?with=${encodeURIComponent(tutorId)}`}>
-              <Button variant="outline">Message tutor</Button>
+              <Button variant="outline" size="sm">
+                Message tutor
+              </Button>
             </Link>
             <SaveTutorButton
               tutor={{
@@ -89,7 +103,16 @@ export default async function TutorDetailPage({
         )}
       </div>
 
-      <h2 className="mb-3 font-display text-lg font-bold text-headline">Available slots</h2>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold text-headline">
+          <CalendarDays className="size-5 text-primary" aria-hidden />
+          Available slots
+          <span className="text-sm font-medium text-muted-foreground">
+            ({Math.min(slots.length, 24)})
+          </span>
+        </h2>
+        {slots.length > 0 && <SessionViewToggle view={view} />}
+      </div>
       {settings.pausedForNewBookings ? (
         <Card>
           <CardContent>
@@ -108,12 +131,25 @@ export default async function TutorDetailPage({
             </Empty>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      ) : view === 'grid' ? (
+        <div className="columns-1 gap-4 sm:columns-2 xl:columns-3">
           {slots.slice(0, 24).map((slot) => (
-            <Card key={slot.startIso}>
-              <CardContent className="flex items-center justify-between py-4">
-                <span className="text-sm">{formatWhen(slot.startIso, slot.endIso)}</span>
+            <SessionGridCard
+              key={slot.startIso}
+              startIso={slot.startIso}
+              endIso={slot.endIso}
+              tone="teal"
+              title={`${durationMinutes(slot.startIso, slot.endIso)} min lesson`}
+              subtitle={slotSubtitle(slot.startIso, slot.endIso, tutor.perSegmentMinor)}
+              badges={
+                !trialUsed && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Sparkles className="size-3" aria-hidden />
+                    Trial −{100 - TRIAL_PRICE_PERCENT}%
+                  </Badge>
+                )
+              }
+              actions={
                 <BookButton
                   tutorId={tutorId}
                   studentId={user.id}
@@ -122,8 +158,39 @@ export default async function TutorDetailPage({
                   perSegmentMinor={tutor.perSegmentMinor}
                   trialUsed={trialUsed}
                 />
-              </CardContent>
-            </Card>
+              }
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {slots.slice(0, 24).map((slot) => (
+            <SessionListCard
+              key={slot.startIso}
+              startIso={slot.startIso}
+              endIso={slot.endIso}
+              tone="teal"
+              title={`${durationMinutes(slot.startIso, slot.endIso)} min lesson`}
+              subtitle={slotSubtitle(slot.startIso, slot.endIso, tutor.perSegmentMinor)}
+              badges={
+                !trialUsed && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Sparkles className="size-3" aria-hidden />
+                    Trial −{100 - TRIAL_PRICE_PERCENT}%
+                  </Badge>
+                )
+              }
+              actions={
+                <BookButton
+                  tutorId={tutorId}
+                  studentId={user.id}
+                  startIso={slot.startIso}
+                  endIso={slot.endIso}
+                  perSegmentMinor={tutor.perSegmentMinor}
+                  trialUsed={trialUsed}
+                />
+              }
+            />
           ))}
         </div>
       )}
@@ -160,6 +227,11 @@ export default async function TutorDetailPage({
       </Link>
     </main>
   );
+}
+
+function slotSubtitle(startIso: string, endIso: string, perSegmentMinor: number): string {
+  const segments = segmentsBetween(startIso, endIso);
+  return `${segments} segment${segments === 1 ? '' : 's'} · ${formatMinor(perSegmentMinor)} each`;
 }
 
 function dateKeyPlus(key: string, offset: number): string {

@@ -125,7 +125,7 @@ export function MessageChat({
           event.preventDefault();
           void send();
         }}
-        className="flex items-center gap-2 border-t bg-background p-3"
+        className="flex items-center gap-2 bg-background p-3"
       >
         <Input
           value={draft}
