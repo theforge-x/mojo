@@ -24,7 +24,7 @@ export function StartSessionButton({ sessionId }: { sessionId: string }) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex w-full flex-col items-stretch gap-1">
       <Button size="sm" onClick={handleClick} disabled={busy}>
         {busy ? 'Starting…' : 'Start live lab'}
       </Button>

@@ -77,7 +77,7 @@ export function BookButton({
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
+    <div className="flex w-full flex-col items-stretch gap-2">
       <span className="text-sm font-medium">
         {replacing ? 'Free · replacement' : formatMinor(total)}
       </span>
@@ -103,7 +103,7 @@ export function BookButton({
           First lesson trial (−{100 - TRIAL_PRICE_PERCENT}%)
         </label>
       )}
-      <Button size="sm" onClick={handleClick} disabled={busy}>
+      <Button size="sm" onClick={handleClick} disabled={busy} className="w-full">
         {busy ? 'Booking…' : 'Book this slot'}
       </Button>
       {error && <Alert variant="danger">{error}</Alert>}
