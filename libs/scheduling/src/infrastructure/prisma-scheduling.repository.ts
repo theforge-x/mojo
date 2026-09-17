@@ -122,7 +122,13 @@ export class PrismaSessionRepository implements SessionRepository {
         status: session.status,
         isTrial: session.isTrial,
       },
-      update: { status: session.status },
+      // In-place moves (reschedule) change the clock, not just the status —
+      // persist both so the Prisma path matches the in-memory store.
+      update: {
+        startAt: new Date(session.startIso),
+        endAt: new Date(session.endIso),
+        status: session.status,
+      },
     });
   }
 

@@ -33,6 +33,19 @@ export type SessionNoShow = DomainEvent<
   { sessionId: string; noShowBy: 'student' | 'tutor' }
 >;
 
+export type SessionRescheduled = DomainEvent<
+  'SessionRescheduled',
+  {
+    sessionId: string;
+    tutorId: string;
+    studentId: string;
+    oldStartIso: string;
+    oldEndIso: string;
+    newStartIso: string;
+    newEndIso: string;
+  }
+>;
+
 export type SessionDeliveryConfirmed = DomainEvent<
   'SessionDeliveryConfirmed',
   { sessionId: string; confirmedBy: 'student' | 'auto_window' }
@@ -81,6 +94,7 @@ export type MojoEvent =
   | SessionCancelled
   | SessionCompleted
   | SessionNoShow
+  | SessionRescheduled
   | SessionDeliveryConfirmed
   | TutorLevelChanged
   | MojoPlusSubscribed
