@@ -1,4 +1,4 @@
-export type DeliveryConfirmationSource = 'student' | 'auto_window';
+export type DeliveryConfirmationSource = 'student' | 'tutor' | 'auto_window';
 
 export interface DeliveryConfirmation {
   readonly sessionId: string;

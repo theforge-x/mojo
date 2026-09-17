@@ -2,7 +2,11 @@ import { eventBus } from '@mojo/shared/events';
 import { describe, expect, it } from 'vitest';
 import type { BookingRepository, SegmentRateReader } from '../domain/booking.ports';
 import type { BookingSession } from '../domain/booking-session.types';
-import { makeConfirmDelivery, SessionNotBookedError } from './confirm-delivery.use-case';
+import {
+  makeConfirmDelivery,
+  SessionAlreadyCompletedError,
+  SessionNotBookedError,
+} from './confirm-delivery.use-case';
 
 function fakeSession(overrides: Partial<BookingSession> = {}): BookingSession {
   return {
@@ -12,7 +16,18 @@ function fakeSession(overrides: Partial<BookingSession> = {}): BookingSession {
     startIso: '2026-09-01T10:00:00.000Z',
     endIso: '2026-09-01T11:00:00.000Z',
     isTrial: false,
+    status: 'confirmed',
     ...overrides,
+  };
+}
+
+function fakeBookings(session: BookingSession | null): BookingRepository {
+  return {
+    findById: async () => session,
+    listAwaitingConfirmation: async () => [],
+    markCompleted: async () => {},
+    markNoShow: async () => {},
+    saveConfirmation: async () => {},
   };
 }
 
@@ -21,12 +36,7 @@ describe('confirmDelivery', () => {
 
   it('publishes SessionCompleted with a segment count derived from duration', async () => {
     const session = fakeSession();
-    const bookings: BookingRepository = {
-      findById: async () => session,
-      markCompleted: async () => {},
-      markNoShow: async () => {},
-      saveConfirmation: async () => {},
-    };
+    const bookings = fakeBookings(session);
     let completed: unknown = null;
     eventBus.subscribe('SessionCompleted', (e) => {
       completed = e;
@@ -46,12 +56,7 @@ describe('confirmDelivery', () => {
 
   it('publishes a zero rate for trial sessions', async () => {
     const session = fakeSession({ isTrial: true });
-    const bookings: BookingRepository = {
-      findById: async () => session,
-      markCompleted: async () => {},
-      markNoShow: async () => {},
-      saveConfirmation: async () => {},
-    };
+    const bookings = fakeBookings(session);
     let completed: unknown = null;
     eventBus.subscribe('SessionCompleted', (e) => {
       completed = e;
@@ -67,13 +72,21 @@ describe('confirmDelivery', () => {
     expect(completed).toMatchObject({ payload: { rate: { amountMinor: 0 } } });
   });
 
+  it('refuses to complete an already-completed session twice', async () => {
+    const bookings = fakeBookings(fakeSession({ status: 'completed' }));
+    const confirmDelivery = makeConfirmDelivery({ bookings, rates });
+
+    await expect(
+      confirmDelivery({
+        sessionId: 's_1',
+        confirmedBy: 'student',
+        nowIso: '2026-09-01T11:05:00.000Z',
+      }),
+    ).rejects.toThrow(SessionAlreadyCompletedError);
+  });
+
   it('throws if the session does not exist', async () => {
-    const bookings: BookingRepository = {
-      findById: async () => null,
-      markCompleted: async () => {},
-      markNoShow: async () => {},
-      saveConfirmation: async () => {},
-    };
+    const bookings = fakeBookings(null);
     const confirmDelivery = makeConfirmDelivery({ bookings, rates });
 
     await expect(

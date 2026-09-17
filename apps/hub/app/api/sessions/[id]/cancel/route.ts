@@ -28,6 +28,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   const cancelledBy = user.role === 'tutor' ? 'tutor' : user.role === 'admin' ? 'admin' : 'student';
 
+  const cancelled = await hub.scheduling.sessionById(id);
+
   try {
     await hub.scheduling.cancel({
       sessionId: id,
@@ -38,7 +40,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // A cancelled booking keeps no money: settle the student's charge back
     // in full. Refund failure must not fail the cancellation itself.
     await hub.billing.refundForSession(id, 'cancelled', new Date().toISOString()).catch(() => {});
-    return NextResponse.json({ ok: true });
+    // A cancelled trial banks one free rebook with the same tutor. The grant
+    // is single-use and can never mint a follow-up, so the chain terminates.
+    let replacementGrantId: string | null = null;
+    if (cancelled?.isTrial) {
+      const grant = await hub.billing
+        .grantReplacement({
+          studentId: cancelled.studentId,
+          tutorId: cancelled.tutorId,
+          sourceSessionId: id,
+        })
+        .catch(() => null);
+      if (grant !== null && grant.status === 'granted') replacementGrantId = grant.id;
+    }
+    return NextResponse.json({
+      ok: true,
+      replacementGranted: replacementGrantId !== null,
+      replacementGrantId,
+    });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'Cancellation failed.' },

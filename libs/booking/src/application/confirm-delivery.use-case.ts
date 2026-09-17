@@ -4,13 +4,19 @@ import type { BookingRepository, SegmentRateReader } from '../domain/booking.por
 
 export interface ConfirmDeliveryInput {
   sessionId: string;
-  confirmedBy: 'student' | 'auto_window';
+  confirmedBy: 'student' | 'tutor' | 'auto_window';
   nowIso: string;
 }
 
 export class SessionNotBookedError extends Error {
   constructor(id: string) {
     super(`No session found for id ${id}.`);
+  }
+}
+
+export class SessionAlreadyCompletedError extends Error {
+  constructor(id: string) {
+    super(`Session ${id} is already completed — confirming twice would double-pay the tutor.`);
   }
 }
 
@@ -30,6 +36,7 @@ export function makeConfirmDelivery(deps: {
   return async function confirmDelivery(input: ConfirmDeliveryInput): Promise<void> {
     const session = await deps.bookings.findById(input.sessionId);
     if (!session) throw new SessionNotBookedError(input.sessionId);
+    if (session.status === 'completed') throw new SessionAlreadyCompletedError(input.sessionId);
 
     await deps.bookings.markCompleted(input.sessionId, input.nowIso);
     await deps.bookings.saveConfirmation({

@@ -2,16 +2,21 @@ import { CalendarView } from '@mojo/scheduling/feature';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import { CalendarDays, Handshake, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { DisputeButton } from '../../components/dispute-button';
 import { LevelBadge } from '../../components/level-badge';
 import { RequestPayoutButton } from '../../components/request-payout-button';
-import { CancelSessionButton, StartSessionButton } from '../../components/session-actions';
+import {
+  CancelSessionButton,
+  CompleteSessionButton,
+  StartSessionButton,
+} from '../../components/session-actions';
 import {
   parseSessionView,
   SessionGridCard,
   SessionListCard,
   toneForStatus,
 } from '../../components/session-cards';
-import { NoShowButton, RecapCard } from '../../components/session-feedback';
+import { NoShowButton, RecapCard, RescheduleForm } from '../../components/session-feedback';
 import { SessionStatusBadge } from '../../components/session-status-badge';
 import { SessionViewToggle } from '../../components/session-view-toggle';
 import { getHub } from '../../demo/composition-root';
@@ -129,9 +134,13 @@ export default async function TutorHome({
                   student: (await hub.identity.userById(session.studentId))?.name ?? 'Your student',
                   recap:
                     session.status === 'completed' ? await hub.recaps.latestFor(session.id) : null,
+                  dispute:
+                    session.status === 'completed' || session.status === 'cancelled'
+                      ? await hub.trust.forSession(session.id)
+                      : null,
                 })),
               )
-            ).map(({ session, student, recap }) => (
+            ).map(({ session, student, recap, dispute }) => (
               <SessionGridCard
                 key={session.id}
                 startIso={session.startIso}
@@ -143,6 +152,14 @@ export default async function TutorHome({
                 actions={<TutorSessionActions session={session} />}
               >
                 {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
+                {dispute?.status === 'open' && (
+                  <p className="text-xs font-medium text-secondary">
+                    Dispute open — our team is looking into this lesson.
+                  </p>
+                )}
+                {(session.status === 'completed' || session.status === 'cancelled') && !dispute && (
+                  <DisputeButton sessionId={session.id} />
+                )}
               </SessionGridCard>
             ))}
           </div>
@@ -155,9 +172,13 @@ export default async function TutorHome({
                   student: (await hub.identity.userById(session.studentId))?.name ?? 'Your student',
                   recap:
                     session.status === 'completed' ? await hub.recaps.latestFor(session.id) : null,
+                  dispute:
+                    session.status === 'completed' || session.status === 'cancelled'
+                      ? await hub.trust.forSession(session.id)
+                      : null,
                 })),
               )
-            ).map(({ session, student, recap }) => (
+            ).map(({ session, student, recap, dispute }) => (
               <SessionListCard
                 key={session.id}
                 startIso={session.startIso}
@@ -169,6 +190,14 @@ export default async function TutorHome({
                 actions={<TutorSessionActions session={session} />}
               >
                 {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
+                {dispute?.status === 'open' && (
+                  <p className="text-xs font-medium text-secondary">
+                    Dispute open — our team is looking into this lesson.
+                  </p>
+                )}
+                {(session.status === 'completed' || session.status === 'cancelled') && !dispute && (
+                  <DisputeButton sessionId={session.id} />
+                )}
               </SessionListCard>
             ))}
           </div>
@@ -211,6 +240,10 @@ function TutorSessionActions({ session }: { session: { id: string; status: strin
         </>
       )}
       {session.status === 'booked' && <StartSessionButton sessionId={session.id} />}
+      {session.status === 'confirmed' && <CompleteSessionButton sessionId={session.id} />}
+      {(session.status === 'booked' || session.status === 'confirmed') && (
+        <RescheduleForm sessionId={session.id} />
+      )}
       {session.status === 'confirmed' && (
         <Link href={`/tutor/lab/${session.id}`} className="w-full sm:w-auto">
           <Button size="sm" className="w-full">

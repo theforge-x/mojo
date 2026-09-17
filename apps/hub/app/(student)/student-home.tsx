@@ -10,6 +10,7 @@ import {
 } from '@mojo/shared/ui';
 import { CalendarDays, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { DisputeButton } from '../../components/dispute-button';
 import { CancelSessionButton, ConfirmDeliveryButton } from '../../components/session-actions';
 import {
   dayLabel,
@@ -19,7 +20,12 @@ import {
   type SessionView,
   toneForStatus,
 } from '../../components/session-cards';
-import { RecapCard, RescheduleForm, ReviewForm } from '../../components/session-feedback';
+import {
+  NoShowButton,
+  RecapCard,
+  RescheduleForm,
+  ReviewForm,
+} from '../../components/session-feedback';
 import { SessionStatusBadge } from '../../components/session-status-badge';
 import { SessionViewToggle } from '../../components/session-view-toggle';
 import { getHub } from '../../demo/composition-root';
@@ -49,6 +55,10 @@ export async function StudentHome({ view }: { view: SessionView }) {
       review:
         session.status === 'completed' ? await hub.reviews.reviewForSession(session.id) : null,
       recap: session.status === 'completed' ? await hub.recaps.latestFor(session.id) : null,
+      dispute:
+        session.status === 'completed' || session.status === 'cancelled'
+          ? await hub.trust.forSession(session.id)
+          : null,
     })),
   );
 
@@ -115,7 +125,7 @@ export async function StudentHome({ view }: { view: SessionView }) {
         </Empty>
       ) : view === 'grid' ? (
         <div className="columns-1 gap-4 sm:columns-2 xl:columns-3">
-          {enriched.map(({ session, tutor, review, recap }) => (
+          {enriched.map(({ session, tutor, review, recap, dispute }) => (
             <SessionGridCard
               key={session.id}
               startIso={session.startIso}
@@ -131,13 +141,14 @@ export async function StudentHome({ view }: { view: SessionView }) {
                 sessionId={session.id}
                 hasReview={review !== null}
                 recap={recap}
+                disputeStatus={dispute?.status ?? null}
               />
             </SessionGridCard>
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {enriched.map(({ session, tutor, review, recap }) => (
+          {enriched.map(({ session, tutor, review, recap, dispute }) => (
             <SessionListCard
               key={session.id}
               startIso={session.startIso}
@@ -153,6 +164,7 @@ export async function StudentHome({ view }: { view: SessionView }) {
                 sessionId={session.id}
                 hasReview={review !== null}
                 recap={recap}
+                disputeStatus={dispute?.status ?? null}
               />
             </SessionListCard>
           ))}
@@ -195,6 +207,7 @@ function StudentSessionActions({ session }: { session: { id: string; status: str
       {(session.status === 'booked' || session.status === 'confirmed') && (
         <CancelSessionButton sessionId={session.id} />
       )}
+      {session.status === 'confirmed' && <NoShowButton sessionId={session.id} />}
       {session.status === 'booked' && <RescheduleForm sessionId={session.id} />}
     </>
   );
@@ -205,12 +218,15 @@ function StudentSessionExtras({
   sessionId,
   hasReview,
   recap,
+  disputeStatus,
 }: {
   status: string;
   sessionId: string;
   hasReview: boolean;
   recap: { summary: string; focusAreas: readonly string[] } | null;
+  disputeStatus: string | null;
 }) {
+  const disputable = status === 'completed' || status === 'cancelled';
   return (
     <>
       {status === 'completed' && !hasReview && (
@@ -218,6 +234,12 @@ function StudentSessionExtras({
       )}
       {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
       {status === 'completed' && !hasReview && <ReviewForm sessionId={sessionId} />}
+      {disputeStatus === 'open' && (
+        <p className="text-xs font-medium text-secondary">
+          Dispute open — our team is looking into this lesson.
+        </p>
+      )}
+      {disputable && !disputeStatus && <DisputeButton sessionId={sessionId} />}
     </>
   );
 }

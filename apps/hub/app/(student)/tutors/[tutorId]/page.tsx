@@ -37,8 +37,8 @@ export default async function TutorDetailPage({
   const todayKey = tutorLocalTime(new Date().toISOString(), settings.timezone).dateKey;
   const weekEndKey = dateKeyPlus(todayKey, 7);
 
-  const [tutors, rules, sessions, exceptions, profile, tutorReviews, myCharges] = await Promise.all(
-    [
+  const [tutors, rules, sessions, exceptions, profile, tutorReviews, myCharges, myGrants] =
+    await Promise.all([
       hub.discovery.search({}),
       hub.scheduling.availabilityRules(tutorId),
       hub.scheduling.sessionsByTutor(tutorId),
@@ -46,12 +46,15 @@ export default async function TutorDetailPage({
       hub.profile.byTutor(tutorId),
       hub.reviews.forTutor(tutorId),
       hub.billing.chargesByStudent(user.id),
-    ],
-  );
+      hub.billing.grants(user.id),
+    ]);
   const tutor = tutors.find((t) => t.tutorId === tutorId);
   if (!tutor) notFound();
   const trialUsed = myCharges.some(
     (charge) => charge.tutorId === tutorId && charge.isTrial && charge.status !== 'refunded',
+  );
+  const replacementGrant = myGrants.find(
+    (grant) => grant.tutorId === tutorId && grant.status === 'granted',
   );
 
   hub.interests.record({ studentId: user.id, tutorId, source: 'view' }).catch(() => {});
@@ -91,6 +94,12 @@ export default async function TutorDetailPage({
         {!trialUsed && (
           <p className="mt-1 text-xs text-muted-foreground">
             First lesson trial — {100 - TRIAL_PRICE_PERCENT}% off any slot below.
+          </p>
+        )}
+        {replacementGrant && (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-bold text-headline">
+            <Sparkles className="size-3.5" aria-hidden />
+            Free replacement lesson banked — tick the box at checkout to use it.
           </p>
         )}
         {profile?.bio && (
@@ -170,6 +179,7 @@ export default async function TutorDetailPage({
                   endIso={slot.endIso}
                   perSegmentMinor={tutor.perSegmentMinor}
                   trialUsed={trialUsed}
+                  replacementGrantId={replacementGrant?.id}
                 />
               }
             />
@@ -201,6 +211,7 @@ export default async function TutorDetailPage({
                   endIso={slot.endIso}
                   perSegmentMinor={tutor.perSegmentMinor}
                   trialUsed={trialUsed}
+                  replacementGrantId={replacementGrant?.id}
                 />
               }
             />

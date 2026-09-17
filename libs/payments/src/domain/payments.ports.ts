@@ -1,5 +1,6 @@
 import type { Money, TutorLevel } from '@mojo/shared/domain';
 import type { ChargeRefund, StudentCharge } from './charge.types';
+import type { ReplacementGrant } from './replacement.types';
 import type { PayoutRequest, Wallet, WalletTransaction } from './wallet.types';
 
 export interface WalletRepository {
@@ -59,4 +60,12 @@ export interface ChargeRepository {
   listByStudent(studentId: string): Promise<StudentCharge[]>;
   saveRefund(refund: ChargeRefund): Promise<void>;
   listRefundsByStudent(studentId: string): Promise<ChargeRefund[]>;
+}
+
+export interface ReplacementGrantRepository {
+  findById(id: string): Promise<ReplacementGrant | null>;
+  findBySourceSession(sourceSessionId: string): Promise<ReplacementGrant | null>;
+  findRedeemedSession(sessionId: string): Promise<ReplacementGrant | null>;
+  listByStudent(studentId: string): Promise<ReplacementGrant[]>;
+  save(grant: ReplacementGrant): Promise<void>;
 }

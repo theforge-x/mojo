@@ -3,8 +3,14 @@ import type { DeliveryConfirmation } from './session-lifecycle.types';
 
 export interface BookingRepository {
   findById(sessionId: string): Promise<BookingSession | null>;
+  /**
+   * Sessions stuck in `confirmed` whose end is before `endBeforeIso` — the
+   * auto-confirm worker's intake. Never includes already-completed sessions,
+   * so a run can never double-credit a tutor's wallet.
+   */
+  listAwaitingConfirmation(endBeforeIso: string): Promise<BookingSession[]>;
   markCompleted(sessionId: string, at: string): Promise<void>;
-  markNoShow(sessionId: string, by: 'student' | 'tutor', at: string): Promise<void>;
+  markNoShow(sessionId: string, by: 'student' | 'tutor', nowIso: string): Promise<void>;
   saveConfirmation(confirmation: DeliveryConfirmation): Promise<void>;
 }
 

@@ -20,6 +20,10 @@ function buildFakes(initial: User | null, others: User[] = []) {
       return all.find((u) => u.email === email) ?? null;
     },
     findById: async (id) => (current && current.id === id ? current : null),
+    listByRole: async (role) => {
+      const all = [...(current ? [current] : []), ...others];
+      return all.filter((u) => u.role === role);
+    },
     save: async (user) => {
       current = user;
     },

@@ -60,11 +60,7 @@ export function makeRescheduleSession(deps: {
     }
 
     const existing = (
-      await deps.sessions.getBookedSessions(
-        session.tutorId,
-        input.newStartIso,
-        input.newEndIso,
-      )
+      await deps.sessions.getBookedSessions(session.tutorId, input.newStartIso, input.newEndIso)
     ).filter((s) => s.id !== session.id);
 
     if (hasConflict(candidate, existing)) {

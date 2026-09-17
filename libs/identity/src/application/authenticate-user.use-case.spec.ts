@@ -15,6 +15,7 @@ function buildFakes(user: User | null) {
   const users: UserRepository = {
     findByEmail: async (email) => (user && user.email === email ? user : null),
     findById: async (id) => (user && user.id === id ? user : null),
+    listByRole: async (role) => (user && user.role === role ? [user] : []),
     save: async () => {},
   };
   const hasher: PasswordHasher = {

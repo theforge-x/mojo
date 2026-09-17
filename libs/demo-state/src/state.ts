@@ -8,6 +8,7 @@ import type { NotificationPreferences } from '@mojo/notifications/domain';
 import type {
   ChargeRefund,
   PayoutRequest,
+  ReplacementGrant,
   StudentCharge,
   StudentPaymentMethod,
   WalletTransaction,
@@ -80,6 +81,8 @@ export class DemoState {
   readonly suspensions = new Map<string, Suspension>();
   readonly messages = new Map<string, Message>();
   readonly tutorInterests = new Map<string, TutorInterest>();
+  /** Free-replacement entitlements banked from cancelled trials. */
+  readonly replacementGrants = new Map<string, ReplacementGrant>();
   /** Admin-managed subject catalogue (domains + subjects). */
   readonly taxonomy: SubjectTaxonomyEntry[] = [];
   readonly notifications: SentNotification[] = [];

@@ -14,6 +14,7 @@ export { EmailDispatcher, WhatsAppDispatcher } from '@mojo/notifications/infrast
 export {
   PaystackPayoutRail,
   PrismaChargeRepository,
+  PrismaReplacementGrantRepository,
   PrismaWalletRepository,
 } from '@mojo/payments/infrastructure';
 export { PrismaTutorLevelReader } from '@mojo/pricing/infrastructure';

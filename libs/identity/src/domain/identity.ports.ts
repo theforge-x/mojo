@@ -8,6 +8,7 @@ import type { User } from './user.types';
 export interface UserRepository {
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
+  listByRole(role: User['role']): Promise<User[]>;
   save(user: User): Promise<void>;
 }
 

@@ -1,5 +1,6 @@
 import {
   DuplicateChargeError,
+  InvalidReplacementGrantError,
   NoPaymentMethodError,
   TrialAlreadyUsedError,
 } from '@mojo/payments/application';
@@ -19,6 +20,8 @@ export async function POST(request: Request) {
   const startIso = typeof body.startIso === 'string' ? body.startIso : '';
   const endIso = typeof body.endIso === 'string' ? body.endIso : '';
   const isTrial = body.isTrial === true;
+  const replacementGrantId =
+    typeof body.replacementGrantId === 'string' ? body.replacementGrantId : undefined;
   const hub = getHub();
   const nowIso = new Date().toISOString();
 
@@ -54,6 +57,7 @@ export async function POST(request: Request) {
       endIso: session.endIso,
       isTrial,
       paymentMethodId: method.id,
+      replacementGrantId,
       nowIso,
     });
     return NextResponse.json({ ok: true, session, charge }, { status: 201 });
@@ -67,7 +71,11 @@ export async function POST(request: Request) {
       })
       .catch(() => {});
     const status =
-      error instanceof NoPaymentMethodError || error instanceof TrialAlreadyUsedError ? 402 : 409;
+      error instanceof NoPaymentMethodError ||
+      error instanceof TrialAlreadyUsedError ||
+      error instanceof InvalidReplacementGrantError
+        ? 402
+        : 409;
     return NextResponse.json(
       {
         ok: false,

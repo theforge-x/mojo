@@ -48,7 +48,7 @@ export type SessionRescheduled = DomainEvent<
 
 export type SessionDeliveryConfirmed = DomainEvent<
   'SessionDeliveryConfirmed',
-  { sessionId: string; confirmedBy: 'student' | 'auto_window' }
+  { sessionId: string; confirmedBy: 'student' | 'tutor' | 'auto_window' }
 >;
 
 export type TutorLevelChanged = DomainEvent<

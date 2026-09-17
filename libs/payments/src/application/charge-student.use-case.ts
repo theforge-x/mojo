@@ -3,6 +3,7 @@ import type { StudentCharge } from '../domain/charge.types';
 import type {
   ChargeRateReader,
   ChargeRepository,
+  ReplacementGrantRepository,
   StudentPaymentMethodRepository,
 } from '../domain/payments.ports';
 import { makeQuoteSessionCharge } from './quote-session-charge.use-case';
@@ -16,6 +17,8 @@ export interface ChargeStudentInput {
   isTrial: boolean;
   /** Defaults to the student's default method when omitted. */
   paymentMethodId?: string;
+  /** A granted free-replacement entitlement — settles the booking at zero. */
+  replacementGrantId?: string;
   nowIso: string;
 }
 
@@ -37,6 +40,12 @@ export class TrialAlreadyUsedError extends Error {
   }
 }
 
+export class InvalidReplacementGrantError extends Error {
+  constructor() {
+    super('This free replacement is no longer available — it may already be used.');
+  }
+}
+
 /**
  * Records the student's charge for a booking against their payment method.
  * In demo mode this is a stub ledger entry (captured immediately, no rail
@@ -49,6 +58,7 @@ export function makeChargeStudent(deps: {
   methods: StudentPaymentMethodRepository;
   rates: ChargeRateReader;
   defaults: Record<TutorLevel, number>;
+  grants: ReplacementGrantRepository;
 }) {
   const quoteSessionCharge = makeQuoteSessionCharge({ rates: deps.rates, defaults: deps.defaults });
 
@@ -64,7 +74,19 @@ export function makeChargeStudent(deps: {
       throw new DuplicateChargeError(input.sessionId);
     }
 
-    if (input.isTrial) {
+    const grant = input.replacementGrantId
+      ? await deps.grants.findById(input.replacementGrantId)
+      : null;
+    const grantValid =
+      grant !== null &&
+      grant.status === 'granted' &&
+      grant.studentId === input.studentId &&
+      grant.tutorId === input.tutorId;
+    if (input.replacementGrantId && !grantValid) {
+      throw new InvalidReplacementGrantError();
+    }
+
+    if (input.isTrial && !grant) {
       const prior = await deps.charges.listByStudent(input.studentId);
       const trialUsed = prior.some(
         (c) => c.tutorId === input.tutorId && c.isTrial && c.status !== 'refunded',
@@ -87,8 +109,8 @@ export function makeChargeStudent(deps: {
       segments: quote.segments,
       perSegmentMinor: quote.perSegmentMinor,
       standardTotalMinor: quote.standardTotalMinor,
-      trialDiscountMinor: quote.trialDiscountMinor,
-      totalMinor: quote.totalMinor,
+      trialDiscountMinor: grant ? quote.standardTotalMinor : quote.trialDiscountMinor,
+      totalMinor: grant ? 0 : quote.totalMinor,
       currency: quote.currency,
       isTrial: input.isTrial,
       level: quote.level,
@@ -98,6 +120,14 @@ export function makeChargeStudent(deps: {
       createdAt: input.nowIso,
     };
     await deps.charges.save(charge);
+    if (grant) {
+      await deps.grants.save({
+        ...grant,
+        status: 'redeemed',
+        redeemedSessionId: input.sessionId,
+        redeemedAt: input.nowIso,
+      });
+    }
     return charge;
   };
 }

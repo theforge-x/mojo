@@ -15,6 +15,8 @@ export interface BookButtonProps {
   perSegmentMinor: number;
   /** Hides the trial option once the student has used it with this tutor. */
   trialUsed: boolean;
+  /** A granted free-replacement entitlement with this tutor, if any. */
+  replacementGrantId?: string;
 }
 
 export function BookButton({
@@ -24,17 +26,23 @@ export function BookButton({
   endIso,
   perSegmentMinor,
   trialUsed,
+  replacementGrantId,
 }: BookButtonProps) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
+  const [useReplacement, setUseReplacement] = useState(Boolean(replacementGrantId));
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
   const segments = segmentsBetween(startIso, endIso);
   const standardTotal = segments * perSegmentMinor;
-  const total =
-    !trialUsed && isTrial ? Math.round((standardTotal * TRIAL_PRICE_PERCENT) / 100) : standardTotal;
+  const replacing = Boolean(replacementGrantId) && useReplacement;
+  const total = replacing
+    ? 0
+    : !trialUsed && isTrial
+      ? Math.round((standardTotal * TRIAL_PRICE_PERCENT) / 100)
+      : standardTotal;
 
   async function handleClick() {
     setBusy(true);
@@ -50,12 +58,15 @@ export function BookButton({
           startIso,
           endIso,
           isTrial: !trialUsed && isTrial,
+          replacementGrantId: replacing ? replacementGrantId : undefined,
         }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? 'Booking failed.');
       setConfirmation(
-        `Booked — ${formatMinor(body.charge?.totalMinor ?? total)} charged to your card.`,
+        replacing
+          ? 'Booked free with your replacement lesson.'
+          : `Booked — ${formatMinor(body.charge?.totalMinor ?? total)} charged to your card.`,
       );
       router.refresh();
     } catch (err) {
@@ -67,8 +78,21 @@ export function BookButton({
 
   return (
     <div className="flex flex-col items-end gap-2">
-      <span className="text-sm font-medium">{formatMinor(total)}</span>
-      {!trialUsed && (
+      <span className="text-sm font-medium">
+        {replacing ? 'Free · replacement' : formatMinor(total)}
+      </span>
+      {replacementGrantId && (
+        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={useReplacement}
+            onChange={(event) => setUseReplacement(event.target.checked)}
+            disabled={busy}
+          />
+          Use free replacement lesson
+        </label>
+      )}
+      {!trialUsed && !replacing && (
         <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
           <input
             type="checkbox"

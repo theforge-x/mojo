@@ -12,7 +12,9 @@ import {
 import { makeGenerateRecap } from '@mojo/ai-learning/application';
 import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
 import {
+  type AutoConfirmDeliveriesResult,
   type ConfirmDeliveryInput,
+  makeAutoConfirmDeliveries,
   makeConfirmDelivery,
   makeMarkNoShow,
 } from '@mojo/booking/application';
@@ -70,6 +72,7 @@ import {
 import {
   type ChargeStudentInput,
   makeChargeStudent,
+  makeGrantReplacement,
   makeQuoteSessionCharge,
   makeRefundCharge,
   makeReleasePayout,
@@ -83,6 +86,8 @@ import type {
   ChargeRepository,
   PayoutRail,
   RefundReason,
+  ReplacementGrant,
+  ReplacementGrantRepository,
   StudentCharge,
   StudentPaymentMethod,
   StudentPaymentMethodRepository,
@@ -125,7 +130,8 @@ import {
   type SessionDeliveryConfirmed,
   type SessionRescheduled,
 } from '@mojo/shared/events';
-import type { DisputeRepository } from '@mojo/trust-safety/domain';
+import { makeFileDispute } from '@mojo/trust-safety/application';
+import type { Dispute, DisputeRepository } from '@mojo/trust-safety/domain';
 import { makeRecomputeLevel } from '@mojo/tutor-performance/application';
 import type { TutorPerformance, TutorPerformanceRepository } from '@mojo/tutor-performance/domain';
 import { makeReviewApplication, makeSubmitApplication } from '@mojo/tutor-profile/application';
@@ -150,6 +156,7 @@ import {
   PrismaPaymentMethodRepository,
   PrismaRecapRepository,
   PrismaReferralRepository,
+  PrismaReplacementGrantRepository,
   PrismaReviewRepository,
   PrismaSessionRepository,
   PrismaSubjectTaxonomyRepository,
@@ -175,6 +182,7 @@ import {
   InMemoryPayoutRail,
   InMemoryRecapRepository,
   InMemoryReferralRepository,
+  InMemoryReplacementGrantRepository,
   InMemoryReviewRepository,
   InMemorySessionRepository,
   InMemorySessionStore,
@@ -205,6 +213,7 @@ interface Repositories {
   rail: PayoutRail;
   charges: ChargeRepository;
   methods: StudentPaymentMethodRepository;
+  grants: ReplacementGrantRepository;
   performances: TutorPerformanceRepository;
   mojoPlus: MojoPlusRepository;
   notifications: Record<'email' | 'whatsapp', NotificationDispatcher>;
@@ -249,6 +258,7 @@ export interface HubApp {
     deactivateAccount(input: { userId: string; currentPassword: string }): Promise<void>;
   };
   scheduling: {
+    sessionById(sessionId: string): Promise<ScheduledSession | null>;
     sessionsByTutor(tutorId: string): Promise<ScheduledSession[]>;
     sessionsByStudent(studentId: string): Promise<ScheduledSession[]>;
     availabilityRules(tutorId: string): Promise<AvailabilityRule[]>;
@@ -269,6 +279,11 @@ export interface HubApp {
   booking: {
     confirmDelivery(input: ConfirmDeliveryInput): Promise<void>;
     markNoShow(sessionId: string, by: 'student' | 'tutor', nowIso: string): Promise<void>;
+    autoConfirm(nowIso: string): Promise<AutoConfirmDeliveriesResult>;
+  };
+  trust: {
+    file(input: { sessionId: string; filedBy: string; reason: string }): Promise<Dispute>;
+    forSession(sessionId: string): Promise<Dispute | null>;
   };
   discovery: {
     search(filters: TutorSearchFilters): Promise<TutorSearchResult[]>;
@@ -292,6 +307,12 @@ export interface HubApp {
       reason: RefundReason,
       nowIso: string,
     ): Promise<ChargeRefund | null>;
+    grants(studentId: string): Promise<ReplacementGrant[]>;
+    grantReplacement(input: {
+      studentId: string;
+      tutorId: string;
+      sourceSessionId: string;
+    }): Promise<ReplacementGrant | null>;
   };
   performance: {
     byTutor(tutorId: string): Promise<TutorPerformance | null>;
@@ -346,6 +367,8 @@ export interface HubApp {
     preferences(userId: string): Promise<NotificationPreferences>;
     savePreferences(userId: string, prefs: NotificationPreferences): Promise<void>;
     fireDueReminders(userId: string, nowIso: string): Promise<{ sent: number; due: number }>;
+    /** Sweep every active student — the cron entrypoint. Never throws per-user. */
+    fireAllDueReminders(nowIso: string): Promise<{ users: number; sent: number; due: number }>;
   };
   catalog: {
     /** Full taxonomy (including inactive) — admin management over the bridge. */
@@ -412,6 +435,7 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
     rail: new InMemoryPayoutRail(),
     charges: new InMemoryChargeRepository(state),
     methods: new InMemoryStudentPaymentMethodRepository(state),
+    grants: new InMemoryReplacementGrantRepository(state),
     performances: new InMemoryTutorPerformanceRepository(state),
     mojoPlus: new InMemoryMojoPlusRepository(state),
     notifications: inMemoryDispatchers(state),
@@ -455,6 +479,7 @@ function buildPrismaRepositories(_state: DemoState): Repositories {
     rail: new PaystackPayoutRail(process.env.PAYSTACK_SECRET_KEY ?? ''),
     charges: new PrismaChargeRepository(prisma),
     methods: new PrismaPaymentMethodRepository(prisma),
+    grants: new PrismaReplacementGrantRepository(prisma),
     performances: new PrismaTutorPerformanceRepository(prisma),
     mojoPlus: new PrismaMojoPlusRepository(prisma),
     notifications: externalDispatchers(),
@@ -593,6 +618,12 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     },
   });
   const markNoShow = makeMarkNoShow({ bookings: repos.bookings });
+  const fileDispute = makeFileDispute({ disputes: repos.disputes });
+  const autoConfirmDeliveries = makeAutoConfirmDeliveries({
+    listAwaitingConfirmation: (endBeforeIso) =>
+      repos.bookings.listAwaitingConfirmation(endBeforeIso),
+    confirmDelivery: (input) => confirmDelivery(input),
+  });
   const searchTutors = makeSearchTutors({ index: repos.searchIndex });
   const submitApplication = makeSubmitApplication({ applications: repos.applications });
   const reviewApplication = makeReviewApplication({
@@ -613,7 +644,9 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     methods: repos.methods,
     rates: repos.levels,
     defaults: DEFAULT_SEGMENT_RATE_NGN,
+    grants: repos.grants,
   });
+  const grantReplacement = makeGrantReplacement({ grants: repos.grants });
   const refundCharge = makeRefundCharge({ charges: repos.charges });
   const dispatchNotification = makeDispatchNotification({ dispatchers: repos.notifications });
   const sendMessage = makeSendMessage({ messages: repos.messages });
@@ -637,6 +670,43 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     data: Record<string, unknown>,
   ) => {
     dispatchNotification({ channel, to, templateId, data }).catch((_error) => {});
+  };
+
+  const fireDueFor = async (
+    userId: string,
+    nowIso: string,
+  ): Promise<{ sent: number; due: number }> => {
+    const prefs = state.notificationPreferences.get(userId) ?? DEFAULT_NOTIFICATION_PREFERENCES;
+    const upcoming = await repos.sessions.listByStudent(userId);
+    const due = dueSessionReminders(
+      upcoming.map((session) => ({
+        sessionId: session.id,
+        tutorId: session.tutorId,
+        studentId: session.studentId,
+        startIso: session.startIso,
+        isTrial: session.isTrial,
+      })),
+      nowIso,
+      prefs,
+    );
+    let sent = 0;
+    for (const signal of due) {
+      const key = `${signal.sessionId}:${signal.templateId}`;
+      if (state.reminderJournal.has(key)) continue;
+      state.reminderJournal.set(key, nowIso);
+      for (const channel of prefs.channels) {
+        state.notifications.push({
+          id: demoId('n'),
+          channel,
+          to: `${userId}@mojo.dev`,
+          templateId: signal.templateId,
+          data: { sessionId: signal.sessionId, leadMinutes: signal.leadMinutes },
+          sentAt: nowIso,
+        });
+      }
+      sent += 1;
+    }
+    return { sent, due: due.length };
   };
 
   const emptyPerformance = (tutorId: string): TutorPerformance => ({
@@ -780,6 +850,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
         deactivateAccount({ ...input, nowIso: new Date().toISOString() }),
     },
     scheduling: {
+      sessionById: (sessionId) => repos.sessions.findById(sessionId),
       sessionsByTutor: (tutorId) => repos.sessions.listByTutor(tutorId),
       sessionsByStudent: (studentId) => repos.sessions.listByStudent(studentId),
       availabilityRules: (tutorId) => repos.availability.getRules(tutorId),
@@ -797,6 +868,23 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     booking: {
       confirmDelivery: (input) => confirmDelivery(input),
       markNoShow: (sessionId, by, nowIso) => markNoShow({ sessionId, by, nowIso }),
+      autoConfirm: (nowIso) => autoConfirmDeliveries({ nowIso }),
+    },
+    trust: {
+      file: async ({ sessionId, filedBy, reason }) => {
+        const dispute: Dispute = {
+          id: `d_${crypto.randomUUID().slice(0, 8)}`,
+          sessionId,
+          filedBy,
+          reason,
+          status: 'open',
+          filedAt: new Date().toISOString(),
+          resolvedAt: null,
+        };
+        await fileDispute(dispute);
+        return dispute;
+      },
+      forSession: (sessionId) => repos.disputes.findBySession(sessionId),
     },
     discovery: {
       search: (filters) => searchTutors(filters),
@@ -841,6 +929,8 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
         });
         return refund;
       },
+      grants: (studentId) => repos.grants.listByStudent(studentId),
+      grantReplacement: (input) => grantReplacement({ ...input, nowIso: new Date().toISOString() }),
     },
     performance: {
       byTutor: (tutorId) => repos.performances.findByTutorId(tutorId),
@@ -917,38 +1007,24 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       savePreferences: async (userId, prefs) => {
         state.notificationPreferences.set(userId, prefs);
       },
-      fireDueReminders: async (userId, nowIso) => {
-        const prefs = state.notificationPreferences.get(userId) ?? DEFAULT_NOTIFICATION_PREFERENCES;
-        const upcoming = await repos.sessions.listByStudent(userId);
-        const due = dueSessionReminders(
-          upcoming.map((session) => ({
-            sessionId: session.id,
-            tutorId: session.tutorId,
-            studentId: session.studentId,
-            startIso: session.startIso,
-            isTrial: session.isTrial,
-          })),
-          nowIso,
-          prefs,
-        );
+      fireDueReminders: (userId, nowIso) => fireDueFor(userId, nowIso),
+      fireAllDueReminders: async (nowIso) => {
+        const students = await repos.users.listByRole('student');
+        let users = 0;
         let sent = 0;
-        for (const signal of due) {
-          const key = `${signal.sessionId}:${signal.templateId}`;
-          if (state.reminderJournal.has(key)) continue;
-          state.reminderJournal.set(key, nowIso);
-          for (const channel of prefs.channels) {
-            state.notifications.push({
-              id: demoId('n'),
-              channel,
-              to: `${userId}@mojo.dev`,
-              templateId: signal.templateId,
-              data: { sessionId: signal.sessionId, leadMinutes: signal.leadMinutes },
-              sentAt: nowIso,
-            });
+        let due = 0;
+        for (const student of students) {
+          if (student.suspendedAt) continue;
+          users += 1;
+          try {
+            const fired = await fireDueFor(student.id, nowIso);
+            sent += fired.sent;
+            due += fired.due;
+          } catch {
+            // One student's failure must not stall everyone else's reminders.
           }
-          sent += 1;
         }
-        return { sent, due: due.length };
+        return { users, sent, due };
       },
     },
     eventCount: (name) => eventCounts.get(name) ?? 0,

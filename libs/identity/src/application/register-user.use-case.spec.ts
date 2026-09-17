@@ -11,6 +11,10 @@ function buildFakes(existing: User | null) {
   const users: UserRepository = {
     findByEmail: async (email) => (existing && existing.email === email ? existing : null),
     findById: async (id) => saved.find((u) => u.id === id) ?? null,
+    listByRole: async (role) => [
+      ...(existing && existing.role === role ? [existing] : []),
+      ...saved.filter((u) => u.role === role),
+    ],
     save: async (user) => {
       saved.push(user);
     },

@@ -3,9 +3,10 @@ import { getHub } from '../../../../../demo/composition-root';
 import { requireUser } from '../../../../../lib/session';
 
 /**
- * Moves a booking to a new slot: books the new time first (so availability,
- * conflicts, buffer and notice are all re-validated) and cancels the old
- * one only after the new booking succeeds.
+ * Moves a booking to a new slot in place — same session id, so the original
+ * charge still settles it and exactly one charge ever exists per session.
+ * The new slot re-validates through the scheduling engine (notice,
+ * availability, conflicts, buffer).
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -33,31 +34,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!session) {
     return NextResponse.json({ ok: false, error: 'You are not on this booking.' }, { status: 403 });
   }
-  if (session.status !== 'booked') {
-    return NextResponse.json(
-      { ok: false, error: 'Only booked sessions can be rescheduled.' },
-      { status: 409 },
-    );
-  }
 
-  const nowIso = new Date().toISOString();
   try {
-    const moved = await hub.scheduling.book({
-      sessionId: crypto.randomUUID(),
-      tutorId: session.tutorId,
-      studentId: session.studentId,
-      startIso,
-      endIso,
-      isTrial: session.isTrial,
-      nowIso,
-    });
-    await hub.scheduling.cancel({
+    const moved = await hub.scheduling.reschedule({
       sessionId: id,
-      cancelledBy: user.role === 'tutor' ? 'tutor' : 'student',
-      withinNoticeWindow: true,
-      nowIso,
+      newStartIso: startIso,
+      newEndIso: endIso,
+      nowIso: new Date().toISOString(),
     });
-    return NextResponse.json({ ok: true, session: moved }, { status: 201 });
+    return NextResponse.json({ ok: true, session: moved });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'Reschedule failed.' },

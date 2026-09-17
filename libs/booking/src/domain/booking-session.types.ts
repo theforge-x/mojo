@@ -13,4 +13,5 @@ export interface BookingSession {
   readonly startIso: string;
   readonly endIso: string;
   readonly isTrial: boolean;
+  readonly status: 'booked' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
 }

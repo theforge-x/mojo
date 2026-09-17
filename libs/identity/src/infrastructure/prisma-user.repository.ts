@@ -15,6 +15,11 @@ export class PrismaUserRepository implements UserRepository {
     return row ? toDomain(row) : null;
   }
 
+  async listByRole(role: User['role']): Promise<User[]> {
+    const rows = await this.prisma.user.findMany({ where: { role } });
+    return rows.map(toDomain);
+  }
+
   async save(user: User): Promise<void> {
     await this.prisma.user.upsert({
       where: { id: user.id },

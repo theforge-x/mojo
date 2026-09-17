@@ -63,6 +63,36 @@ export function ConfirmDeliveryButton({ sessionId }: { sessionId: string }) {
   );
 }
 
+export function CompleteSessionButton({ sessionId }: { sessionId: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleClick() {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/complete`, { method: 'POST' });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? 'Completion failed.');
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Completion failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <Button size="sm" onClick={handleClick} disabled={busy}>
+        {busy ? 'Completing…' : 'Mark complete'}
+      </Button>
+      {error && <Alert variant="danger">{error}</Alert>}
+    </>
+  );
+}
+
 export function CancelSessionButton({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);

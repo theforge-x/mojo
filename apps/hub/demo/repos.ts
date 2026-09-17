@@ -25,6 +25,8 @@ import type {
   ChargeRepository,
   PayoutRail,
   PayoutRequest,
+  ReplacementGrant,
+  ReplacementGrantRepository,
   StudentCharge,
   StudentPaymentMethod,
   StudentPaymentMethodRepository,
@@ -76,6 +78,10 @@ export class InMemoryUserRepository implements UserRepository {
 
   async findById(id: string): Promise<User | null> {
     return this.state.users.get(id) ?? null;
+  }
+
+  async listByRole(role: User['role']): Promise<User[]> {
+    return [...this.state.users.values()].filter((u) => u.role === role);
   }
 
   async save(user: User): Promise<void> {
@@ -217,7 +223,23 @@ export class InMemoryBookingRepository implements BookingRepository {
       startIso: session.startIso,
       endIso: session.endIso,
       isTrial: session.isTrial,
+      status: session.status,
     };
+  }
+
+  async listAwaitingConfirmation(endBeforeIso: string): Promise<BookingSession[]> {
+    return [...this.state.sessions.values()]
+      .filter((s) => s.status === 'confirmed' && s.endIso < endBeforeIso)
+      .sort((a, b) => a.endIso.localeCompare(b.endIso))
+      .map((session) => ({
+        id: session.id,
+        tutorId: session.tutorId,
+        studentId: session.studentId,
+        startIso: session.startIso,
+        endIso: session.endIso,
+        isTrial: session.isTrial,
+        status: session.status,
+      }));
   }
 
   async markCompleted(sessionId: string, at: string): Promise<void> {
@@ -309,6 +331,38 @@ export class InMemoryWalletRepository implements WalletRepository {
     };
     this.state.walletTransactions.push(transaction);
     return transaction;
+  }
+}
+
+export class InMemoryReplacementGrantRepository implements ReplacementGrantRepository {
+  constructor(private readonly state: DemoState) {}
+
+  async findById(id: string): Promise<ReplacementGrant | null> {
+    return this.state.replacementGrants.get(id) ?? null;
+  }
+
+  async findBySourceSession(sourceSessionId: string): Promise<ReplacementGrant | null> {
+    for (const grant of this.state.replacementGrants.values()) {
+      if (grant.sourceSessionId === sourceSessionId) return grant;
+    }
+    return null;
+  }
+
+  async findRedeemedSession(sessionId: string): Promise<ReplacementGrant | null> {
+    for (const grant of this.state.replacementGrants.values()) {
+      if (grant.redeemedSessionId === sessionId) return grant;
+    }
+    return null;
+  }
+
+  async listByStudent(studentId: string): Promise<ReplacementGrant[]> {
+    return [...this.state.replacementGrants.values()]
+      .filter((g) => g.studentId === studentId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async save(grant: ReplacementGrant): Promise<void> {
+    this.state.replacementGrants.set(grant.id, grant);
   }
 }
 
