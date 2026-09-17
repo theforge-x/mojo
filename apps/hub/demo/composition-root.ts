@@ -1,3 +1,14 @@
+import {
+  makeRemoveTaxonomyEntry,
+  makeSaveTaxonomyEntry,
+  makeSetTaxonomyActive,
+  type SaveTaxonomyEntryInput,
+} from '@mojo/admin-config/application';
+import {
+  DEFAULT_TAXONOMY_SEED,
+  type SubjectTaxonomyEntry,
+  type SubjectTaxonomyRepository,
+} from '@mojo/admin-config/domain';
 import { makeGenerateRecap } from '@mojo/ai-learning/application';
 import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
 import {
@@ -19,7 +30,14 @@ import type {
   TutorSearchIndex,
   TutorSearchResult,
 } from '@mojo/discovery/domain';
-import { makeAuthenticateUser, makeRegisterUser } from '@mojo/identity/application';
+import {
+  makeAuthenticateUser,
+  makeChangeEmail,
+  makeChangePassword,
+  makeDeactivateAccount,
+  makeRegisterUser,
+  makeUpdateDisplayName,
+} from '@mojo/identity/application';
 import type { SessionStore, TokenIssuer, User, UserRepository } from '@mojo/identity/domain';
 import {
   bcryptPasswordHasher,
@@ -82,9 +100,11 @@ import {
   makeBookSession,
   makeCancelSession,
   makeConfirmSession,
+  makeRescheduleSession,
   makeSetAvailability,
   makeSetExceptions,
   makeUpdateSchedulingSettings,
+  type RescheduleSessionInput,
   type UpdateSchedulingSettingsInput,
 } from '@mojo/scheduling/application';
 import type {
@@ -103,6 +123,7 @@ import {
   type SessionCancelled,
   type SessionCompleted,
   type SessionDeliveryConfirmed,
+  type SessionRescheduled,
 } from '@mojo/shared/events';
 import type { DisputeRepository } from '@mojo/trust-safety/domain';
 import { makeRecomputeLevel } from '@mojo/tutor-performance/application';
@@ -131,6 +152,7 @@ import {
   PrismaReferralRepository,
   PrismaReviewRepository,
   PrismaSessionRepository,
+  PrismaSubjectTaxonomyRepository,
   PrismaTutorLevelReader,
   PrismaTutorPerformanceRepository,
   PrismaTutorProfileRepository,
@@ -157,6 +179,7 @@ import {
   InMemorySessionRepository,
   InMemorySessionStore,
   InMemoryStudentPaymentMethodRepository,
+  InMemorySubjectTaxonomyRepository,
   InMemoryTutorLevelReader,
   InMemoryTutorPerformanceRepository,
   InMemoryTutorProfileRepository,
@@ -195,6 +218,7 @@ interface Repositories {
   searchIndex: TutorSearchIndex;
   applications: ApplicationRepository;
   profiles: TutorProfileRepository;
+  taxonomy: SubjectTaxonomyRepository;
 }
 
 export interface HubApp {
@@ -215,6 +239,14 @@ export interface HubApp {
       locale: string;
       role?: 'student' | 'tutor';
     }): Promise<User>;
+    changePassword(input: {
+      userId: string;
+      currentPassword: string;
+      newPassword: string;
+    }): Promise<void>;
+    updateDisplayName(userId: string, name: string): Promise<void>;
+    changeEmail(input: { userId: string; email: string; currentPassword: string }): Promise<void>;
+    deactivateAccount(input: { userId: string; currentPassword: string }): Promise<void>;
   };
   scheduling: {
     sessionsByTutor(tutorId: string): Promise<ScheduledSession[]>;
@@ -224,6 +256,7 @@ export interface HubApp {
     book(input: BookSessionInput): Promise<ScheduledSession>;
     cancel(input: CancelSessionInput): Promise<void>;
     confirmSession(input: ConfirmSessionInput): Promise<void>;
+    reschedule(input: RescheduleSessionInput): Promise<ScheduledSession>;
     saveAvailability(tutorId: string, rules: Omit<AvailabilityRule, 'tutorId'>[]): Promise<void>;
     updateSettings(input: UpdateSchedulingSettingsInput): Promise<void>;
     exceptions(tutorId: string, fromDate: string, toDate: string): Promise<AvailabilityException[]>;
@@ -247,6 +280,7 @@ export interface HubApp {
   billing: {
     quote(input: QuoteSessionChargeInput): Promise<ChargeQuote>;
     defaultMethod(studentId: string): Promise<StudentPaymentMethod | null>;
+    methods(studentId: string): Promise<StudentPaymentMethod[]>;
     /** Demo stub card — throws outside demo mode, where a real rail intent belongs. */
     provisionDemoMethod(studentId: string): Promise<StudentPaymentMethod>;
     charge(input: ChargeStudentInput): Promise<StudentCharge>;
@@ -310,6 +344,15 @@ export interface HubApp {
     savePreferences(userId: string, prefs: NotificationPreferences): Promise<void>;
     fireDueReminders(userId: string, nowIso: string): Promise<{ sent: number; due: number }>;
   };
+  catalog: {
+    /** Full taxonomy (including inactive) — admin management over the bridge. */
+    list(): Promise<SubjectTaxonomyEntry[]>;
+    /** Active domains with their active subjects, for search filters and apply. */
+    options(): Promise<{ domain: string; subjects: string[] }[]>;
+    save(entry: SaveTaxonomyEntryInput): Promise<SubjectTaxonomyEntry>;
+    setActive(id: string, active: boolean): Promise<SubjectTaxonomyEntry>;
+    remove(id: string): Promise<void>;
+  };
   eventCount(name: string): number;
 }
 
@@ -322,8 +365,15 @@ export function getHub(): HubApp {
   const isDemoMode = process.env.USE_PRISMA !== 'true';
   const state = sharedDemoState();
   const repos = isDemoMode ? buildInMemoryRepositories(state) : buildPrismaRepositories(state);
-  if (isDemoMode && !state.seedReady) {
-    state.seedReady = seedDemo(state);
+  if (isDemoMode) {
+    // Synchronous so catalogue reads never race the async demo seed — tutor
+    // search and filters must see subjects on the very first request.
+    if (state.taxonomy.length === 0) {
+      for (const entry of DEFAULT_TAXONOMY_SEED) state.taxonomy.push({ ...entry });
+    }
+    if (!state.seedReady) {
+      state.seedReady = seedDemo(state);
+    }
   }
 
   hubInstance = buildApp(repos, isDemoMode, state);
@@ -372,6 +422,7 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
     searchIndex: new InMemoryTutorSearchIndex(state),
     applications: new InMemoryApplicationRepository(state),
     profiles: new InMemoryTutorProfileRepository(state),
+    taxonomy: new InMemorySubjectTaxonomyRepository(state),
   };
 }
 
@@ -414,6 +465,7 @@ function buildPrismaRepositories(_state: DemoState): Repositories {
     searchIndex: new PrismaTutorSearchIndex(prisma),
     applications: new PrismaApplicationRepository(prisma),
     profiles: new PrismaTutorProfileRepository(prisma),
+    taxonomy: new PrismaSubjectTaxonomyRepository(prisma),
   };
 }
 
@@ -505,12 +557,23 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     tokens,
   });
   const registerUser = makeRegisterUser({ users: repos.users, hasher: bcryptPasswordHasher });
+  const changePassword = makeChangePassword({ users: repos.users, hasher: bcryptPasswordHasher });
+  const updateDisplayName = makeUpdateDisplayName({ users: repos.users });
+  const changeEmail = makeChangeEmail({ users: repos.users, hasher: bcryptPasswordHasher });
+  const deactivateAccount = makeDeactivateAccount({
+    users: repos.users,
+    hasher: bcryptPasswordHasher,
+  });
   const bookSession = makeBookSession({
     availability: repos.availability,
     sessions: repos.sessions,
   });
   const cancelSession = makeCancelSession({ sessions: repos.sessions });
   const confirmSession = makeConfirmSession({ sessions: repos.sessions });
+  const rescheduleSession = makeRescheduleSession({
+    availability: repos.availability,
+    sessions: repos.sessions,
+  });
   const setAvailability = makeSetAvailability({ availability: repos.availability });
   const setExceptions = makeSetExceptions({ availability: repos.availability });
   const updateSchedulingSettings = makeUpdateSchedulingSettings({
@@ -555,6 +618,9 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const threadsFor = makeThreadsFor({ messages: repos.messages });
   const markRead = makeMarkRead({ messages: repos.messages });
   const recordInterest = makeRecordInterest({ interests: repos.interests });
+  const saveTaxonomyEntry = makeSaveTaxonomyEntry({ taxonomy: repos.taxonomy });
+  const setTaxonomyActive = makeSetTaxonomyActive({ taxonomy: repos.taxonomy });
+  const removeTaxonomyEntry = makeRemoveTaxonomyEntry({ taxonomy: repos.taxonomy });
   const listTutorInterests = makeListTutorInterests({ interests: repos.interests });
 
   const count = (name: string) => {
@@ -587,6 +653,10 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   eventBus.subscribe('SessionCancelled', (event: SessionCancelled) => {
     count('SessionCancelled');
     safeNotify('email', 'tutor@mojo.dev', 'session-cancelled-alert', event.payload);
+  });
+  eventBus.subscribe('SessionRescheduled', (event: SessionRescheduled) => {
+    count('SessionRescheduled');
+    safeNotify('email', 'student@mojo.dev', 'session-rescheduled-confirmation', event.payload);
   });
   eventBus.subscribe('SessionDeliveryConfirmed', (event: SessionDeliveryConfirmed) => {
     count('SessionDeliveryConfirmed');
@@ -700,6 +770,11 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
           locale,
         });
       },
+      changePassword: (input) => changePassword(input),
+      updateDisplayName: (userId, name) => updateDisplayName({ userId, name }),
+      changeEmail: (input) => changeEmail(input),
+      deactivateAccount: (input) =>
+        deactivateAccount({ ...input, nowIso: new Date().toISOString() }),
     },
     scheduling: {
       sessionsByTutor: (tutorId) => repos.sessions.listByTutor(tutorId),
@@ -709,6 +784,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       book: (input) => bookSession(input),
       cancel: (input) => cancelSession(input),
       confirmSession: (input) => confirmSession(input),
+      reschedule: (input) => rescheduleSession(input),
       saveAvailability: (tutorId, rules) => setAvailability(tutorId, rules),
       updateSettings: (input) => updateSchedulingSettings(input),
       exceptions: (tutorId, fromDate, toDate) =>
@@ -732,6 +808,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     billing: {
       quote: (input) => quoteSessionCharge(input),
       defaultMethod: (studentId) => repos.methods.findDefault(studentId),
+      methods: (studentId) => repos.methods.findByStudent(studentId),
       provisionDemoMethod: async (studentId) => {
         if (!isDemoMode) {
           throw new Error('Add a Paystack or Flutterwave card to book.');
@@ -806,6 +883,26 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     interests: {
       record: (input) => recordInterest(input),
       forTutor: (tutorId) => listTutorInterests(tutorId),
+    },
+    catalog: {
+      list: () => repos.taxonomy.list(),
+      options: async () => {
+        const entries = await repos.taxonomy.list();
+        return entries
+          .filter((e) => e.parentId === null && e.active)
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((domain) => ({
+            domain: domain.name,
+            subjects: entries
+              .filter((e) => e.parentId === domain.id && e.active)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((e) => e.name),
+          }))
+          .filter((group) => group.subjects.length > 0);
+      },
+      save: (entry) => saveTaxonomyEntry(entry),
+      setActive: (id, active) => setTaxonomyActive({ id, active }),
+      remove: (id) => removeTaxonomyEntry(id),
     },
     notifications: {
       log: () => state.notifications,

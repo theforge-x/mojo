@@ -1,7 +1,11 @@
 import {
   makeAppendAuditLog,
   makeListSubjects,
+  makeRemoveTaxonomyEntry,
+  makeSaveTaxonomyEntry,
   makeSetFeatureFlag,
+  makeSetTaxonomyActive,
+  type SaveTaxonomyEntryInput,
 } from '@mojo/admin-config/application';
 import type { AuditLogEntry, FeatureFlag, SubjectTaxonomyEntry } from '@mojo/admin-config/domain';
 import { makeBuildLeaderboard, makeComputePlatformMetrics } from '@mojo/analytics/application';
@@ -68,6 +72,12 @@ export interface AdminApp {
     setFlag(flag: FeatureFlag): Promise<void>;
     subjects(): Promise<SubjectTaxonomyEntry[]>;
   };
+  catalog: {
+    list(): Promise<SubjectTaxonomyEntry[]>;
+    save(entry: SaveTaxonomyEntryInput): Promise<SubjectTaxonomyEntry>;
+    setActive(id: string, active: boolean): Promise<SubjectTaxonomyEntry>;
+    remove(id: string): Promise<void>;
+  };
   reviews: {
     list(): Promise<Review[]>;
   };
@@ -118,6 +128,9 @@ export function getAdmin(): AdminApp {
   const setFeatureFlag = makeSetFeatureFlag({ flags });
   const appendAuditLog = makeAppendAuditLog({ logs: logRepo });
   const listSubjects = makeListSubjects({ taxonomy });
+  const saveTaxonomyEntry = makeSaveTaxonomyEntry({ taxonomy });
+  const setTaxonomyActive = makeSetTaxonomyActive({ taxonomy });
+  const removeTaxonomyEntry = makeRemoveTaxonomyEntry({ taxonomy });
 
   const audit = (action: string, targetId: string | null) => {
     appendAuditLog({
@@ -246,6 +259,112 @@ export function getAdmin(): AdminApp {
         audit('feature_flag.toggled', flag.key);
       },
       subjects: () => listSubjects(),
+    },
+    catalog: {
+      list: async () => {
+        // The hub owns the catalogue in the demo loop — the admin list is
+        // whatever the hub has, with the same bridge-then-local-fallback
+        // shape as the application queue.
+        if (!hubBaseUrl) return taxonomy.list();
+        try {
+          const response = await fetch(`${hubBaseUrl}/api/admin/catalog`, {
+            headers: bridgeHeaders,
+            signal: AbortSignal.timeout(5000),
+          });
+          if (!response.ok) return taxonomy.list();
+          const data = (await response.json()) as { entries?: unknown };
+          if (!Array.isArray(data.entries)) return taxonomy.list();
+          return data.entries as SubjectTaxonomyEntry[];
+        } catch {
+          return taxonomy.list();
+        }
+      },
+      save: async (entry) => {
+        const fallback = async () => {
+          const saved = await saveTaxonomyEntry(entry);
+          audit('catalog.save', saved.id);
+          return saved;
+        };
+        if (!hubBaseUrl) return fallback();
+        let response: Response;
+        try {
+          response = await fetch(`${hubBaseUrl}/api/admin/catalog`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', ...bridgeHeaders },
+            body: JSON.stringify(entry),
+            signal: AbortSignal.timeout(5000),
+          });
+        } catch {
+          return fallback();
+        }
+        const data = (await response.json().catch(() => ({}))) as {
+          entry?: SubjectTaxonomyEntry;
+          error?: unknown;
+        };
+        // Hub rejections (!ok) never fall back: writing locally after the hub
+        // refused would double-apply.
+        if (!response.ok || !data.entry) {
+          throw new Error(
+            typeof data.error === 'string' ? data.error : 'The hub rejected this change.',
+          );
+        }
+        audit('catalog.save', data.entry.id);
+        return data.entry;
+      },
+      setActive: async (id, active) => {
+        const fallback = async () => {
+          const updated = await setTaxonomyActive({ id, active });
+          audit('catalog.active', id);
+          return updated;
+        };
+        if (!hubBaseUrl) return fallback();
+        let response: Response;
+        try {
+          response = await fetch(`${hubBaseUrl}/api/admin/catalog`, {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json', ...bridgeHeaders },
+            body: JSON.stringify({ id, active }),
+            signal: AbortSignal.timeout(5000),
+          });
+        } catch {
+          return fallback();
+        }
+        const data = (await response.json().catch(() => ({}))) as {
+          entry?: SubjectTaxonomyEntry;
+          error?: unknown;
+        };
+        if (!response.ok || !data.entry) {
+          throw new Error(
+            typeof data.error === 'string' ? data.error : 'The hub rejected this change.',
+          );
+        }
+        audit('catalog.active', id);
+        return data.entry;
+      },
+      remove: async (id) => {
+        const fallback = async () => {
+          await removeTaxonomyEntry(id);
+          audit('catalog.remove', id);
+        };
+        if (!hubBaseUrl) return fallback();
+        let response: Response;
+        try {
+          response = await fetch(`${hubBaseUrl}/api/admin/catalog?id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: bridgeHeaders,
+            signal: AbortSignal.timeout(5000),
+          });
+        } catch {
+          return fallback();
+        }
+        const data = (await response.json().catch(() => ({}))) as { error?: unknown };
+        if (!response.ok) {
+          throw new Error(
+            typeof data.error === 'string' ? data.error : 'The hub rejected this change.',
+          );
+        }
+        audit('catalog.remove', id);
+      },
     },
     reviews: {
       list: async () => reviews.list(),

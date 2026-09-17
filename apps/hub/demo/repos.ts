@@ -1,3 +1,4 @@
+import type { SubjectTaxonomyEntry, SubjectTaxonomyRepository } from '@mojo/admin-config/domain';
 import type { LessonRecap, RecapRepository, TranscriptSummarizer } from '@mojo/ai-learning/domain';
 import type { BookingRepository, BookingSession, DeliveryConfirmation } from '@mojo/booking/domain';
 import { type DemoState, demoId } from '@mojo/demo-state';
@@ -639,6 +640,25 @@ export class InMemoryTutorProfileRepository implements TutorProfileRepository {
 
   async save(profile: TutorProfile): Promise<void> {
     this.state.profiles.set(profile.tutorId, profile);
+  }
+}
+
+export class InMemorySubjectTaxonomyRepository implements SubjectTaxonomyRepository {
+  constructor(private readonly state: DemoState) {}
+
+  async list(): Promise<SubjectTaxonomyEntry[]> {
+    return [...this.state.taxonomy];
+  }
+
+  async save(entry: SubjectTaxonomyEntry): Promise<void> {
+    const index = this.state.taxonomy.findIndex((e) => e.id === entry.id);
+    if (index >= 0) this.state.taxonomy[index] = entry;
+    else this.state.taxonomy.push(entry);
+  }
+
+  async remove(id: string): Promise<void> {
+    const index = this.state.taxonomy.findIndex((e) => e.id === id);
+    if (index >= 0) this.state.taxonomy.splice(index, 1);
   }
 }
 

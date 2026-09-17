@@ -30,25 +30,6 @@ import { useRef, useState } from 'react';
 import { WizardArtwork } from './apply-form-artwork';
 import { StatTile } from './stat-tile';
 
-const SUBJECT_OPTIONS = [
-  'Spanish',
-  'French',
-  'English',
-  'Maths',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'Economics',
-  'Python',
-  'Guitar',
-  'Piano',
-  'Yoruba',
-  'Igbo',
-  'Hausa',
-  'Art & Design',
-  'Business',
-];
-
 const LANGUAGE_OPTIONS = ['English', 'French', 'Spanish', 'Yoruba', 'Igbo', 'Hausa', 'Pidgin'];
 
 const EXPERIENCE_OPTIONS = ['Less than a year', '1–3 years', '3–5 years', '5+ years'];
@@ -88,10 +69,13 @@ export function ApplyForm({
   signedIn,
   name: initialName,
   email: initialEmail,
+  subjectOptions,
 }: {
   signedIn: boolean;
   name: string;
   email: string;
+  /** Active subjects from the admin-managed catalogue. */
+  subjectOptions: readonly string[];
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -223,7 +207,7 @@ export function ApplyForm({
             <WizardArtwork
               step={step}
               signedIn={signedIn}
-              subjectOptions={SUBJECT_OPTIONS}
+              subjectOptions={[...subjectOptions]}
               subjects={subjects}
               languages={languages}
               bio={bio}
@@ -257,7 +241,7 @@ export function ApplyForm({
                   value={subjects}
                   onValueChange={setSubjects}
                 >
-                  {SUBJECT_OPTIONS.map((subject) => (
+                  {subjectOptions.map((subject) => (
                     <ToggleGroupItem key={subject} value={subject} className="rounded-full">
                       {subject}
                     </ToggleGroupItem>

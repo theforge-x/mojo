@@ -2,6 +2,7 @@
 // can compose when `USE_PRISMA=true`. Kept behind one file so the demo
 // (in-memory) path never pulls Prisma-dependent code into its bundle.
 
+export { PrismaSubjectTaxonomyRepository } from '@mojo/admin-config/infrastructure';
 export { PrismaRecapRepository, summarizerFromEnv } from '@mojo/ai-learning/infrastructure';
 export { PrismaPaymentMethodRepository } from '@mojo/billing/infrastructure';
 export { PrismaBookingRepository } from '@mojo/booking/infrastructure';

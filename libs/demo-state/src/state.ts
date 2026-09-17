@@ -1,3 +1,4 @@
+import type { SubjectTaxonomyEntry } from '@mojo/admin-config/domain';
 import type { LessonRecap } from '@mojo/ai-learning/domain';
 import type { DeliveryConfirmation } from '@mojo/booking/domain';
 import type { User } from '@mojo/identity/domain';
@@ -79,6 +80,8 @@ export class DemoState {
   readonly suspensions = new Map<string, Suspension>();
   readonly messages = new Map<string, Message>();
   readonly tutorInterests = new Map<string, TutorInterest>();
+  /** Admin-managed subject catalogue (domains + subjects). */
+  readonly taxonomy: SubjectTaxonomyEntry[] = [];
   readonly notifications: SentNotification[] = [];
   readonly notificationPreferences = new Map<string, NotificationPreferences>();
 

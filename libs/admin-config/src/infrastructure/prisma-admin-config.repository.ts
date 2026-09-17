@@ -65,14 +65,18 @@ export class PrismaSubjectTaxonomyRepository implements SubjectTaxonomyRepositor
 
   async list(): Promise<SubjectTaxonomyEntry[]> {
     const rows = await this.prisma.subjectTaxonomyEntry.findMany();
-    return rows.map((r) => ({ id: r.id, name: r.name, parentId: r.parentId }));
+    return rows.map((r) => ({ id: r.id, name: r.name, parentId: r.parentId, active: r.active }));
   }
 
   async save(entry: SubjectTaxonomyEntry): Promise<void> {
     await this.prisma.subjectTaxonomyEntry.upsert({
       where: { id: entry.id },
-      create: { id: entry.id, name: entry.name, parentId: entry.parentId },
-      update: { name: entry.name, parentId: entry.parentId },
+      create: { id: entry.id, name: entry.name, parentId: entry.parentId, active: entry.active },
+      update: { name: entry.name, parentId: entry.parentId, active: entry.active },
     });
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.prisma.subjectTaxonomyEntry.delete({ where: { id } });
   }
 }

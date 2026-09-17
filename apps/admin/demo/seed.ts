@@ -1,3 +1,4 @@
+import { DEFAULT_TAXONOMY_SEED } from '@mojo/admin-config/domain';
 import { seedDemoApplications } from '@mojo/demo-state';
 import type { ScheduledSession } from '@mojo/scheduling/domain';
 import type { ApplicationProfileStore } from './repos';
@@ -89,14 +90,9 @@ export function seedAdmin(state: AdminState, shared: ApplicationProfileStore): v
     rolloutPercent: 100,
   });
 
-  state.subjects.push(
-    { id: 'sub_1', name: 'Languages', parentId: null },
-    { id: 'sub_2', name: 'Spanish', parentId: 'sub_1' },
-    { id: 'sub_3', name: 'French', parentId: 'sub_1' },
-    { id: 'sub_4', name: 'Maths', parentId: null },
-    { id: 'sub_5', name: 'Music', parentId: null },
-    { id: 'sub_6', name: 'Guitar', parentId: 'sub_5' },
-  );
+  if (state.subjects.length === 0) {
+    for (const entry of DEFAULT_TAXONOMY_SEED) state.subjects.push({ ...entry });
+  }
 
   state.reviews.set('r_1', {
     id: 'r_1',

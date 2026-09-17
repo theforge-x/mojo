@@ -12,5 +12,7 @@ export interface AuditLogRepository {
 
 export interface SubjectTaxonomyRepository {
   list(): Promise<SubjectTaxonomyEntry[]>;
+  /** Upsert by id. */
   save(entry: SubjectTaxonomyEntry): Promise<void>;
+  remove(id: string): Promise<void>;
 }

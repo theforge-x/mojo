@@ -160,7 +160,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
         items: [
           {
             title: 'Subjects & languages',
-            url: '#',
+            url: '/settings#subjects',
           },
           {
             title: 'Referral program',

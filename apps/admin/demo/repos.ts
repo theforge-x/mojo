@@ -207,6 +207,13 @@ export class InMemorySubjectTaxonomyRepository implements SubjectTaxonomyReposit
   }
 
   async save(entry: SubjectTaxonomyEntry): Promise<void> {
-    this.state.subjects.push(entry);
+    const index = this.state.subjects.findIndex((e) => e.id === entry.id);
+    if (index >= 0) this.state.subjects[index] = entry;
+    else this.state.subjects.push(entry);
+  }
+
+  async remove(id: string): Promise<void> {
+    const index = this.state.subjects.findIndex((e) => e.id === id);
+    if (index >= 0) this.state.subjects.splice(index, 1);
   }
 }

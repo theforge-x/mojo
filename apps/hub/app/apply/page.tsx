@@ -55,6 +55,8 @@ export default async function ApplyPage() {
     }
   }
 
+  const subjectOptions = (await getHub().catalog.options()).flatMap((group) => group.subjects);
+
   return (
     <main className="mx-auto w-full max-w-6xl p-6 lg:p-10">
       <div className="mb-6">
@@ -69,7 +71,12 @@ export default async function ApplyPage() {
           <CardTitle>Application</CardTitle>
         </CardHeader>
         <CardContent>
-          <ApplyForm signedIn={Boolean(user)} name={user?.name ?? ''} email={user?.email ?? ''} />
+          <ApplyForm
+            signedIn={Boolean(user)}
+            name={user?.name ?? ''}
+            email={user?.email ?? ''}
+            subjectOptions={subjectOptions}
+          />
         </CardContent>
       </Card>
     </main>

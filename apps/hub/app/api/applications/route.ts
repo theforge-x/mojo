@@ -94,6 +94,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const activeSubjects = new Set((await hub.catalog.options()).flatMap((group) => group.subjects));
+  const unknown = subjects.filter((subject: string) => !activeSubjects.has(subject));
+  if (unknown.length > 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `These subjects are no longer offered: ${unknown.join(', ')}. Pick from the current list.`,
+      },
+      { status: 422 },
+    );
+  }
+
   if (languages.length === 0) {
     return NextResponse.json(
       { ok: false, error: 'Pick at least one language you can teach in.' },
