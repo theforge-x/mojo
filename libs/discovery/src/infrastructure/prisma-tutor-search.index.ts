@@ -104,6 +104,7 @@ export class PrismaTutorSearchIndex implements TutorSearchIndex {
           perSegmentMinor: DEFAULT_SEGMENT_RATE_NGN[level],
           rating: perf?.averageRating ?? 0,
           responseTimeMinutesAvg: perf?.responseTimeMinutesAvg ?? 0,
+          introVideoUrl: profile.introVideoUrl,
         };
       });
   }

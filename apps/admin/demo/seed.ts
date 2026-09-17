@@ -29,6 +29,7 @@ export function seedAdmin(state: AdminState, shared: ApplicationProfileStore): v
             ? ['English']
             : ['English', 'Spanish'],
       bio: '',
+      introVideoUrl: '',
       timezone: 'Africa/Lagos',
       moderationFlagged: false,
     };

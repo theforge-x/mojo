@@ -27,6 +27,8 @@ export interface TutorApplication {
   readonly timezone: string;
   readonly availability: readonly AvailabilityWindow[];
   readonly status: ApplicationStatus;
+  /** Rejection reason, set when an admin rejects — shown to the applicant on resubmit. */
+  readonly reviewNote: string;
   readonly submittedAt: string;
 }
 
@@ -38,6 +40,7 @@ export interface TutorProfile {
   readonly subjects: readonly string[];
   readonly languages: readonly string[];
   readonly bio: string;
+  readonly introVideoUrl: string;
   readonly timezone: string;
   readonly moderationFlagged: boolean;
 }

@@ -579,6 +579,7 @@ export class InMemoryTutorSearchIndex implements TutorSearchIndex {
           perSegmentMinor: DEFAULT_RATE_MINOR[level],
           rating: perf?.averageRating ?? 0,
           responseTimeMinutesAvg: perf?.responseTimeMinutesAvg ?? 0,
+          introVideoUrl: profile.introVideoUrl,
         };
       });
   }

@@ -82,6 +82,7 @@ model TutorApplication {
   timezone         String            @default("Africa/Lagos")
   availabilityRules Json             @default("[]")
   status           ApplicationStatus @default(pending)
+  reviewNote       String            @default("")
   submittedAt      DateTime          @default(now())
 
   @@map("tutor_applications")
@@ -96,8 +97,9 @@ model TutorProfile {
   subjects          String[]
   languages         String[]  @default([])
   bio               String
-  timezone          String  @default("Africa/Lagos")
-  moderationFlagged Boolean @default(false)
+  introVideoUrl     String    @default("")
+  timezone          String    @default("Africa/Lagos")
+  moderationFlagged Boolean   @default(false)
 
   @@map("tutor_profiles")
 }

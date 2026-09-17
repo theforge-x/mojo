@@ -37,6 +37,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
         timezone: application.timezone,
         availabilityRules: application.availability as unknown as object,
         status: application.status,
+        reviewNote: application.reviewNote,
         submittedAt: new Date(application.submittedAt),
       },
       update: {
@@ -51,6 +52,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
         timezone: application.timezone,
         availabilityRules: application.availability as unknown as object,
         status: application.status,
+        reviewNote: application.reviewNote,
       },
     });
   }
@@ -69,6 +71,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
     timezone: string;
     availabilityRules: unknown;
     status: string;
+    reviewNote: string;
     submittedAt: Date;
   }): TutorApplication {
     return {
@@ -85,6 +88,7 @@ export class PrismaApplicationRepository implements ApplicationRepository {
       timezone: row.timezone,
       availability: this.toWindows(row.availabilityRules),
       status: row.status as TutorApplication['status'],
+      reviewNote: row.reviewNote,
       submittedAt: row.submittedAt.toISOString(),
     };
   }
@@ -109,6 +113,7 @@ export class PrismaTutorProfileRepository implements TutorProfileRepository {
       subjects: row.subjects,
       languages: row.languages,
       bio: row.bio,
+      introVideoUrl: row.introVideoUrl,
       timezone: row.timezone,
       moderationFlagged: row.moderationFlagged,
     };
@@ -125,6 +130,7 @@ export class PrismaTutorProfileRepository implements TutorProfileRepository {
         subjects: [...profile.subjects],
         languages: [...profile.languages],
         bio: profile.bio,
+        introVideoUrl: profile.introVideoUrl,
         timezone: profile.timezone,
         moderationFlagged: profile.moderationFlagged,
       },
@@ -135,6 +141,7 @@ export class PrismaTutorProfileRepository implements TutorProfileRepository {
         subjects: [...profile.subjects],
         languages: [...profile.languages],
         bio: profile.bio,
+        introVideoUrl: profile.introVideoUrl,
         timezone: profile.timezone,
         moderationFlagged: profile.moderationFlagged,
       },

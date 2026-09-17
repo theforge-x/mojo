@@ -18,4 +18,5 @@ export interface TutorSearchResult {
   readonly perSegmentMinor: number;
   readonly rating: number;
   readonly responseTimeMinutesAvg: number;
+  readonly introVideoUrl: string;
 }

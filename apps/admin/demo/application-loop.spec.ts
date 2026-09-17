@@ -18,6 +18,7 @@ function pendingApplication(prefix: string): TutorApplication {
     timezone: 'Africa/Lagos',
     availability: [{ id: `${prefix}_w`, weekday: 2, startMinute: 540, endMinute: 720 }],
     status: 'pending',
+    reviewNote: '',
     submittedAt: '2026-08-30T09:00:00.000Z',
   };
 }
@@ -63,8 +64,10 @@ describe('hub-backed application review', () => {
     const reviewed = await getAdmin().applications.review({
       applicationId: app.id,
       decision: 'rejected',
+      note: 'The intro is too short to assess fit.',
     });
     expect(reviewed.status).toBe('rejected');
+    expect(reviewed.reviewNote).toBe('The intro is too short to assess fit.');
 
     expect(shared.applications.get(app.id)?.status).toBe('rejected');
     expect(shared.profiles.get(app.tutorId)).toBeUndefined();

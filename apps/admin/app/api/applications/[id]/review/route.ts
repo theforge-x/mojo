@@ -12,13 +12,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   try {
     const decision = body.decision;
-    if (decision !== 'approved' && decision !== 'rejected') {
+    if (decision !== 'approved' && decision !== 'rejected' && decision !== 'in_review') {
       return NextResponse.json(
-        { ok: false, error: 'decision must be "approved" or "rejected".' },
+        { ok: false, error: 'decision must be "approved", "rejected" or "in_review".' },
         { status: 422 },
       );
     }
-    const application = await getAdmin().applications.review({ applicationId: id, decision });
+    const note = typeof body.note === 'string' ? body.note : undefined;
+    const application = await getAdmin().applications.review({ applicationId: id, decision, note });
     return NextResponse.json({ ok: true, application });
   } catch (error) {
     return NextResponse.json(

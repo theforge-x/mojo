@@ -20,6 +20,7 @@ describe('searchTutors', () => {
         perSegmentMinor: 600_000,
         rating: 4.6,
         responseTimeMinutesAvg: 90,
+        introVideoUrl: '',
       },
     ];
     const searchTutors = makeSearchTutors({ index: fakeIndex(results) });

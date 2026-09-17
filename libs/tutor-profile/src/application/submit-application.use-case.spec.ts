@@ -31,6 +31,7 @@ function sampleApplication(overrides: Partial<TutorApplication> = {}): TutorAppl
     timezone: 'Africa/Lagos',
     availability: [{ id: 'a1', weekday: 1, startMinute: 480, endMinute: 720 }],
     status: 'pending',
+    reviewNote: '',
     submittedAt: '2026-09-01T09:00:00.000Z',
     ...overrides,
   };

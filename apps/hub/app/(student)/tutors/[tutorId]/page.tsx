@@ -2,7 +2,7 @@ import { TRIAL_PRICE_PERCENT } from '@mojo/payments/domain';
 import { tutorLocalTime } from '@mojo/scheduling/domain';
 import { Badge, Button, Card, CardContent, Empty, EmptyDescription } from '@mojo/shared/ui';
 import { segmentsBetween } from '@mojo/shared/util';
-import { CalendarDays, Sparkles } from 'lucide-react';
+import { CalendarDays, Play, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { BookButton } from '../../../../components/book-button';
@@ -100,6 +100,19 @@ export default async function TutorDetailPage({
           <p className="mt-1 text-xs text-muted-foreground">
             Teaches in: {profile.languages.join(', ')}
           </p>
+        )}
+        {profile?.introVideoUrl && (
+          <a
+            href={profile.introVideoUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex items-center gap-2 rounded-full bg-black/80 py-1 pl-1 pr-4 text-sm font-medium text-white transition-opacity hover:opacity-85"
+          >
+            <span className="grid size-8 place-items-center rounded-full bg-white/20">
+              <Play className="size-4 fill-white" aria-hidden />
+            </span>
+            Watch {tutor.displayName.split(' ')[0]}&apos;s intro
+          </a>
         )}
       </div>
 

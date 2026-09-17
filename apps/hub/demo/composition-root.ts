@@ -300,9 +300,11 @@ export interface HubApp {
     submitApplication(app: TutorApplication, nowIso: string): Promise<void>;
     review(input: {
       applicationId: string;
-      decision: 'approved' | 'rejected';
+      decision: 'approved' | 'rejected' | 'in_review';
+      note?: string;
       nowIso?: string;
     }): Promise<TutorApplication>;
+    /** Latest application by submittedAt — resubmits and profile updates supersede. */
     applicationForTutor(tutorId: string): Promise<TutorApplication | null>;
     applications(): Promise<TutorApplication[]>;
     byTutor(tutorId: string): Promise<{
@@ -312,6 +314,7 @@ export interface HubApp {
       subjects: readonly string[];
       languages: readonly string[];
       bio: string;
+      introVideoUrl: string;
       timezone: string;
     } | null>;
   };
@@ -848,7 +851,9 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
         reviewApplication({ ...input, nowIso: input.nowIso ?? new Date().toISOString() }),
       applicationForTutor: async (tutorId) => {
         const all = await repos.applications.list();
-        return all.find((app) => app.tutorId === tutorId) ?? null;
+        const mine = all.filter((app) => app.tutorId === tutorId);
+        mine.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+        return mine[0] ?? null;
       },
       applications: () => repos.applications.list(),
       byTutor: async (tutorId) => {
@@ -861,6 +866,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
               subjects: profile.subjects,
               languages: profile.languages,
               bio: profile.bio,
+              introVideoUrl: profile.introVideoUrl,
               timezone: profile.timezone,
             }
           : null;

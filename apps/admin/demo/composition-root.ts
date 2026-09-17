@@ -52,7 +52,8 @@ export interface AdminApp {
     list(): Promise<TutorApplication[]>;
     review(input: {
       applicationId: string;
-      decision: 'approved' | 'rejected';
+      decision: 'approved' | 'rejected' | 'in_review';
+      note?: string;
     }): Promise<TutorApplication>;
   };
   profiles: {
@@ -181,11 +182,12 @@ export function getAdmin(): AdminApp {
           return fallback();
         }
       },
-      review: async ({ applicationId, decision }) => {
+      review: async ({ applicationId, decision, note }) => {
         if (!hubBaseUrl) {
           const updated = await reviewApplication({
             applicationId,
             decision,
+            note,
             nowIso: new Date().toISOString(),
           });
           audit(`application.${decision}`, applicationId);
@@ -196,7 +198,7 @@ export function getAdmin(): AdminApp {
           response = await fetch(`${hubBaseUrl}/api/applications/${applicationId}/review`, {
             method: 'POST',
             headers: { 'content-type': 'application/json', ...bridgeHeaders },
-            body: JSON.stringify({ decision }),
+            body: JSON.stringify({ decision, note }),
             signal: AbortSignal.timeout(5000),
           });
         } catch {
@@ -205,6 +207,7 @@ export function getAdmin(): AdminApp {
           // back: writing locally after the hub refused would double-apply.
           const updated = await reviewApplication({
             applicationId,
+            note,
             decision,
             nowIso: new Date().toISOString(),
           });

@@ -4,6 +4,7 @@ import type { TutorApplication } from '../domain/tutor-profile.types';
 import {
   ApplicationAlreadyReviewedError,
   ApplicationNotFoundError,
+  MissingReviewNoteError,
   makeReviewApplication,
 } from './review-application.use-case';
 
@@ -44,6 +45,7 @@ function sampleApplication(overrides: Partial<TutorApplication> = {}): TutorAppl
       { id: 'a2', weekday: 4, startMinute: 540, endMinute: 780 },
     ],
     status: 'pending',
+    reviewNote: '',
     submittedAt: '2026-09-01T09:00:00.000Z',
     ...overrides,
   };
@@ -71,16 +73,56 @@ describe('reviewApplication', () => {
     });
   });
 
-  it('rejects a pending application without creating a profile', async () => {
+  it('rejects a pending application with a note and without creating a profile', async () => {
     const { applications, profiles, get, getProfile } = fakeRepos(sampleApplication());
     await makeReviewApplication({ applications, profiles })({
       applicationId: 'app_1',
       decision: 'rejected',
+      note: 'Add a clearer headshot.',
       nowIso: '2026-09-02T10:00:00.000Z',
     });
 
     expect(get()?.status).toBe('rejected');
+    expect(get()?.reviewNote).toBe('Add a clearer headshot.');
     expect(getProfile()).toBeNull();
+  });
+
+  it('requires a note when rejecting', async () => {
+    const { applications, profiles } = fakeRepos(sampleApplication());
+    await expect(
+      makeReviewApplication({ applications, profiles })({
+        applicationId: 'app_1',
+        decision: 'rejected',
+        nowIso: '2026-09-02T10:00:00.000Z',
+      }),
+    ).rejects.toThrow(MissingReviewNoteError);
+  });
+
+  it('moves pending to in_review and then to a final decision', async () => {
+    const { applications, profiles, get } = fakeRepos(sampleApplication());
+    const review = makeReviewApplication({ applications, profiles });
+    await review({
+      applicationId: 'app_1',
+      decision: 'in_review',
+      nowIso: '2026-09-02T10:00:00.000Z',
+    });
+    expect(get()?.status).toBe('in_review');
+    await review({
+      applicationId: 'app_1',
+      decision: 'approved',
+      nowIso: '2026-09-02T11:00:00.000Z',
+    });
+    expect(get()?.status).toBe('approved');
+  });
+
+  it('carries the intro video onto the published profile', async () => {
+    const { applications, profiles, getProfile } = fakeRepos(sampleApplication());
+    await makeReviewApplication({ applications, profiles })({
+      applicationId: 'app_1',
+      decision: 'approved',
+      nowIso: '2026-09-02T10:00:00.000Z',
+    });
+    expect(getProfile()).toMatchObject({ introVideoUrl: 'https://ex.com/v' });
   });
 
   it('throws when the application does not exist', async () => {

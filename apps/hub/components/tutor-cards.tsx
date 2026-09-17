@@ -33,6 +33,7 @@ export interface EnrichedTutor {
   readonly reviewCount: number;
   /** True when the tutor's weekly availability covers right now (not paused, not blocked). */
   readonly isAvailableNow: boolean;
+  readonly introVideoUrl: string;
 }
 
 const FALLBACK_TINTS = [
@@ -204,10 +205,12 @@ export function TutorListCard({ tutor }: { tutor: EnrichedTutor }) {
                 Available now
               </span>
             )}
-            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
-              <Play className="size-3 fill-white" aria-hidden />
-              Intro video
-            </span>
+            {tutor.introVideoUrl && (
+              <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
+                <Play className="size-3 fill-white" aria-hidden />
+                Intro video
+              </span>
+            )}
           </div>
         </Link>
 
@@ -375,9 +378,19 @@ export function TutorMasonryCard({ tutor, index = 0 }: { tutor: EnrichedTutor; i
         </div>
 
         <div className="absolute inset-x-3 bottom-3 flex items-end justify-between gap-2">
-          <span className="rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-slate-900 shadow-sm">
-            {formatMinor(tutor.perSegmentMinor)}
-            <span className="font-medium text-slate-500"> /lesson</span>
+          <span className="flex items-center gap-1.5">
+            <span className="rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-slate-900 shadow-sm">
+              {formatMinor(tutor.perSegmentMinor)}
+              <span className="font-medium text-slate-500"> /lesson</span>
+            </span>
+            {tutor.introVideoUrl && (
+              <span
+                className="grid size-7 place-items-center rounded-full bg-black/60 text-white backdrop-blur"
+                title="Has an intro video"
+              >
+                <Play className="size-3 fill-white" aria-hidden />
+              </span>
+            )}
           </span>
           <span className="flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur">
             <Star className="size-3 fill-amber-400 text-amber-400" aria-hidden />

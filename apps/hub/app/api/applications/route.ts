@@ -152,12 +152,9 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (user?.role === 'tutor') {
-    const existing = await hub.profile.byTutor(user.id);
-    if (existing) {
-      return NextResponse.json({ ok: false, error: 'You are already a tutor.' }, { status: 409 });
-    }
-  }
+  // Signed-in tutors may file a follow-up application: a profile update (or a
+  // post-rejection resubmit) goes back through review, and approval upserts
+  // the live profile. The existing profile stays visible until then.
 
   let tutorId: string;
   let accountCreated = false;
@@ -222,6 +219,7 @@ export async function POST(request: NextRequest) {
     timezone,
     availability,
     status: 'pending' as const,
+    reviewNote: '',
     submittedAt: nowIso,
   };
 
@@ -308,6 +306,7 @@ export async function GET(request: NextRequest) {
       timezone: app.timezone,
       availability: app.availability,
       status: app.status,
+      reviewNote: app.reviewNote,
       submittedAt: app.submittedAt,
     })),
   });

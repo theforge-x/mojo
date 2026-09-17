@@ -38,6 +38,7 @@ export function seedDemoApplications(store: { applications: Map<string, TutorApp
         { id: `app_${index + 1}_w2`, weekday: 4, startMinute: 960, endMinute: 1140 },
       ],
       status: 'pending',
+      reviewNote: '',
       submittedAt: iso,
     });
   });

@@ -65,34 +65,63 @@ function clock(minute: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+export interface ApplyFormInitial {
+  readonly subjects: readonly string[];
+  readonly languages: readonly string[];
+  readonly bio: string;
+  readonly displayName: string;
+  readonly photoUrl: string;
+  readonly education: string;
+  readonly certifications: readonly string[];
+  readonly introVideoUrl: string;
+  readonly timezone: string;
+  readonly availability: readonly AvailabilityWindow[];
+}
+
+/** Strips the "Teaching for …; " prefix the API composes, so edits don't stack it. */
+function stripExperiencePrefix(bio: string): string {
+  return bio.replace(/^Teaching for [^;]+; /, '');
+}
+
 export function ApplyForm({
   signedIn,
   name: initialName,
   email: initialEmail,
   subjectOptions,
+  initial,
 }: {
   signedIn: boolean;
   name: string;
   email: string;
   /** Active subjects from the admin-managed catalogue. */
   subjectOptions: readonly string[];
+  /** Prefill for resubmits and profile updates. */
+  initial?: ApplyFormInitial;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [subjects, setSubjects] = useState<string[]>([]);
-  const [languages, setLanguages] = useState<string[]>([]);
-  const [bio, setBio] = useState('');
-  const [displayName, setDisplayName] = useState(initialName);
-  const [photoMode, setPhotoMode] = useState<'file' | 'url'>('file');
+  const [subjects, setSubjects] = useState<string[]>(() =>
+    [...(initial?.subjects ?? [])].filter((s) => subjectOptions.includes(s)),
+  );
+  const [languages, setLanguages] = useState<string[]>([...(initial?.languages ?? [])]);
+  const [bio, setBio] = useState(initial ? stripExperiencePrefix(initial.bio) : '');
+  const [displayName, setDisplayName] = useState(initial?.displayName || initialName);
+  const [photoMode, setPhotoMode] = useState<'file' | 'url'>(initial?.photoUrl ? 'url' : 'file');
   const [photoFile, setPhotoFile] = useState<string>('');
-  const [photoUrl, setPhotoUrl] = useState('');
-  const [education, setEducation] = useState('');
+  const [photoUrl, setPhotoUrl] = useState(initial?.photoUrl ?? '');
+  const [education, setEducation] = useState(initial?.education ?? '');
   const [yearsExperience, setYearsExperience] = useState<string | null>(null);
-  const [certifications, setCertifications] = useState<string[]>([]);
+  const [certifications, setCertifications] = useState<string[]>([
+    ...(initial?.certifications ?? []),
+  ]);
   const [certDraft, setCertDraft] = useState('');
-  const [introVideoUrl, setIntroVideoUrl] = useState('');
-  const [timezone, setTimezone] = useState(defaultTimezone);
-  const [availability, setAvailability] = useState<AvailabilityWindow[]>([]);
+  const [introVideoUrl, setIntroVideoUrl] = useState(initial?.introVideoUrl ?? '');
+  const [timezone, setTimezone] = useState(() =>
+    initial && isValidTimezone(initial.timezone) ? initial.timezone : defaultTimezone(),
+  );
+  const [availability, setAvailability] = useState<AvailabilityWindow[]>([
+    ...(initial?.availability ?? []),
+  ]);
   const [name, setName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');

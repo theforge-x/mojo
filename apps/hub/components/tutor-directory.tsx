@@ -81,6 +81,7 @@ export async function TutorDirectory({
         bio: profile?.bio ?? '',
         lessonsTaught: Math.max(0, Math.round(performance?.cumulativeHoursTaught ?? 0)),
         reviewCount: reviews.length,
+        introVideoUrl: tutor.introVideoUrl,
         isAvailableNow: await isAvailableNow(
           hub,
           tutor.tutorId,

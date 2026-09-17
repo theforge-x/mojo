@@ -65,18 +65,45 @@ function ApplicationCard({ app }: { app: TutorApplication }) {
           <p className="mt-1 text-sm text-muted-foreground">{app.bio}</p>
           <p className="mt-2 flex flex-wrap gap-1.5">
             <Badge variant="muted">{app.timezone || 'timezone unset'}</Badge>
+            {app.languages.map((language) => (
+              <Badge key={language} variant="outline">
+                {language}
+              </Badge>
+            ))}
+            {app.certifications.map((cert) => (
+              <Badge key={cert} variant="outline">
+                {cert}
+              </Badge>
+            ))}
             {app.availability.map((w) => (
               <Badge key={w.id} variant="outline">
                 {windowLabel(w.weekday, w.startMinute, w.endMinute)}
               </Badge>
             ))}
           </p>
+          {app.introVideoUrl && (
+            <p className="mt-2 text-sm">
+              <a
+                href={app.introVideoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Watch intro video
+              </a>
+            </p>
+          )}
+          {app.status === 'rejected' && app.reviewNote && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Rejected — <span className="text-foreground">{app.reviewNote}</span>
+            </p>
+          )}
           <p className="mt-2 text-xs text-muted-foreground">
             submitted {new Date(app.submittedAt).toLocaleString()}
           </p>
         </div>
-        {app.status === 'pending' ? (
-          <ReviewButtons applicationId={app.id} />
+        {app.status === 'pending' || app.status === 'in_review' ? (
+          <ReviewButtons applicationId={app.id} status={app.status} />
         ) : (
           <Badge variant={app.status === 'approved' ? 'primary' : 'muted'}>{app.status}</Badge>
         )}
