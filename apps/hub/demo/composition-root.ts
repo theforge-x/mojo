@@ -105,7 +105,11 @@ import type {
   WalletTransaction,
 } from '@mojo/payments/domain';
 import { makeRecordSessionCompletion } from '@mojo/pricing/application';
-import { DEFAULT_SEGMENT_RATE_NGN, type TutorLevelReader } from '@mojo/pricing/domain';
+import {
+  DEFAULT_SEGMENT_RATE_NGN,
+  groupPerSegmentMinor,
+  type TutorLevelReader,
+} from '@mojo/pricing/domain';
 import type { ReferralRepository } from '@mojo/referrals/domain';
 import { makeSubmitReview } from '@mojo/reviews/application';
 import type { Review, ReviewRepository } from '@mojo/reviews/domain';
@@ -631,16 +635,27 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const updateSchedulingSettings = makeUpdateSchedulingSettings({
     availability: repos.availability,
   });
+  const oneOnOneBaseMinor = async (tutorId: string): Promise<number> => {
+    const custom = await repos.levels.getCustomRateMinor(tutorId);
+    if (custom !== null) return custom;
+    return DEFAULT_SEGMENT_RATE_NGN[await repos.levels.getLevel(tutorId)];
+  };
   const confirmDelivery = makeConfirmDelivery({
     bookings: repos.bookings,
     rates: {
-      perSegmentMinor: async (tutorId) => {
-        const custom = await repos.levels.getCustomRateMinor(tutorId);
-        if (custom !== null) return custom;
-        return DEFAULT_SEGMENT_RATE_NGN[await repos.levels.getLevel(tutorId)];
-      },
+      perSegmentMinor: async (tutorId, groupSize) =>
+        groupSize !== undefined && groupSize > 1
+          ? groupPerSegmentMinor(await oneOnOneBaseMinor(tutorId), 'NGN', groupSize)
+          : oneOnOneBaseMinor(tutorId),
     },
   });
+  const chargeRateReader = {
+    getLevel: (tutorId: string) => repos.levels.getLevel(tutorId),
+    hasMojoPlus: (tutorId: string) => repos.levels.hasMojoPlus(tutorId),
+    getCustomRateMinor: (tutorId: string) => repos.levels.getCustomRateMinor(tutorId),
+    groupPerSegmentMinor: async (tutorId: string, size: number) =>
+      groupPerSegmentMinor(await oneOnOneBaseMinor(tutorId), 'NGN', size),
+  };
   const markNoShow = makeMarkNoShow({ bookings: repos.bookings });
   const subscribeMojoPlus = makeSubscribeMojoPlus({ subscriptions: repos.mojoPlus });
   const cancelMojoPlus = makeCancelMojoPlus({ subscriptions: repos.mojoPlus });
@@ -663,7 +678,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const submitReview = makeSubmitReview({ reviews: repos.reviews });
   const releasePayout = makeReleasePayout({ wallets: repos.wallets, rail: repos.rail });
   const quoteSessionCharge = makeQuoteSessionCharge({
-    rates: repos.levels,
+    rates: chargeRateReader,
     defaults: DEFAULT_SEGMENT_RATE_NGN,
   });
   // Demo mode keeps the historical stub ledger (immediate success, no
@@ -704,14 +719,14 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const chargeStudent = makeChargeStudent({
     charges: repos.charges,
     methods: repos.methods,
-    rates: repos.levels,
+    rates: chargeRateReader,
     defaults: DEFAULT_SEGMENT_RATE_NGN,
     grants: repos.grants,
     collect,
   });
   const initializeCharge = makeInitializeCharge({
     charges: repos.charges,
-    rates: repos.levels,
+    rates: chargeRateReader,
     defaults: DEFAULT_SEGMENT_RATE_NGN,
     collect,
   });

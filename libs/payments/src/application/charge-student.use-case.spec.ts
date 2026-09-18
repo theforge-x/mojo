@@ -10,6 +10,7 @@ import type {
 import type { ReplacementGrant } from '../domain/replacement.types';
 import {
   DuplicateChargeError,
+  GroupTrialBookingError,
   InvalidReplacementGrantError,
   makeChargeStudent,
   NoPaymentMethodError,
@@ -28,6 +29,7 @@ function fakeRates(level: TutorLevel = 'entry', custom: number | null = null): C
     getLevel: async () => level,
     hasMojoPlus: async () => custom !== null,
     getCustomRateMinor: async () => custom,
+    groupPerSegmentMinor: async () => custom ?? DEFAULTS[level],
   };
 }
 
@@ -154,6 +156,44 @@ describe('chargeStudent', () => {
     expect(charge.totalMinor).toBe(800_000);
     expect(charge.trialDiscountMinor).toBe(800_000);
     expect(charge.isTrial).toBe(true);
+  });
+
+  it('charges the ladder group rate per student for group labs', async () => {
+    const charges = fakeCharges();
+    const chargeStudent = makeChargeStudent({
+      ...deps(charges),
+      rates: {
+        ...fakeRates(),
+        groupPerSegmentMinor: async () => 360_000,
+      },
+    });
+
+    const charge = await chargeStudent({ ...BASE, groupSize: 15 });
+
+    // 4 segments × ₦3,600 group rate (fake ladder).
+    expect(charge.segments).toBe(4);
+    expect(charge.perSegmentMinor).toBe(360_000);
+    expect(charge.totalMinor).toBe(1_440_000);
+  });
+
+  it('refuses trial pricing for group labs', async () => {
+    const charges = fakeCharges();
+    const chargeStudent = makeChargeStudent(deps(charges));
+
+    await expect(chargeStudent({ ...BASE, isTrial: true, groupSize: 12 })).rejects.toThrow(
+      GroupTrialBookingError,
+    );
+    expect(charges.saved).toHaveLength(0);
+  });
+
+  it('refuses replacement grants for group labs', async () => {
+    const charges = fakeCharges();
+    const chargeStudent = makeChargeStudent(deps(charges));
+
+    await expect(
+      chargeStudent({ ...BASE, groupSize: 12, replacementGrantId: 'missing' }),
+    ).rejects.toThrow(InvalidReplacementGrantError);
+    expect(charges.saved).toHaveLength(0);
   });
 
   it('refuses without a payment method on file', async () => {

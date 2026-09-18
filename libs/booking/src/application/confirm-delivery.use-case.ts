@@ -46,7 +46,9 @@ export function makeConfirmDelivery(deps: {
     });
 
     const segmentCount = segmentsBetween(session.startIso, session.endIso);
-    const amountMinor = session.isTrial ? 0 : await deps.rates.perSegmentMinor(session.tutorId);
+    const amountMinor = session.isTrial
+      ? 0
+      : await deps.rates.perSegmentMinor(session.tutorId, session.groupSize ?? undefined);
 
     await eventBus.publish({
       name: 'SessionCompleted',

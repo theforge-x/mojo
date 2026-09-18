@@ -6,6 +6,7 @@ import type {
   PaymentCollector,
   StudentPaymentMethodRepository,
 } from '../domain/payments.ports';
+import { GroupTrialBookingError } from './charge-student.use-case';
 import { makeQuoteSessionCharge } from './quote-session-charge.use-case';
 
 export interface InitializeChargeInput {
@@ -15,6 +16,8 @@ export interface InitializeChargeInput {
   startIso: string;
   endIso: string;
   isTrial: boolean;
+  /** Group lab size — per-student total follows the ladder. Omit for 1-on-1. */
+  groupSize?: number;
   customerEmail: string;
   callbackUrl: string;
 }
@@ -54,11 +57,15 @@ export function makeInitializeCharge(deps: {
       return { charge: existing, authorizationUrl: resumed.authorizationUrl };
     }
 
+    const groupSize =
+      input.groupSize !== undefined && input.groupSize > 1 ? input.groupSize : undefined;
+    if (groupSize !== undefined && input.isTrial) throw new GroupTrialBookingError();
     const quote = await quoteSessionCharge({
       tutorId: input.tutorId,
       startIso: input.startIso,
       endIso: input.endIso,
       isTrial: input.isTrial,
+      groupSize,
     });
     const charge: StudentCharge = {
       id: crypto.randomUUID(),

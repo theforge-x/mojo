@@ -96,6 +96,7 @@ describe('initializeCharge', () => {
         getLevel: async () => 'entry' as const,
         hasMojoPlus: async () => false,
         getCustomRateMinor: async () => null,
+        groupPerSegmentMinor: async () => DEFAULTS.entry,
       },
       defaults: DEFAULTS,
       collect: {
@@ -131,6 +132,7 @@ describe('initializeCharge', () => {
         getLevel: async () => 'entry' as const,
         hasMojoPlus: async () => false,
         getCustomRateMinor: async () => null,
+        groupPerSegmentMinor: async () => DEFAULTS.entry,
       },
       defaults: DEFAULTS,
       collect: {
@@ -167,6 +169,7 @@ describe('initializeCharge', () => {
         getLevel: async () => 'entry' as const,
         hasMojoPlus: async () => false,
         getCustomRateMinor: async () => null,
+        groupPerSegmentMinor: async () => DEFAULTS.entry,
       },
       defaults: DEFAULTS,
       collect: {

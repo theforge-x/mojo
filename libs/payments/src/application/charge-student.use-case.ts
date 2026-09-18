@@ -22,6 +22,8 @@ export interface ChargeStudentInput {
   customerEmail?: string;
   /** A granted free-replacement entitlement — settles the booking at zero. */
   replacementGrantId?: string;
+  /** Group lab size — per-student total follows the ladder. Omit for 1-on-1. */
+  groupSize?: number;
   nowIso: string;
 }
 
@@ -49,6 +51,12 @@ export class InvalidReplacementGrantError extends Error {
   }
 }
 
+export class GroupTrialBookingError extends Error {
+  constructor() {
+    super('Trial lessons are one-on-one — group labs are charged at the group rate.');
+  }
+}
+
 /**
  * Records the student's charge for a booking against their payment method.
  * Money moves through the injected `collect` rail first (Paystack
@@ -68,6 +76,10 @@ export function makeChargeStudent(deps: {
   const quoteSessionCharge = makeQuoteSessionCharge({ rates: deps.rates, defaults: deps.defaults });
 
   return async function chargeStudent(input: ChargeStudentInput): Promise<StudentCharge> {
+    const groupSize = input.groupSize !== undefined && input.groupSize > 1 ? input.groupSize : undefined;
+    if (groupSize !== undefined && input.isTrial) throw new GroupTrialBookingError();
+    if (groupSize !== undefined && input.replacementGrantId) throw new InvalidReplacementGrantError();
+
     const method = input.paymentMethodId
       ? ((await deps.methods.findByStudent(input.studentId)).find(
           (m) => m.id === input.paymentMethodId,
@@ -108,6 +120,7 @@ export function makeChargeStudent(deps: {
       startIso: input.startIso,
       endIso: input.endIso,
       isTrial: input.isTrial,
+      groupSize,
     });
 
     const totalMinor = grant ? 0 : quote.totalMinor;

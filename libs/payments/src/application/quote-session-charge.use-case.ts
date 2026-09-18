@@ -8,6 +8,8 @@ export interface QuoteSessionChargeInput {
   startIso: string;
   endIso: string;
   isTrial: boolean;
+  /** Group lab size — per-student price follows the ladder. Omit for 1-on-1. */
+  groupSize?: number;
 }
 
 /**
@@ -28,7 +30,10 @@ export function makeQuoteSessionCharge(deps: {
       deps.rates.getLevel(input.tutorId),
       deps.rates.getCustomRateMinor(input.tutorId),
     ]);
-    const perSegmentMinor = customRateMinor ?? deps.defaults[level];
+    const perSegmentMinor =
+      input.groupSize !== undefined && input.groupSize > 1
+        ? await deps.rates.groupPerSegmentMinor(input.tutorId, input.groupSize)
+        : (customRateMinor ?? deps.defaults[level]);
     const segments = segmentsBetween(input.startIso, input.endIso);
     const standard = money(segments * perSegmentMinor, 'NGN');
     const total = input.isTrial ? percentOf(standard, TRIAL_PRICE_PERCENT) : standard;

@@ -15,6 +15,8 @@ function session(
     endIso,
     status,
     isTrial: false,
+    groupId: null,
+    groupSize: null,
     statusHistory: [],
   };
 }

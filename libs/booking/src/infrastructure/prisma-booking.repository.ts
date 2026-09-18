@@ -60,6 +60,7 @@ function toBookingSession(row: {
   endAt: Date;
   isTrial: boolean;
   status: BookingSession['status'];
+  groupSize: number | null;
 }): BookingSession {
   return {
     id: row.id,
@@ -69,5 +70,6 @@ function toBookingSession(row: {
     endIso: row.endAt.toISOString(),
     isTrial: row.isTrial,
     status: row.status,
+    groupSize: row.groupSize,
   };
 }

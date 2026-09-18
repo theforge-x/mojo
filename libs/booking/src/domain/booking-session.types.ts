@@ -14,4 +14,6 @@ export interface BookingSession {
   readonly endIso: string;
   readonly isTrial: boolean;
   readonly status: 'booked' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
+  /** Group lab size snapshot — null for one-on-one sessions. */
+  readonly groupSize: number | null;
 }

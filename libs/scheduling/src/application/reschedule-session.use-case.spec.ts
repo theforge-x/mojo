@@ -64,6 +64,7 @@ function buildFakes(
       saved.push(s);
     },
     findById: async (id) => existing.find((s) => s.id === id) ?? null,
+    listByGroup: async () => [],
   };
   return { availability, sessions, saved };
 }

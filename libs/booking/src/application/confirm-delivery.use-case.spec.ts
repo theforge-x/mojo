@@ -17,6 +17,7 @@ function fakeSession(overrides: Partial<BookingSession> = {}): BookingSession {
     endIso: '2026-09-01T11:00:00.000Z',
     isTrial: false,
     status: 'confirmed',
+    groupSize: null,
     ...overrides,
   };
 }

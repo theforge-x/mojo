@@ -22,6 +22,7 @@ function fakeSessions(initial: { status: string; tutorId: string }): SessionRepo
   const base = {
     getBookedSessions: async () => [],
     findById: async (id: string) => (id === session.id ? session : null),
+    listByGroup: async () => [],
     save: async (next: never) => {
       session = next;
     },

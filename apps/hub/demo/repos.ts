@@ -224,6 +224,7 @@ export class InMemoryBookingRepository implements BookingRepository {
       endIso: session.endIso,
       isTrial: session.isTrial,
       status: session.status,
+      groupSize: session.groupSize,
     };
   }
 
@@ -239,6 +240,7 @@ export class InMemoryBookingRepository implements BookingRepository {
         endIso: session.endIso,
         isTrial: session.isTrial,
         status: session.status,
+        groupSize: session.groupSize,
       }));
   }
 

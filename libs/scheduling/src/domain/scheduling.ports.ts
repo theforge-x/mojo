@@ -3,6 +3,7 @@ import type {
   AvailabilityRule,
   SchedulingSettings,
 } from './availability.types';
+import type { GroupLab } from './group-lab.types';
 import type { ScheduledSession } from './session.types';
 
 export interface AvailabilityRepository {
@@ -27,4 +28,11 @@ export interface SessionRepository {
   ): Promise<ScheduledSession[]>;
   save(session: ScheduledSession): Promise<void>;
   findById(id: string): Promise<ScheduledSession | null>;
+  listByGroup(groupId: string): Promise<ScheduledSession[]>;
+}
+
+export interface GroupLabRepository {
+  findById(groupId: string): Promise<GroupLab | null>;
+  listByTutor(tutorId: string): Promise<GroupLab[]>;
+  save(group: GroupLab): Promise<void>;
 }

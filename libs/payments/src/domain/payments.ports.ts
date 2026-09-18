@@ -33,6 +33,12 @@ export interface ChargeRateReader {
   getLevel(tutorId: string): Promise<TutorLevel>;
   hasMojoPlus(tutorId: string): Promise<boolean>;
   getCustomRateMinor(tutorId: string): Promise<number | null>;
+  /**
+   * Ladder price for a group of `groupSize` — the 1-on-1 base (custom or
+   * level rate) discounted per the group pricing ladder. Implemented by the
+   * composition root, which is the only layer allowed to know the ladder.
+   */
+  groupPerSegmentMinor(tutorId: string, groupSize: number): Promise<number>;
 }
 
 /**

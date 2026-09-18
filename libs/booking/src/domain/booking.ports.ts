@@ -20,5 +20,9 @@ export interface BookingRepository {
  * module — the composition root implements it from the pricing reader.
  */
 export interface SegmentRateReader {
-  perSegmentMinor(tutorId: string): Promise<number>;
+  /**
+   * Per-student per-segment rate. Group sessions pass the ladder size so the
+   * reader returns the discounted group price; one-on-one omits it.
+   */
+  perSegmentMinor(tutorId: string, groupSize?: number): Promise<number>;
 }

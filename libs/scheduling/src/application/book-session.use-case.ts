@@ -12,6 +12,9 @@ export interface BookSessionInput {
   endIso: string;
   isTrial: boolean;
   nowIso: string;
+  /** Group lab enrollment — the row joins this group at the given live size. */
+  groupId?: string;
+  groupSize?: number;
 }
 
 export class SchedulingConflictError extends Error {
@@ -58,10 +61,17 @@ export function makeBookSession(deps: {
       input.endIso,
     );
 
-    if (hasConflict(candidate, existing)) {
+    // Members of the same group lab share one event — they neither conflict
+    // with nor buffer against each other, only against everything else.
+    const others =
+      input.groupId !== undefined
+        ? existing.filter((s) => s.groupId !== input.groupId)
+        : existing;
+
+    if (hasConflict(candidate, others)) {
       throw new SchedulingConflictError('overlaps an existing session.');
     }
-    if (!respectsBuffer(candidate, existing, settings.bufferMinutes)) {
+    if (!respectsBuffer(candidate, others, settings.bufferMinutes)) {
       throw new SchedulingConflictError(
         `does not respect the ${settings.bufferMinutes}-minute buffer.`,
       );
@@ -75,6 +85,8 @@ export function makeBookSession(deps: {
       endIso: input.endIso,
       status: 'booked',
       isTrial: input.isTrial,
+      groupId: input.groupId ?? null,
+      groupSize: input.groupSize ?? null,
       statusHistory: [{ status: 'booked', at: input.nowIso }],
     };
     await deps.sessions.save(session);

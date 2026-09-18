@@ -51,6 +51,11 @@ export type SessionDeliveryConfirmed = DomainEvent<
   { sessionId: string; confirmedBy: 'student' | 'tutor' | 'auto_window' }
 >;
 
+export type GroupLabLocked = DomainEvent<
+  'GroupLabLocked',
+  { groupId: string; tutorId: string; lockedSize: number }
+>;
+
 export type TutorLevelChanged = DomainEvent<
   'TutorLevelChanged',
   { tutorId: string; fromLevel: string; toLevel: string }
@@ -95,6 +100,7 @@ export type MojoEvent =
   | SessionCompleted
   | SessionNoShow
   | SessionRescheduled
+  | GroupLabLocked
   | SessionDeliveryConfirmed
   | TutorLevelChanged
   | MojoPlusSubscribed
