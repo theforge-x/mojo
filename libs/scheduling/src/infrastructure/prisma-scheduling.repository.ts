@@ -5,7 +5,12 @@ import type {
   SchedulingSettings,
   Weekday,
 } from '../domain/availability.types';
-import type { AvailabilityRepository, SessionRepository } from '../domain/scheduling.ports';
+import type { GroupLab, GroupLabStatus } from '../domain/group-lab.types';
+import type {
+  AvailabilityRepository,
+  GroupLabRepository,
+  SessionRepository,
+} from '../domain/scheduling.ports';
 import type { ScheduledSession } from '../domain/session.types';
 
 const DEFAULT_BUFFER_MINUTES = 15;
@@ -121,6 +126,8 @@ export class PrismaSessionRepository implements SessionRepository {
         endAt: new Date(session.endIso),
         status: session.status,
         isTrial: session.isTrial,
+        groupId: session.groupId,
+        groupSize: session.groupSize,
       },
       // In-place moves (reschedule) change the clock, not just the status —
       // persist both so the Prisma path matches the in-memory store.
@@ -128,6 +135,8 @@ export class PrismaSessionRepository implements SessionRepository {
         startAt: new Date(session.startIso),
         endAt: new Date(session.endIso),
         status: session.status,
+        groupId: session.groupId,
+        groupSize: session.groupSize,
       },
     });
   }
@@ -139,6 +148,79 @@ export class PrismaSessionRepository implements SessionRepository {
     });
     return row ? toDomain(row) : null;
   }
+
+  async listByGroup(groupId: string): Promise<ScheduledSession[]> {
+    const rows = await this.prisma.session.findMany({
+      where: { groupId },
+      include: { statusHistory: true },
+      orderBy: { startAt: 'asc' },
+    });
+    return rows.map(toDomain);
+  }
+}
+
+export class PrismaGroupLabRepository implements GroupLabRepository {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  async findById(groupId: string): Promise<GroupLab | null> {
+    const row = await this.prisma.groupLab.findUnique({ where: { id: groupId } });
+    return row ? toGroupLab(row) : null;
+  }
+
+  async listByTutor(tutorId: string): Promise<GroupLab[]> {
+    const rows = await this.prisma.groupLab.findMany({
+      where: { tutorId },
+      orderBy: { startAt: 'asc' },
+    });
+    return rows.map(toGroupLab);
+  }
+
+  async listOpenByTutor(tutorId: string): Promise<GroupLab[]> {
+    const rows = await this.prisma.groupLab.findMany({
+      where: { tutorId, status: 'open' },
+      orderBy: { startAt: 'asc' },
+    });
+    return rows.map(toGroupLab);
+  }
+
+  async save(group: GroupLab): Promise<void> {
+    await this.prisma.groupLab.upsert({
+      where: { id: group.id },
+      create: {
+        id: group.id,
+        tutorId: group.tutorId,
+        title: group.title,
+        startAt: new Date(group.startIso),
+        endAt: new Date(group.endIso),
+        maxSeats: group.maxSeats,
+        status: group.status,
+        lockedSize: group.lockedSize,
+      },
+      update: {
+        title: group.title,
+        startAt: new Date(group.startIso),
+        endAt: new Date(group.endIso),
+        maxSeats: group.maxSeats,
+        status: group.status,
+        lockedSize: group.lockedSize,
+      },
+    });
+  }
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: kept light rather than importing every Prisma row type
+function toGroupLab(row: any): GroupLab {
+  return {
+    id: row.id,
+    tutorId: row.tutorId,
+    title: row.title,
+    startIso: row.startAt.toISOString(),
+    endIso: row.endAt.toISOString(),
+    maxSeats: row.maxSeats,
+    status: row.status as GroupLabStatus,
+    lockedSize: row.lockedSize,
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: kept light rather than importing every Prisma row type
@@ -148,9 +230,11 @@ function toDomain(row: any): ScheduledSession {
     tutorId: row.tutorId,
     studentId: row.studentId,
     startIso: row.startAt.toISOString(),
-    endIso: row.endAt.toISOString(),
+    endIso: row.endIso.toISOString(),
     status: row.status,
     isTrial: row.isTrial,
+    groupId: row.groupId ?? null,
+    groupSize: row.groupSize ?? null,
     statusHistory: (row.statusHistory ?? []).map((h: { status: string; at: Date }) => ({
       status: h.status as ScheduledSession['status'],
       at: h.at.toISOString(),

@@ -118,7 +118,10 @@ import {
   type CancelSessionInput,
   type ConfirmSessionInput,
   makeBookSession,
+  makeCancelGroupLab,
   makeCancelSession,
+  makeCreateGroupLab,
+  makeLockGroupLab,
   makeConfirmSession,
   makeRescheduleSession,
   makeSetAvailability,
@@ -134,6 +137,7 @@ import type {
   ScheduledSession,
   SchedulingSettings,
   SessionRepository,
+  GroupLabRepository,
 } from '@mojo/scheduling/domain';
 import type { Money } from '@mojo/shared/domain';
 import {
@@ -174,6 +178,7 @@ import {
   PrismaReferralRepository,
   PrismaReplacementGrantRepository,
   PrismaReviewRepository,
+  PrismaGroupLabRepository,
   PrismaSessionRepository,
   PrismaSubjectTaxonomyRepository,
   PrismaTutorLevelReader,
@@ -200,6 +205,7 @@ import {
   InMemoryReferralRepository,
   InMemoryReplacementGrantRepository,
   InMemoryReviewRepository,
+  InMemoryGroupLabRepository,
   InMemorySessionRepository,
   InMemorySessionStore,
   InMemoryStudentPaymentMethodRepository,
@@ -223,6 +229,7 @@ interface Repositories {
     listByTutor(tutorId: string): Promise<ScheduledSession[]>;
     listByStudent(studentId: string): Promise<ScheduledSession[]>;
   };
+  groups: GroupLabRepository;
   bookings: BookingRepository;
   levels: TutorLevelReader;
   wallets: WalletRepository;
@@ -454,9 +461,11 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
       getBookedSessions: (t, a, b) => sessions.getBookedSessions(t, a, b),
       save: (s) => sessions.save(s),
       findById: (id) => sessions.findById(id),
+      listByGroup: (g) => sessions.listByGroup(g),
       listByTutor: async (t) => sessions.listByTutor(t),
       listByStudent: async (s) => sessions.listByStudent(s),
     },
+    groups: new InMemoryGroupLabRepository(state),
     bookings: new InMemoryBookingRepository(state),
     levels: new InMemoryTutorLevelReader(state),
     wallets: new InMemoryWalletRepository(state),
@@ -498,9 +507,11 @@ function buildPrismaRepositories(_state: DemoState): Repositories {
       getBookedSessions: (t, a, b) => sessions.getBookedSessions(t, a, b),
       save: (s) => sessions.save(s),
       findById: (id) => sessions.findById(id),
+      listByGroup: (groupId) => sessions.listByGroup(groupId),
       listByTutor: async (tutorId) => listSessions(prisma, { tutorId }),
       listByStudent: async (studentId) => listSessions(prisma, { studentId }),
     },
+    groups: new PrismaGroupLabRepository(prisma),
     bookings: new PrismaBookingRepository(prisma),
     levels: new PrismaTutorLevelReader(prisma),
     wallets: new PrismaWalletRepository(prisma),
@@ -542,6 +553,8 @@ async function listSessions(
     endIso: row.endAt.toISOString(),
     status: row.status,
     isTrial: row.isTrial,
+    groupId: row.groupId,
+    groupSize: row.groupSize,
     statusHistory: (row.statusHistory ?? []).map((h) => ({
       status: h.status,
       at: h.at.toISOString(),

@@ -18,6 +18,7 @@ import type { Review } from '@mojo/reviews/domain';
 import type {
   AvailabilityException,
   AvailabilityRule,
+  GroupLab,
   ScheduledSession,
   SchedulingSettings,
 } from '@mojo/scheduling/domain';
@@ -59,6 +60,8 @@ const STATE_SYMBOL = Symbol.for('mojo.demo.state');
 export class DemoState {
   readonly users = new Map<string, User>();
   readonly sessions = new Map<string, ScheduledSession>();
+  /** Tutor-run group labs, keyed by lab id. */
+  readonly groupLabs = new Map<string, GroupLab>();
   readonly confirmationBySession = new Map<string, DeliveryConfirmation>();
   readonly availabilityRules = new Map<string, AvailabilityRule[]>();
   readonly availabilityExceptions = new Map<string, AvailabilityException[]>();

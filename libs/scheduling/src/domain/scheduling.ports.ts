@@ -34,5 +34,6 @@ export interface SessionRepository {
 export interface GroupLabRepository {
   findById(groupId: string): Promise<GroupLab | null>;
   listByTutor(tutorId: string): Promise<GroupLab[]>;
+  listOpenByTutor(tutorId: string): Promise<GroupLab[]>;
   save(group: GroupLab): Promise<void>;
 }

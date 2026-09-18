@@ -125,6 +125,8 @@ export function seedAdmin(state: AdminState, shared: ApplicationProfileStore): v
       endIso: hour(now, 7),
       status,
       isTrial: false,
+      groupId: null,
+      groupSize: null,
       statusHistory: [],
     });
   };

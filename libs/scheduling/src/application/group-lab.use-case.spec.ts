@@ -45,6 +45,8 @@ function fakes(members: ScheduledSession[] = []) {
   const groupsRepo: GroupLabRepository = {
     findById: async (id) => groups.get(id) ?? null,
     listByTutor: async (tutorId) => [...groups.values()].filter((g) => g.tutorId === tutorId),
+    listOpenByTutor: async (tutorId) =>
+      [...groups.values()].filter((g) => g.tutorId === tutorId && g.status === 'open'),
     save: async (group) => {
       groups.set(group.id, group);
     },

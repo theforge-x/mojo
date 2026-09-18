@@ -41,6 +41,8 @@ import type {
   AvailabilityException,
   AvailabilityRepository,
   AvailabilityRule,
+  GroupLab,
+  GroupLabRepository,
   ScheduledSession,
   SchedulingSettings,
   SessionRepository,
@@ -207,6 +209,34 @@ export class InMemorySessionRepository implements SessionRepository {
     return [...this.state.sessions.values()]
       .filter((s) => s.studentId === studentId)
       .sort((a, b) => a.startIso.localeCompare(b.startIso));
+  }
+
+  async listByGroup(groupId: string): Promise<ScheduledSession[]> {
+    return [...this.state.sessions.values()]
+      .filter((s) => s.groupId === groupId)
+      .sort((a, b) => a.startIso.localeCompare(b.startIso));
+  }
+}
+
+export class InMemoryGroupLabRepository implements GroupLabRepository {
+  constructor(private readonly state: DemoState) {}
+
+  async findById(groupId: string): Promise<GroupLab | null> {
+    return this.state.groupLabs.get(groupId) ?? null;
+  }
+
+  async listByTutor(tutorId: string): Promise<GroupLab[]> {
+    return [...this.state.groupLabs.values()]
+      .filter((g) => g.tutorId === tutorId)
+      .sort((a, b) => a.startIso.localeCompare(b.startIso));
+  }
+
+  async listOpenByTutor(tutorId: string): Promise<GroupLab[]> {
+    return (await this.listByTutor(tutorId)).filter((g) => g.status === 'open');
+  }
+
+  async save(group: GroupLab): Promise<void> {
+    this.state.groupLabs.set(group.id, group);
   }
 }
 

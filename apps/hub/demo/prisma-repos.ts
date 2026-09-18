@@ -23,6 +23,7 @@ export { PrismaReferralRepository } from '@mojo/referrals/infrastructure';
 export { PrismaReviewRepository } from '@mojo/reviews/infrastructure';
 export {
   PrismaAvailabilityRepository,
+  PrismaGroupLabRepository,
   PrismaSessionRepository,
 } from '@mojo/scheduling/infrastructure';
 export { PrismaDisputeRepository } from '@mojo/trust-safety/infrastructure';

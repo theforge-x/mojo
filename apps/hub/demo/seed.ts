@@ -129,6 +129,8 @@ export async function seedDemo(state: DemoState): Promise<void> {
       endIso: isoAt(0, 10, 0),
       status: 'booked',
       isTrial: true,
+      groupId: null,
+      groupSize: null,
       statusHistory: [{ status: 'booked', at: isoAt(-2, 10, 0) }],
     },
     {
@@ -139,6 +141,8 @@ export async function seedDemo(state: DemoState): Promise<void> {
       endIso: isoAt(0, 13, 0),
       status: 'completed',
       isTrial: false,
+      groupId: null,
+      groupSize: null,
       statusHistory: [
         { status: 'booked', at: isoAt(-6, 9, 0) },
         { status: 'completed', at: isoAt(0, 13, 30) },
@@ -152,6 +156,8 @@ export async function seedDemo(state: DemoState): Promise<void> {
       endIso: isoAt(0, 11, 0),
       status: 'confirmed',
       isTrial: false,
+      groupId: null,
+      groupSize: null,
       statusHistory: [
         { status: 'booked', at: isoAt(-3, 8, 0) },
         { status: 'confirmed', at: isoAt(-3, 8, 10) },
@@ -165,6 +171,8 @@ export async function seedDemo(state: DemoState): Promise<void> {
       endIso: isoAt(1, 10, 0),
       status: 'booked',
       isTrial: false,
+      groupId: null,
+      groupSize: null,
       statusHistory: [{ status: 'booked', at: isoAt(-1, 14, 0) }],
     },
   ];
