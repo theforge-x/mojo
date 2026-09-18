@@ -10,6 +10,7 @@ import {
 } from '@mojo/shared/ui';
 import { CalendarDays, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { CalendarExportButton } from '../../components/calendar-export-button';
 import { DisputeButton } from '../../components/dispute-button';
 import { CancelSessionButton, ConfirmDeliveryButton } from '../../components/session-actions';
 import {
@@ -134,7 +135,7 @@ export async function StudentHome({ view }: { view: SessionView }) {
               title={tutor}
               subtitle={session.isTrial ? 'Trial lesson' : undefined}
               badges={<StudentSessionBadges status={session.status} isTrial={session.isTrial} />}
-              actions={<StudentSessionActions session={session} />}
+              actions={<StudentSessionActions session={session} tutorName={tutor} />}
             >
               <StudentSessionExtras
                 status={session.status}
@@ -157,7 +158,7 @@ export async function StudentHome({ view }: { view: SessionView }) {
               title={tutor}
               subtitle={session.isTrial ? 'Trial lesson' : undefined}
               badges={<StudentSessionBadges status={session.status} isTrial={session.isTrial} />}
-              actions={<StudentSessionActions session={session} />}
+              actions={<StudentSessionActions session={session} tutorName={tutor} />}
             >
               <StudentSessionExtras
                 status={session.status}
@@ -193,9 +194,23 @@ function StudentSessionBadges({ status, isTrial }: { status: string; isTrial: bo
   );
 }
 
-function StudentSessionActions({ session }: { session: { id: string; status: string } }) {
+function StudentSessionActions({
+  session,
+  tutorName,
+}: {
+  session: { id: string; status: string; tutorId: string; startIso: string; endIso: string };
+  tutorName: string;
+}) {
   return (
     <>
+      {(session.status === 'booked' || session.status === 'confirmed') && (
+        <CalendarExportButton
+          sessionId={session.id}
+          title={`Mojo lesson with ${tutorName}`}
+          startIso={session.startIso}
+          endIso={session.endIso}
+        />
+      )}
       {session.status === 'confirmed' && (
         <Link href={`/lab/${session.id}`} className="w-full">
           <Button size="sm" variant="outline" className="w-full">
@@ -208,7 +223,9 @@ function StudentSessionActions({ session }: { session: { id: string; status: str
         <CancelSessionButton sessionId={session.id} />
       )}
       {session.status === 'confirmed' && <NoShowButton sessionId={session.id} />}
-      {session.status === 'booked' && <RescheduleForm sessionId={session.id} />}
+      {session.status === 'booked' && (
+        <RescheduleForm sessionId={session.id} tutorId={session.tutorId} />
+      )}
     </>
   );
 }

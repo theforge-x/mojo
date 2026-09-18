@@ -14,6 +14,7 @@ describe('releasePayout', () => {
       saved,
       debited,
       getWallet: async () => ({ tutorId: 't_1', balance: money(balanceMinor, 'NGN') }),
+      listTransactions: async () => [],
       credit: async () => ({
         id: 'tx_1',
         tutorId: 't_1',

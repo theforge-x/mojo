@@ -290,6 +290,12 @@ export class InMemoryWalletRepository implements WalletRepository {
     return { tutorId, balance: money(this.state.walletBalancesMinor.get(tutorId) ?? 0, 'NGN') };
   }
 
+  async listTransactions(tutorId: string): Promise<WalletTransaction[]> {
+    return this.state.walletTransactions
+      .filter((t) => t.tutorId === tutorId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
   async credit(
     tutorId: string,
     amount: Money,

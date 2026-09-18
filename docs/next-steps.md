@@ -21,12 +21,12 @@ that loop.
 |---|---|---|---|
 | Tutor profile & application | `[x]` | 8-step wizard (`apply-form.tsx`) — displayName, photo (5MB validated), education, timezone, availability, subjects, languages, bio, certs, intro video; submission stored via `tutor-profile/submit-application`; review → live hand-off wired (admin queue reads the hub over `HUB_URL`, approval publishes a searchable profile); applicant status view (`/apply`) | Rejected → resubmit dead-end (no edit form, no reason surfaced); `in_review` unreachable; no download/edit of an already-approved profile; admin card hides languages/certs/video |
 | Tutor search & discovery | `[x]` | `TutorSearchFilters` (subject, level, language, minRating, availableWithinHours) implemented in **both** `InMemoryTutorSearchIndex` and `PrismaTutorSearchIndex`; `/tutors` filter bar exposes all five; cards show photo, level, rating, price/segment, response time | No intro-video thumbnail on cards/detail (`introVideoUrl` lives only on `TutorApplication`, dropped in `profileFromApplication`); no sort/pagination |
-| Trial lesson + booking | `[x]` | `isTrial` bookings against live availability (min-notice + conflict validation); booked→confirmed→completed with timestamped `statusHistory`; **charge at booking** via `billing.charge` (segments × rate, 50% trial off, one-trial-per-tutor guard, rollback on failure); trial banner + totals in `BookButton`; domain `reschedule-session` use-case (in-place move, same id → exactly one charge, booked + confirmed, tutor-side `RescheduleForm`); `SessionRescheduled` event; cancel with UI + auto-refund; **free-replacement entitlement** (`ReplacementGrant`: cancelled trial banks one free rebook, single-use, chain terminates; redeem at checkout for ₦0) | No availability-aware reschedule picker (datetime inputs + engine errors); no `GET` quote endpoint (UI duplicates `TRIAL_PRICE_PERCENT` math); stub capture only (`provisionDemoMethod`, no Paystack/Flutterwave intent) |
+| Trial lesson + booking | `[x]` | `isTrial` bookings against live availability (min-notice + conflict validation); booked→confirmed→completed with timestamped `statusHistory`; **charge at booking** via `billing.charge` (segments × rate, 50% trial off, one-trial-per-tutor guard, rollback on failure); trial banner + totals in `BookButton`; domain `reschedule-session` use-case (in-place move, same id → exactly one charge, booked + confirmed, tutor-side `RescheduleForm`); `SessionRescheduled` event; cancel with UI + auto-refund; **free-replacement entitlement** (`ReplacementGrant`: cancelled trial banks one free rebook, single-use, chain terminates; redeem at checkout for ₦0); `GET /api/quote` breakdown used by checkout; availability-aware reschedule picker | Calendar export is client-side ICS/Google links; Mojo+ UI done (see Step 4) |
 | Virtual lab | `[x]` | LiveKit per-request participant tokens, room per session; video + whiteboard + text chat + file sharing (in-browser in demo); both-role join guards | (none for MVP scope — deep-link status gate and 3h token refresh are polish) |
 | Payments — Nigeria-first | `[x]` | 15-min segments as the pricing atom; level-fixed segment rates; `StudentCharge`/`ChargeRefund` ledger (demo + Prisma); charge at booking, auto-refund on cancel, student-initiated refund for cancelled sessions; `/payments` receipts with segment/trial/refund breakdown; internal wallet ledger; payout request + release via `/api/payouts` | Stub rail only (no real Paystack/Flutterwave collect); Mojo+ subscribe / custom pricing use-cases exist but are unwired (no UI/API); no payout threshold / history view |
 | Messaging | `[x]` | Hub facade `messaging.send/threadBetween/threadsFor/markRead`; `POST/GET /api/messages` + `POST /api/messages/read`; `/messages` thread list + `MessageChat` composer (4s poll, read receipts); pre-booking gating (student→real tutor, tutor→interest/session); entry via **Message tutor** button | No attachments, no moderation/report UI, no search |
 | Reviews | `[x]` | `POST /api/reviews` gated to student-of-record + `completed` + one-per-session; `ReviewForm` on student home; review list (first 10) on tutor profile; aggregate rating on cards | No edit/delete, no tutor reply, no flag/moderation UI |
-| Notifications | `[x]` | Event-driven dispatchers (email + whatsapp, in-memory by default, `RESEND_API_KEY` switches a real email channel); subscribers on book/complete/cancel/submit events; per-channel prefs (`GET/PUT /api/notifications/preferences`, `/settings`); cron/worker (`POST /api/workers/reminders` sweeps all students with per-user isolation + sent journal, `vercel.json` schedules, `CRON_SECRET` auth; manual fire retained) | No calendar sync (ics/Google), only `CalendarView` |
+| Notifications | `[x]` | Event-driven dispatchers (email + whatsapp, in-memory by default, `RESEND_API_KEY` switches a real email channel); subscribers on book/complete/cancel/submit events; per-channel prefs (`GET/PUT /api/notifications/preferences`, `/settings`); cron/worker (`POST /api/workers/reminders` sweeps all students with per-user isolation + sent journal, `vercel.json` schedules, `CRON_SECRET` auth; manual fire retained); calendar export (ICS download + Google link on every upcoming session card) | Done |
 
 ## Phase 0 leftovers that block Phase 1
 
@@ -87,10 +87,11 @@ in place (same id), so the original charge settles it — exactly one charge per
 session, verified live. The **free replacement lesson** is a `ReplacementGrant`
 in payments: cancelling a trial banks one free rebook with the same tutor,
 redeemed at checkout for ₦0; single-use enforced in `charge-student`, and a
-redeemed session can never mint a follow-up. Left:
-1. Availability-aware reschedule picker (today: datetime inputs + engine errors).
-2. A `GET` quote (reuse `makeQuoteSessionCharge`) so checkout shows standard vs.
-   trial vs. total instead of duplicating `TRIAL_PRICE_PERCENT` math in `BookButton`.
+redeemed session can never mint a follow-up. Checkout reads a `GET /api/quote`
+breakdown (preferred by `BookButton` for trials, where custom Mojo+ rates make
+local math wrong), and the reschedule picker shows the tutor's weekly windows
+plus the notice floor (`GET /api/availability/windows`) before the engine
+re-validates.
 3. Acceptance (verified live): student books trial → reschedules (same id, one
    charge) → cancels (refund + grant) → rebooks free (₦0) → grant reuse rejected
    → cancelling the redemption grants nothing.
@@ -104,11 +105,13 @@ Paystack charge-authorization rail before any row is written; cardless checkout
 redirects (`POST /api/payments/initialize` → Paystack → `/payments/verify`),
 with pending/failed charge states, idempotent capture, saved authorizations
 for one-click rebook, and an HMAC-verified `POST /api/payments/webhook`.
-Demo mode keeps the stub ledger with zero behavior change. Left:
-1. Live verification against Paystack test keys (pending keys).
-2. Surface Mojo+ subscribe + custom per-segment pricing (use-cases exist in
-   `mojo-plus`/`pricing`; no UI/API) plus a payout history/threshold view.
-3. Acceptance: booking produces a predictable student charge and the tutor
+Live-verified against Paystack test mode (initialize + verify round-trip).
+Mojo+ subscribe/cancel + custom per-segment pricing are surfaced
+(`GET/POST /api/mojo-plus`, tutor dashboard card, bounded rates) with a
+payout-history view from the wallet ledger. Demo mode keeps the stub ledger
+with zero behavior change. Left:
+1. Point the Paystack dashboard webhook at the deployed hub URL.
+2. Acceptance: booking produces a predictable student charge and the tutor
    payout math still matches.
 
 ### Step 5 — Reviews end to end ✅ done (minimal)
@@ -126,15 +129,15 @@ authenticated users (tutor/student, lab chat stays separate).
 Acceptance passes: two demo accounts hold a pre-booking conversation visible in
 both inboxes. Left: attachments, moderation/report, search.
 
-### Step 7 — Notification polish needed by the loop ✅ done except calendar sync
+### Step 7 — Notifications + calendar sync ✅ done
 Event dispatch (book/complete/cancel/submit), per-channel prefs
 (`GET/PUT /api/notifications/preferences`, `/settings`), and
 `dueSessionReminders` (day-before + T-30) with manual fire
 (`POST /api/notifications/reminders`) are done; scheduling exceptions/buffers
 already block slots in view and at book time. The worker sweep
 (`POST /api/workers/reminders`, per-student isolation, sent journal, `CRON_SECRET`
-auth, `vercel.json` schedule) fires reminders on time. Left: calendar sync
-(ics/Google export).
+auth, `vercel.json` schedule) fires reminders on time. Calendar sync is
+client-side (ICS download + prefilled Google link on session cards) — no OAuth needed.
 
 ### Step 8 — Tutor teaching actions + recap surfaced ✅ done
 Tutor cancel / no-show / start + student confirm + `RecapCard` on both homes
@@ -175,7 +178,7 @@ Tutor cancel / no-show / start + student confirm + `RecapCard` on both homes
        cancelled trials bank one single-use free rebook that settles at ₦0.)
 - [x] Reviews unlock only after a completed lesson and surface on the tutor profile.
 - [x] Notifications cover the whole loop, including time-based reminders.
-       (Events + prefs + cron/worker sweep; calendar sync still missing.)
+       (Events + prefs + cron/worker sweep + calendar export.)
 - [~] No demos-only seat left — every flow works against the Prisma repositories too.
        (`StudentCharge`/`ChargeRefund`, search, sessions, messaging, reviews,
        replacement grants, disputes, reschedule clock moves all have Prisma repos;

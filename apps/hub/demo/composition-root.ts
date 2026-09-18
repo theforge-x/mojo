@@ -62,7 +62,12 @@ import type {
   MessageRepository,
   TutorInterest,
 } from '@mojo/messaging/domain';
-import type { MojoPlusRepository } from '@mojo/mojo-plus/domain';
+import {
+  makeCancelMojoPlus,
+  makeSetCustomRate,
+  makeSubscribeMojoPlus,
+} from '@mojo/mojo-plus/application';
+import type { MojoPlusRepository, MojoPlusSubscription } from '@mojo/mojo-plus/domain';
 import { makeDispatchNotification } from '@mojo/notifications/application';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
@@ -97,6 +102,7 @@ import type {
   StudentPaymentMethod,
   StudentPaymentMethodRepository,
   WalletRepository,
+  WalletTransaction,
 } from '@mojo/payments/domain';
 import { makeRecordSessionCompletion } from '@mojo/pricing/application';
 import { DEFAULT_SEGMENT_RATE_NGN, type TutorLevelReader } from '@mojo/pricing/domain';
@@ -297,6 +303,13 @@ export interface HubApp {
   wallet: {
     forTutor(tutorId: string): Promise<{ tutorId: string; balance: Money }>;
     releasePayout(input: ReleasePayoutInput): Promise<void>;
+    transactions(tutorId: string): Promise<WalletTransaction[]>;
+  };
+  plus: {
+    subscription(tutorId: string): Promise<MojoPlusSubscription | null>;
+    subscribe(tutorId: string): Promise<void>;
+    cancel(tutorId: string): Promise<void>;
+    setCustomRate(tutorId: string, rateMinor: number): Promise<void>;
   };
   billing: {
     quote(input: QuoteSessionChargeInput): Promise<ChargeQuote>;
@@ -629,6 +642,9 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     },
   });
   const markNoShow = makeMarkNoShow({ bookings: repos.bookings });
+  const subscribeMojoPlus = makeSubscribeMojoPlus({ subscriptions: repos.mojoPlus });
+  const cancelMojoPlus = makeCancelMojoPlus({ subscriptions: repos.mojoPlus });
+  const setCustomRate = makeSetCustomRate({ subscriptions: repos.mojoPlus });
   const fileDispute = makeFileDispute({ disputes: repos.disputes });
   const autoConfirmDeliveries = makeAutoConfirmDeliveries({
     listAwaitingConfirmation: (endBeforeIso) =>
@@ -953,6 +969,13 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
         return { tutorId: wallet.tutorId, balance: wallet.balance };
       },
       releasePayout: (input) => releasePayout(input),
+      transactions: (tutorId) => repos.wallets.listTransactions(tutorId),
+    },
+    plus: {
+      subscription: (tutorId) => repos.mojoPlus.find(tutorId),
+      subscribe: (tutorId) => subscribeMojoPlus(tutorId, new Date().toISOString()),
+      cancel: (tutorId) => cancelMojoPlus(tutorId, new Date().toISOString()),
+      setCustomRate: (tutorId, rateMinor) => setCustomRate(tutorId, rateMinor),
     },
     billing: {
       quote: (input) => quoteSessionCharge(input),

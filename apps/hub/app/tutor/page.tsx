@@ -1,9 +1,12 @@
+import { DEFAULT_SEGMENT_RATE_NGN } from '@mojo/pricing/domain';
 import { CalendarView } from '@mojo/scheduling/feature';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import { CalendarDays, Handshake, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { CalendarExportButton } from '../../components/calendar-export-button';
 import { DisputeButton } from '../../components/dispute-button';
 import { LevelBadge } from '../../components/level-badge';
+import { MojoPlusSection } from '../../components/mojo-plus-section';
 import { RequestPayoutButton } from '../../components/request-payout-button';
 import {
   CancelSessionButton,
@@ -35,11 +38,13 @@ export default async function TutorHome({
   const view = parseSessionView(params.view);
 
   const hub = getHub();
-  const [sessions, performance, wallet, interests] = await Promise.all([
+  const [sessions, performance, wallet, interests, subscription, transactions] = await Promise.all([
     hub.scheduling.sessionsByTutor(user.id),
     hub.performance.byTutor(user.id),
     hub.wallet.forTutor(user.id),
     hub.interests.forTutor(user.id),
+    hub.plus.subscription(user.id),
+    hub.wallet.transactions(user.id),
   ]);
 
   const upcoming = sessions.filter((s) => s.status === 'booked' || s.status === 'confirmed');
@@ -115,6 +120,21 @@ export default async function TutorHome({
         </Link>
       </div>
 
+      <div className="mb-6">
+        <MojoPlusSection
+          status={subscription?.status ?? null}
+          customRateMinor={subscription?.customSegmentRateMinor ?? null}
+          defaultRateMinor={DEFAULT_SEGMENT_RATE_NGN[performance?.level ?? 'entry']}
+          transactions={transactions.map((t) => ({
+            id: t.id,
+            kind: t.kind,
+            amountMinor: t.amount.amountMinor,
+            relatedSessionId: t.relatedSessionId,
+            createdAt: t.createdAt,
+          }))}
+        />
+      </div>
+
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 font-display text-lg font-bold text-headline">
           <CalendarDays className="size-5 text-primary" aria-hidden />
@@ -149,7 +169,7 @@ export default async function TutorHome({
                 title={student}
                 subtitle={session.isTrial ? 'Trial lesson' : undefined}
                 badges={<TutorSessionBadges status={session.status} isTrial={session.isTrial} />}
-                actions={<TutorSessionActions session={session} />}
+                actions={<TutorSessionActions session={session} studentName={student} />}
               >
                 {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
                 {dispute?.status === 'open' && (
@@ -187,7 +207,7 @@ export default async function TutorHome({
                 title={student}
                 subtitle={session.isTrial ? 'Trial lesson' : undefined}
                 badges={<TutorSessionBadges status={session.status} isTrial={session.isTrial} />}
-                actions={<TutorSessionActions session={session} />}
+                actions={<TutorSessionActions session={session} studentName={student} />}
               >
                 {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
                 {dispute?.status === 'open' && (
@@ -230,9 +250,23 @@ function TutorSessionBadges({ status, isTrial }: { status: string; isTrial: bool
   );
 }
 
-function TutorSessionActions({ session }: { session: { id: string; status: string } }) {
+function TutorSessionActions({
+  session,
+  studentName,
+}: {
+  session: { id: string; status: string; tutorId: string; startIso: string; endIso: string };
+  studentName: string;
+}) {
   return (
     <>
+      {(session.status === 'booked' || session.status === 'confirmed') && (
+        <CalendarExportButton
+          sessionId={session.id}
+          title={`Mojo lesson with ${studentName}`}
+          startIso={session.startIso}
+          endIso={session.endIso}
+        />
+      )}
       {(session.status === 'booked' || session.status === 'confirmed') && (
         <>
           <CancelSessionButton sessionId={session.id} />
@@ -242,7 +276,7 @@ function TutorSessionActions({ session }: { session: { id: string; status: strin
       {session.status === 'booked' && <StartSessionButton sessionId={session.id} />}
       {session.status === 'confirmed' && <CompleteSessionButton sessionId={session.id} />}
       {(session.status === 'booked' || session.status === 'confirmed') && (
-        <RescheduleForm sessionId={session.id} />
+        <RescheduleForm sessionId={session.id} tutorId={session.tutorId} />
       )}
       {session.status === 'confirmed' && (
         <Link href={`/tutor/lab/${session.id}`} className="w-full sm:w-auto">

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MojoPlusRepository, MojoPlusSubscription } from '../domain/mojo-plus.types';
 import {
+  InvalidCustomRateError,
   MojoPlusRequiredError,
   makeCancelMojoPlus,
   makeSetCustomRate,
@@ -56,5 +57,19 @@ describe('setCustomRate', () => {
     });
     await makeSetCustomRate({ subscriptions: repo })('t_1', 900_000);
     expect(get()?.customSegmentRateMinor).toBe(900_000);
+  });
+
+  it('rejects absurd custom rates', async () => {
+    const { repo, get } = fakeRepo({
+      tutorId: 't_1',
+      status: 'active',
+      customSegmentRateMinor: null,
+      subscribedAt: '2026-08-01T00:00:00.000Z',
+      cancelledAt: null,
+    });
+    const setCustomRate = makeSetCustomRate({ subscriptions: repo });
+    await expect(setCustomRate('t_1', 0)).rejects.toThrow(InvalidCustomRateError);
+    await expect(setCustomRate('t_1', 99_999_999)).rejects.toThrow(InvalidCustomRateError);
+    expect(get()?.customSegmentRateMinor).toBeNull();
   });
 });

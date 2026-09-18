@@ -35,15 +35,42 @@ export function BookButton({
   const [needsCard, setNeedsCard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
+  const [serverQuote, setServerQuote] = useState<{
+    totalMinor: number;
+    trialDiscountMinor: number;
+    standardTotalMinor: number;
+  } | null>(null);
 
   const segments = segmentsBetween(startIso, endIso);
   const standardTotal = segments * perSegmentMinor;
   const replacing = Boolean(replacementGrantId) && useReplacement;
+  // Server quote wins when present: custom Mojo+ rates live server-side, so
+  // local math can understate a trial total. Falls back to local math.
   const total = replacing
     ? 0
     : !trialUsed && isTrial
-      ? Math.round((standardTotal * TRIAL_PRICE_PERCENT) / 100)
+      ? (serverQuote?.totalMinor ?? Math.round((standardTotal * TRIAL_PRICE_PERCENT) / 100))
       : standardTotal;
+
+  async function refreshQuote(checked: boolean) {
+    setIsTrial(checked);
+    setServerQuote(null);
+    if (!checked || trialUsed || replacing) return;
+    try {
+      const params = new URLSearchParams({ tutorId, startIso, endIso, isTrial: 'true' });
+      const response = await fetch(`/api/quote?${params.toString()}`);
+      const body = await response.json().catch(() => ({}));
+      if (response.ok && body.quote) {
+        setServerQuote({
+          totalMinor: body.quote.totalMinor,
+          trialDiscountMinor: body.quote.trialDiscountMinor,
+          standardTotalMinor: body.quote.standardTotalMinor,
+        });
+      }
+    } catch {
+      // Local math below stays as the fallback.
+    }
+  }
 
   async function handleClick() {
     setBusy(true);
@@ -125,7 +152,7 @@ export function BookButton({
           <input
             type="checkbox"
             checked={isTrial}
-            onChange={(event) => setIsTrial(event.target.checked)}
+            onChange={(event) => void refreshQuote(event.target.checked)}
             disabled={busy}
           />
           First lesson trial (−{100 - TRIAL_PRICE_PERCENT}%)

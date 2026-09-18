@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noConsole: seed script progress output */
 // Production bootstrap seed (plain Node — no TS runner required).
 // Idempotent: safe to re-run on every deploy. Creates the first admin
 // account (without which the tutor-review loop can never start) and the

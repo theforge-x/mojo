@@ -5,6 +5,7 @@ import type { PayoutRequest, Wallet, WalletTransaction } from './wallet.types';
 
 export interface WalletRepository {
   getWallet(tutorId: string): Promise<Wallet>;
+  listTransactions(tutorId: string): Promise<WalletTransaction[]>;
   credit(
     tutorId: string,
     amount: Money,

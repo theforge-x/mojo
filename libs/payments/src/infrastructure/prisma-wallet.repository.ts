@@ -11,6 +11,21 @@ export class PrismaWalletRepository implements WalletRepository {
     return { tutorId, balance: money(row.balanceMinor, 'NGN') };
   }
 
+  async listTransactions(tutorId: string): Promise<WalletTransaction[]> {
+    const rows = await this.prisma.walletTransaction.findMany({
+      where: { tutorId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      tutorId: row.tutorId,
+      kind: row.kind as WalletTransaction['kind'],
+      amount: money(row.amountMinor, 'NGN'),
+      relatedSessionId: row.relatedSessionId,
+      createdAt: row.createdAt.toISOString(),
+    }));
+  }
+
   async credit(
     tutorId: string,
     amount: Money,
