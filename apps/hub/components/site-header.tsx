@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useTransition, type ReactNode } from 'react';
+import { useEffect, useState, useTransition, type ReactNode } from 'react';
 import { logout } from '../lib/actions';
 
 export type SiteHeaderUser = {
@@ -123,7 +123,7 @@ function SubjectsMenu({ subjects }: { subjects: readonly HeaderSubject[] }) {
         </p>
       ) : (
         <ul className="max-h-80 overflow-y-auto p-2">
-          {subjects.slice(0, 12).map((subject) => (
+          {subjects.map((subject) => (
             <li key={subject.name}>
               <Link
                 href={`/signup?subject=${encodeURIComponent(subject.name)}`}
@@ -191,10 +191,30 @@ export function SiteHeader({
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // The chrome stays invisible over the hero and fades in once it scrolls
+  // out of view; pages without a hero go solid almost immediately.
+  useEffect(() => {
+    function onScroll() {
+      const hero = document.getElementById('hero');
+      const limit = hero ? hero.offsetTop + hero.offsetHeight - 96 : 24;
+      setScrolled(window.scrollY > limit);
+    }
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [pathname]);
+
+  const chrome = scrolled
+    ? 'border-b border-border bg-background/95 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)] backdrop-blur'
+    : 'border-b border-transparent bg-transparent';
 
   if (!user) {
     return (
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+      <header
+        className={`sticky top-0 z-40 transition-[background-color,border-color,box-shadow] duration-300 ${chrome}`}
+      >
         <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 sm:px-6 lg:px-8">
           <div className="justify-self-start">
             <SiteLogo />
@@ -240,7 +260,10 @@ export function SiteHeader({
           </div>
         </div>
         {menuOpen && (
-          <nav className="border-t border-border px-4 py-3 md:hidden" aria-label="Mobile">
+          <nav
+            className="border-t border-border bg-background/95 px-4 py-3 backdrop-blur md:hidden"
+            aria-label="Mobile"
+          >
             {ANON_NAV.map((item) => (
               <div key={item.href} onClick={() => setMenuOpen(false)}>
                 <NavLink {...item} active={pathname === item.href} />
@@ -285,7 +308,9 @@ export function SiteHeader({
   const items = user.role === 'tutor' || user.role === 'student' ? AUTH_NAV[user.role] : [];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+    <header
+      className={`sticky top-0 z-40 transition-[background-color,border-color,box-shadow] duration-300 ${chrome}`}
+    >
       <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 sm:px-6 lg:px-8">
         <div className="justify-self-start">
           <SiteLogo />
