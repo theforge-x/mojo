@@ -1,4 +1,4 @@
-import { CalendarView } from '@mojo/scheduling/feature';
+import { CalendarDialog } from '@mojo/scheduling/feature';
 import {
   Badge,
   Button,
@@ -185,10 +185,9 @@ export async function StudentHome({ view }: { view: SessionView }) {
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 font-display text-lg font-bold text-headline">This week</h2>
-      <CalendarView
-        sessions={sessions.filter((s) => s.status !== 'cancelled' && s.status !== 'no_show')}
-      />
+      <div className="mt-8">
+        <CalendarDialog sessions={sessions} />
+      </div>
     </main>
   );
 }

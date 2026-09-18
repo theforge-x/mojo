@@ -1,5 +1,5 @@
 import { DEFAULT_SEGMENT_RATE_NGN } from '@mojo/pricing/domain';
-import { CalendarView } from '@mojo/scheduling/feature';
+import { CalendarDialog } from '@mojo/scheduling/feature';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
 import { CalendarDays, Handshake, Sparkles, Users } from 'lucide-react';
 import Link from 'next/link';
@@ -275,10 +275,9 @@ export default async function TutorHome({
         )}
       </div>
 
-      <h2 className="mb-3 font-display text-lg font-bold text-headline">This week</h2>
-      <CalendarView
-        sessions={sessions.filter((s) => s.status !== 'cancelled' && s.status !== 'no_show')}
-      />
+      <div className="mt-2">
+        <CalendarDialog sessions={sessions} />
+      </div>
     </main>
   );
 }
