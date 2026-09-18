@@ -32,6 +32,7 @@ export function BookButton({
   const [busy, setBusy] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
   const [useReplacement, setUseReplacement] = useState(Boolean(replacementGrantId));
+  const [needsCard, setNeedsCard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
@@ -62,6 +63,13 @@ export function BookButton({
         }),
       });
       const body = await response.json();
+      if (response.status === 402 && !replacing) {
+        // No usable card on file — flip to the redirect checkout instead of
+        // leaving the student stuck.
+        setNeedsCard(true);
+        setError(null);
+        return;
+      }
       if (!response.ok) throw new Error(body.error ?? 'Booking failed.');
       setConfirmation(
         replacing
@@ -72,6 +80,26 @@ export function BookButton({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Booking failed.');
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function payWithCard() {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/payments/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tutorId, startIso, endIso, isTrial: !trialUsed && isTrial }),
+      });
+      const body = await response.json();
+      if (!response.ok || !body.authorizationUrl) {
+        throw new Error(body.error ?? 'Could not start card payment.');
+      }
+      window.location.href = body.authorizationUrl as string;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start card payment.');
       setBusy(false);
     }
   }
@@ -106,6 +134,17 @@ export function BookButton({
       <Button size="sm" onClick={handleClick} disabled={busy} className="w-full">
         {busy ? 'Booking…' : 'Book this slot'}
       </Button>
+      {needsCard && !confirmation && (
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={payWithCard}
+          disabled={busy}
+          className="w-full"
+        >
+          {busy ? 'Starting…' : 'Continue to Paystack'}
+        </Button>
+      )}
       {error && <Alert variant="danger">{error}</Alert>}
       {confirmation && <Alert variant="info">{confirmation}</Alert>}
     </div>

@@ -25,6 +25,7 @@ function fakeCharges(
     },
     findById: async (id) => (charge.id === id ? charge : null),
     findBySession: async () => null,
+    findByReference: async () => null,
     listByStudent: async () => [charge],
     saveRefund: async (r) => {
       savedRefunds.push(r);
@@ -49,6 +50,7 @@ const CHARGE: StudentCharge = {
   isCustomRate: false,
   paymentMethodId: 'pm_1',
   status: 'captured',
+  providerReference: 'mojo_ch_1',
   createdAt: '2026-09-15T00:00:00.000Z',
 };
 
@@ -111,6 +113,18 @@ describe('refundCharge', () => {
     const refundRefunded = makeRefundCharge({ charges: refundedCharges });
     await expect(
       refundRefunded({
+        chargeId: 'ch_1',
+        studentId: 'st_1',
+        reason: 'cancelled',
+        nowIso: '2026-09-15T01:00:00.000Z',
+      }),
+    ).rejects.toThrow(ChargeNotRefundableError);
+  });
+
+  it('refuses to refund pending or failed charges — no money moved', async () => {
+    const pendingCharges = fakeCharges({ ...CHARGE, status: 'pending' });
+    await expect(
+      makeRefundCharge({ charges: pendingCharges })({
         chargeId: 'ch_1',
         studentId: 'st_1',
         reason: 'cancelled',

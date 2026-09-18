@@ -58,6 +58,7 @@ function fakeCharges(existing: StudentCharge[] = []): ChargeRepository & {
     findById: async (id) => saved.find((c) => c.id === id) ?? null,
     findBySession: async (sessionId) =>
       [...existing, ...saved].find((c) => c.sessionId === sessionId) ?? null,
+    findByReference: async () => null,
     listByStudent: async () => [...existing, ...saved],
     saveRefund: async () => {},
     listRefundsByStudent: async () => [],
@@ -85,6 +86,25 @@ function fakeGrants(existing: ReplacementGrant[] = []): ReplacementGrantReposito
   };
 }
 
+const stubCollect = {
+  initialize: async () => ({
+    authorizationUrl: 'https://pay.test/x',
+    accessCode: 'x',
+    reference: 'x',
+  }),
+  verify: async () => ({
+    reference: 'x',
+    status: 'success',
+    amountMinor: 0,
+    currency: 'NGN',
+    paidAt: null,
+    authorization: null,
+    customerEmail: null,
+  }),
+  chargeAuthorization: async () => ({ reference: 'x', status: 'success' }),
+  verifyWebhookSignature: () => true,
+};
+
 function deps(
   charges: ChargeRepository & { saved: StudentCharge[] },
   withDefault = true,
@@ -95,6 +115,7 @@ function deps(
     rates: fakeRates(),
     defaults: DEFAULTS,
     grants: fakeGrants(),
+    collect: stubCollect,
   };
 }
 
@@ -172,6 +193,7 @@ describe('chargeStudent', () => {
       rates: fakeRates(),
       defaults: DEFAULTS,
       grants,
+      collect: stubCollect,
     });
     const grant = await makeGrantReplacement({ grants })({
       studentId: 'st_1',

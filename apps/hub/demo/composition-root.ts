@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import {
   makeRemoveTaxonomyEntry,
   makeSaveTaxonomyEntry,
@@ -71,8 +72,11 @@ import {
 } from '@mojo/notifications/domain';
 import {
   type ChargeStudentInput,
+  type InitializeChargeInput,
+  makeCaptureCharge,
   makeChargeStudent,
   makeGrantReplacement,
+  makeInitializeCharge,
   makeQuoteSessionCharge,
   makeRefundCharge,
   makeReleasePayout,
@@ -84,6 +88,7 @@ import type {
   ChargeQuote,
   ChargeRefund,
   ChargeRepository,
+  PaymentCollector,
   PayoutRail,
   RefundReason,
   ReplacementGrant,
@@ -144,6 +149,7 @@ import type { PrismaClient } from '@prisma/client';
 import { sharedPrismaClient } from './prisma-client';
 import {
   EmailDispatcher,
+  PaystackCollectAdapter,
   PaystackPayoutRail,
   PrismaApplicationRepository,
   PrismaAvailabilityRepository,
@@ -299,6 +305,11 @@ export interface HubApp {
     /** Demo stub card — throws outside demo mode, where a real rail intent belongs. */
     provisionDemoMethod(studentId: string): Promise<StudentPaymentMethod>;
     charge(input: ChargeStudentInput): Promise<StudentCharge>;
+    initializeCharge(
+      input: InitializeChargeInput & { callbackUrl: string; nowIso: string },
+    ): Promise<{ charge: StudentCharge; authorizationUrl: string }>;
+    captureCharge(reference: string): Promise<StudentCharge>;
+    verifyWebhookSignature(payload: string, signature: string | null): boolean;
     chargesByStudent(studentId: string): Promise<StudentCharge[]>;
     refundsByStudent(studentId: string): Promise<ChargeRefund[]>;
     refund(input: RefundChargeInput): Promise<{ refund: ChargeRefund; charge: StudentCharge }>;
@@ -639,12 +650,59 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     rates: repos.levels,
     defaults: DEFAULT_SEGMENT_RATE_NGN,
   });
+  // Demo mode keeps the historical stub ledger (immediate success, no
+  // network). Anywhere else, money moves through Paystack before a captured
+  // row is ever written.
+  const collect: PaymentCollector = isDemoMode
+    ? {
+        initialize: async (input) => ({
+          authorizationUrl: `https://checkout.paystack.com/demo/${input.reference}`,
+          accessCode: `demo_${input.reference}`,
+          reference: input.reference,
+        }),
+        verify: async (reference) => {
+          // The demo rail approves whatever was asked — echo the ledger row
+          // so the amount check exercises the real path.
+          const charge = await repos.charges.findByReference(reference);
+          return {
+            reference,
+            status: 'success',
+            amountMinor: charge?.totalMinor ?? 0,
+            currency: 'NGN',
+            paidAt: new Date().toISOString(),
+            authorization: null,
+            customerEmail: null,
+          };
+        },
+        chargeAuthorization: async (input) => ({ reference: input.reference, status: 'success' }),
+        verifyWebhookSignature: (payload, signature) => {
+          // Demo mirrors the prod shape: HMAC against the configured key so
+          // the 401 path stays exercisable without real money.
+          if (!signature) return false;
+          const key = process.env.PAYSTACK_SECRET_KEY || 'demo-bridge-dev-only';
+          const expected = createHmac('sha512', key).update(payload).digest('hex');
+          return expected === signature;
+        },
+      }
+    : new PaystackCollectAdapter(process.env.PAYSTACK_SECRET_KEY ?? '');
   const chargeStudent = makeChargeStudent({
     charges: repos.charges,
     methods: repos.methods,
     rates: repos.levels,
     defaults: DEFAULT_SEGMENT_RATE_NGN,
     grants: repos.grants,
+    collect,
+  });
+  const initializeCharge = makeInitializeCharge({
+    charges: repos.charges,
+    rates: repos.levels,
+    defaults: DEFAULT_SEGMENT_RATE_NGN,
+    collect,
+  });
+  const captureCharge = makeCaptureCharge({
+    charges: repos.charges,
+    methods: repos.methods,
+    collect,
   });
   const grantReplacement = makeGrantReplacement({ grants: repos.grants });
   const refundCharge = makeRefundCharge({ charges: repos.charges });
@@ -909,18 +967,29 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
           studentId,
           rail: 'paystack',
           last4: '0000',
+          authorizationCode: null,
           isDefault: true,
         };
         await repos.methods.save(method);
         return method;
       },
       charge: (input) => chargeStudent(input),
+      initializeCharge: (input) => initializeCharge(input),
+      captureCharge: (reference) => captureCharge({ reference, nowIso: new Date().toISOString() }),
+      verifyWebhookSignature: (payload, signature) =>
+        collect.verifyWebhookSignature(payload, signature),
       chargesByStudent: (studentId) => repos.charges.listByStudent(studentId),
       refundsByStudent: (studentId) => repos.charges.listRefundsByStudent(studentId),
       refund: (input) => refundCharge(input),
       refundForSession: async (sessionId, reason, nowIso) => {
         const charge = await repos.charges.findBySession(sessionId);
-        if (!charge || charge.status === 'refunded') return null;
+        if (!charge || charge.status === 'refunded' || charge.status === 'failed') return null;
+        if (charge.status === 'pending') {
+          // Nothing moved yet — void the row instead of refunding, and report
+          // no refund so callers don't bank a replacement for unpaid money.
+          await repos.charges.save({ ...charge, status: 'failed' });
+          return null;
+        }
         const { refund } = await refundCharge({
           chargeId: charge.id,
           studentId: charge.studentId,

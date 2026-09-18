@@ -95,12 +95,17 @@ redeemed session can never mint a follow-up. Left:
    charge) → cancels (refund + grant) → rebooks free (₦0) → grant reuse rejected
    → cancelling the redemption grants nothing.
 
-### Step 4 — Student-side money (collect done, rail + Mojo+ remain) ✅/◐
+### Step 4 — Student-side money (collect wired, Mojo+ remains) ✅/◐
 Charge at booking (`provisionDemoMethod` stub in demo), `/payments` receipts
 with segment/trial/refund breakdown, auto-refund on cancel, cancelled-only
 student refund, and tutor payout math (segments × take-home on completion,
-trial ₦0) all work. Left:
-1. Real collect (Paystack/Flutterwave intent where `provisionDemoMethod` stubs).
+trial ₦0) all work. Real collect is wired: saved-card charges go through the
+Paystack charge-authorization rail before any row is written; cardless checkout
+redirects (`POST /api/payments/initialize` → Paystack → `/payments/verify`),
+with pending/failed charge states, idempotent capture, saved authorizations
+for one-click rebook, and an HMAC-verified `POST /api/payments/webhook`.
+Demo mode keeps the stub ledger with zero behavior change. Left:
+1. Live verification against Paystack test keys (pending keys).
 2. Surface Mojo+ subscribe + custom per-segment pricing (use-cases exist in
    `mojo-plus`/`pricing`; no UI/API) plus a payout history/threshold view.
 3. Acceptance: booking produces a predictable student charge and the tutor

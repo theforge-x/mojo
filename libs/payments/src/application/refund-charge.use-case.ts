@@ -42,6 +42,9 @@ export function makeRefundCharge(deps: { charges: ChargeRepository }) {
     const charge = await deps.charges.findById(input.chargeId);
     if (!charge || charge.studentId !== input.studentId) throw new ChargeNotFoundError();
     if (charge.status === 'refunded') throw new ChargeNotRefundableError();
+    if (charge.status === 'pending' || charge.status === 'failed') {
+      throw new ChargeNotRefundableError();
+    }
 
     const prior = await deps.charges.listRefundsByStudent(input.studentId);
     const refundedSoFar = prior

@@ -44,7 +44,48 @@ export interface StudentPaymentMethod {
   readonly studentId: string;
   readonly rail: 'paystack' | 'flutterwave' | 'stripe';
   readonly last4: string | null;
+  /** Paystack reusable authorization code — present after one successful card payment. */
+  readonly authorizationCode: string | null;
   readonly isDefault: boolean;
+}
+
+export interface ChargeAuthorization {
+  readonly authorizationCode: string;
+  readonly last4: string | null;
+  readonly cardType: string | null;
+}
+
+export interface VerifiedTransaction {
+  readonly reference: string;
+  readonly status: string;
+  readonly amountMinor: number;
+  readonly currency: string;
+  readonly paidAt: string | null;
+  readonly authorization: ChargeAuthorization | null;
+  readonly customerEmail: string | null;
+}
+
+/**
+ * Collect side of a payment rail (Paystack). Kept next to the payout rail
+ * so one adapter file owns each direction's wire shape.
+ */
+export interface PaymentCollector {
+  initialize(input: {
+    email: string;
+    amountMinor: number;
+    currency: string;
+    reference: string;
+    callbackUrl: string;
+  }): Promise<{ authorizationUrl: string; accessCode: string; reference: string }>;
+  verify(reference: string): Promise<VerifiedTransaction>;
+  chargeAuthorization(input: {
+    authorizationCode: string;
+    email: string;
+    amountMinor: number;
+    currency: string;
+    reference: string;
+  }): Promise<{ reference: string; status: string }>;
+  verifyWebhookSignature(payload: string, signature: string | null): boolean;
 }
 
 export interface StudentPaymentMethodRepository {
@@ -57,6 +98,7 @@ export interface ChargeRepository {
   save(charge: StudentCharge): Promise<void>;
   findById(chargeId: string): Promise<StudentCharge | null>;
   findBySession(sessionId: string): Promise<StudentCharge | null>;
+  findByReference(reference: string): Promise<StudentCharge | null>;
   listByStudent(studentId: string): Promise<StudentCharge[]>;
   saveRefund(refund: ChargeRefund): Promise<void>;
   listRefundsByStudent(studentId: string): Promise<ChargeRefund[]>;

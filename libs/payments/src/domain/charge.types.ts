@@ -8,7 +8,12 @@ import type { Money, TutorLevel } from '@mojo/shared/domain';
  */
 export const TRIAL_PRICE_PERCENT = 50;
 
-export type ChargeStatus = 'captured' | 'partially_refunded' | 'refunded';
+/**
+ * `pending` — redirect/initialize flow created the row, money hasn't moved
+ * yet. `failed` — the rail declined or the window was abandoned. Only
+ * captured-family rows ever represent moved money.
+ */
+export type ChargeStatus = 'pending' | 'failed' | 'captured' | 'partially_refunded' | 'refunded';
 
 export interface StudentCharge {
   readonly id: string;
@@ -27,6 +32,8 @@ export interface StudentCharge {
   readonly isCustomRate: boolean;
   readonly paymentMethodId: string;
   readonly status: ChargeStatus;
+  /** Paystack transaction reference (`mojo_<chargeId>`) — the webhook key. */
+  readonly providerReference: string | null;
   readonly createdAt: string;
 }
 

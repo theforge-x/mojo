@@ -57,6 +57,7 @@ export async function POST(request: Request) {
       endIso: session.endIso,
       isTrial,
       paymentMethodId: method.id,
+      customerEmail: user.email,
       replacementGrantId,
       nowIso,
     });

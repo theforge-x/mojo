@@ -12,6 +12,7 @@ export { PrismaInterestRepository, PrismaMessageRepository } from '@mojo/messagi
 export { PrismaMojoPlusRepository } from '@mojo/mojo-plus/infrastructure';
 export { EmailDispatcher, WhatsAppDispatcher } from '@mojo/notifications/infrastructure';
 export {
+  PaystackCollectAdapter,
   PaystackPayoutRail,
   PrismaChargeRepository,
   PrismaReplacementGrantRepository,

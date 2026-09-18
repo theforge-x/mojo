@@ -390,6 +390,13 @@ export class InMemoryChargeRepository implements ChargeRepository {
     return null;
   }
 
+  async findByReference(reference: string): Promise<StudentCharge | null> {
+    for (const charge of this.state.studentCharges.values()) {
+      if (charge.providerReference === reference) return charge;
+    }
+    return null;
+  }
+
   async listByStudent(studentId: string): Promise<StudentCharge[]> {
     return [...this.state.studentCharges.values()]
       .filter((charge) => charge.studentId === studentId)

@@ -32,9 +32,15 @@ export class PrismaPaymentMethodRepository implements PaymentMethodRepository {
           studentId: method.studentId,
           rail: method.rail,
           last4: method.last4,
+          authorizationCode: method.authorizationCode,
           isDefault: method.isDefault,
         },
-        update: { rail: method.rail, last4: method.last4, isDefault: method.isDefault },
+        update: {
+          rail: method.rail,
+          last4: method.last4,
+          authorizationCode: method.authorizationCode,
+          isDefault: method.isDefault,
+        },
       });
     });
   }
@@ -44,6 +50,7 @@ export class PrismaPaymentMethodRepository implements PaymentMethodRepository {
     studentId: string;
     rail: string;
     last4: string | null;
+    authorizationCode: string | null;
     isDefault: boolean;
   }): PaymentMethod {
     return {
@@ -51,6 +58,7 @@ export class PrismaPaymentMethodRepository implements PaymentMethodRepository {
       studentId: row.studentId,
       rail: row.rail as PaymentMethod['rail'],
       last4: row.last4,
+      authorizationCode: row.authorizationCode,
       isDefault: row.isDefault,
     };
   }

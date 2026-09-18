@@ -25,9 +25,16 @@ export class PrismaChargeRepository implements ChargeRepository {
         isCustomRate: charge.isCustomRate,
         paymentMethodId: charge.paymentMethodId,
         status: charge.status,
+        providerReference: charge.providerReference,
         createdAt: new Date(charge.createdAt),
       },
-      update: { status: charge.status },
+      update: {
+        status: charge.status,
+        providerReference: charge.providerReference,
+        totalMinor: charge.totalMinor,
+        trialDiscountMinor: charge.trialDiscountMinor,
+        paymentMethodId: charge.paymentMethodId,
+      },
     });
   }
 
@@ -38,6 +45,13 @@ export class PrismaChargeRepository implements ChargeRepository {
 
   async findBySession(sessionId: string): Promise<StudentCharge | null> {
     const row = await this.prisma.studentCharge.findUnique({ where: { sessionId } });
+    return row ? this.toCharge(row) : null;
+  }
+
+  async findByReference(reference: string): Promise<StudentCharge | null> {
+    const row = await this.prisma.studentCharge.findFirst({
+      where: { providerReference: reference },
+    });
     return row ? this.toCharge(row) : null;
   }
 
@@ -95,6 +109,7 @@ export class PrismaChargeRepository implements ChargeRepository {
     isCustomRate: boolean;
     paymentMethodId: string;
     status: string;
+    providerReference: string | null;
     createdAt: Date;
   }): StudentCharge {
     return {
@@ -113,6 +128,7 @@ export class PrismaChargeRepository implements ChargeRepository {
       isCustomRate: row.isCustomRate,
       paymentMethodId: row.paymentMethodId,
       status: row.status as StudentCharge['status'],
+      providerReference: row.providerReference,
       createdAt: row.createdAt.toISOString(),
     };
   }

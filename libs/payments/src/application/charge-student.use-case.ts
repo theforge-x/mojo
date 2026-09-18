@@ -3,6 +3,7 @@ import type { StudentCharge } from '../domain/charge.types';
 import type {
   ChargeRateReader,
   ChargeRepository,
+  PaymentCollector,
   ReplacementGrantRepository,
   StudentPaymentMethodRepository,
 } from '../domain/payments.ports';
@@ -17,6 +18,8 @@ export interface ChargeStudentInput {
   isTrial: boolean;
   /** Defaults to the student's default method when omitted. */
   paymentMethodId?: string;
+  /** Customer email for the rail's receipt/fraud checks. */
+  customerEmail?: string;
   /** A granted free-replacement entitlement — settles the booking at zero. */
   replacementGrantId?: string;
   nowIso: string;
@@ -48,10 +51,11 @@ export class InvalidReplacementGrantError extends Error {
 
 /**
  * Records the student's charge for a booking against their payment method.
- * In demo mode this is a stub ledger entry (captured immediately, no rail
- * call) — the record is still the source of truth for receipts and refunds.
- * Collecting through a real Paystack/Flutterwave intent is the follow-up;
- * it slots in here, before `charges.save`.
+ * Money moves through the injected `collect` rail first (Paystack
+ * charge-authorization on the saved card; a stub success in demo mode), and
+ * only a successful collect is persisted as `captured`. Zero-total bookings
+ * (free replacements) skip the rail entirely. Anything the rail rejects
+ * throws before any row is written, so the caller can release the slot.
  */
 export function makeChargeStudent(deps: {
   charges: ChargeRepository;
@@ -59,6 +63,7 @@ export function makeChargeStudent(deps: {
   rates: ChargeRateReader;
   defaults: Record<TutorLevel, number>;
   grants: ReplacementGrantRepository;
+  collect: PaymentCollector;
 }) {
   const quoteSessionCharge = makeQuoteSessionCharge({ rates: deps.rates, defaults: deps.defaults });
 
@@ -89,7 +94,11 @@ export function makeChargeStudent(deps: {
     if (input.isTrial && !grant) {
       const prior = await deps.charges.listByStudent(input.studentId);
       const trialUsed = prior.some(
-        (c) => c.tutorId === input.tutorId && c.isTrial && c.status !== 'refunded',
+        (c) =>
+          c.tutorId === input.tutorId &&
+          c.isTrial &&
+          c.status !== 'refunded' &&
+          c.status !== 'failed',
       );
       if (trialUsed) throw new TrialAlreadyUsedError();
     }
@@ -101,8 +110,19 @@ export function makeChargeStudent(deps: {
       isTrial: input.isTrial,
     });
 
+    const totalMinor = grant ? 0 : quote.totalMinor;
+    const chargeId = crypto.randomUUID();
+    if (totalMinor > 0) {
+      await deps.collect.chargeAuthorization({
+        authorizationCode: method.authorizationCode ?? '',
+        email: input.customerEmail ?? '',
+        amountMinor: totalMinor,
+        currency: quote.currency,
+        reference: `mojo_${chargeId}`,
+      });
+    }
     const charge: StudentCharge = {
-      id: crypto.randomUUID(),
+      id: chargeId,
       studentId: input.studentId,
       tutorId: input.tutorId,
       sessionId: input.sessionId,
@@ -110,13 +130,14 @@ export function makeChargeStudent(deps: {
       perSegmentMinor: quote.perSegmentMinor,
       standardTotalMinor: quote.standardTotalMinor,
       trialDiscountMinor: grant ? quote.standardTotalMinor : quote.trialDiscountMinor,
-      totalMinor: grant ? 0 : quote.totalMinor,
+      totalMinor,
       currency: quote.currency,
       isTrial: input.isTrial,
       level: quote.level,
       isCustomRate: quote.isCustomRate,
       paymentMethodId: method.id,
       status: 'captured',
+      providerReference: `mojo_${chargeId}`,
       createdAt: input.nowIso,
     };
     await deps.charges.save(charge);
