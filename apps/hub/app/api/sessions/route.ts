@@ -5,9 +5,43 @@ import {
   TrialAlreadyUsedError,
 } from '@mojo/payments/application';
 import type { ScheduledSession } from '@mojo/scheduling/domain';
+import type { SessionSummary } from '@mojo/shared/api-contract';
 import { NextResponse } from 'next/server';
 import { getHub } from '../../../demo/composition-root';
-import { requireRole } from '../../../lib/session';
+import { requireRole, requireUser } from '../../../lib/session';
+
+/**
+ * My sessions — the mobile home-screen contract. Role-aware: students get
+ * their bookings, tutors their schedule. Summaries only (no status history),
+ * newest-start first.
+ */
+export async function GET() {
+  const user = await requireUser();
+  if (!user) {
+    return NextResponse.json({ ok: false, error: 'Sign-in required.' }, { status: 401 });
+  }
+  if (user.role !== 'student' && user.role !== 'tutor') {
+    return NextResponse.json({ ok: false, error: 'Students and tutors only.' }, { status: 403 });
+  }
+  const hub = getHub();
+  const sessions =
+    user.role === 'student'
+      ? await hub.scheduling.sessionsByStudent(user.id)
+      : await hub.scheduling.sessionsByTutor(user.id);
+  const summaries: SessionSummary[] = [...sessions]
+    .sort((a, b) => (a.startIso < b.startIso ? -1 : 1))
+    .map((session) => ({
+      id: session.id,
+      tutorId: session.tutorId,
+      studentId: session.studentId,
+      startIso: session.startIso,
+      endIso: session.endIso,
+      status: session.status,
+      isTrial: session.isTrial,
+      groupId: session.groupId,
+    }));
+  return NextResponse.json({ ok: true, sessions: summaries });
+}
 
 export async function POST(request: Request) {
   const user = await requireRole('student');

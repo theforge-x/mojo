@@ -1,0 +1,6 @@
+{
+  "name": "shared-api-contract",
+  "sourceRoot": "libs/shared/api-contract/src",
+  "projectType": "library",
+  "tags": ["type:util", "scope:shared"]
+}

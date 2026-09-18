@@ -13,6 +13,7 @@ export default defineConfig({
     projects: [
       'apps/admin/vitest.config.ts',
       'libs/shared/events/vitest.config.ts',
+      'libs/shared/api-contract/vitest.config.ts',
       'libs/identity/vitest.config.ts',
       'libs/scheduling/vitest.config.ts',
       'libs/pricing/vitest.config.ts',

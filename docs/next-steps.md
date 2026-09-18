@@ -217,7 +217,14 @@ live-verified 2026-09-18:
 3. **Payment callbacks** ✅ — `GET /api/payments/verify?reference=` answers JSON;
    `POST /api/payments/initialize` accepts `callbackUrl`, allowlisted to the web
    verify page or `mojo://` (`resolvePaymentCallbackUrl`, 5 unit tests).
-Remaining:
-4. **RN UI rebuild** — `@mojo/shared/ui` is DOM-only; pure domain libs (ladder math,
-   segments, money) are importable as-is, everything else stays server-side behind the
-   boundary lint (`apps/mobile`, ideally via the Nx Expo plugin).
+Client:
+4. **RN UI rebuild** ✅ started 2026-09-18 — `apps/mobile` (Expo SDK 57,
+   sibling app per boundary rules) with auth → sessions → lab → checkout
+   vertical slice, all calls typed through `libs/shared/api-contract`.
+   LiveKit video, push registration, and the Paystack deep-link loop are
+   coded; on-device + EAS runs still to come. Added for mobile:
+   `GET /api/sessions` (role-aware summaries). Toolchain notes: app scheme
+   is `mojo` (matches the payment-callback allowlist); `expo install --fix`
+   pins SDK-validated versions (RN 0.86.3); `scripts/patch-expo-cli.js`
+   (postinstall) works around an upstream `@expo/cli` web-bundling bug
+    (`rn-get-polyfills` removed in RN 0.86) — drop it when upstream fixes it.
