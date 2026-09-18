@@ -2,10 +2,11 @@ import { TRIAL_PRICE_PERCENT } from '@mojo/payments/domain';
 import { tutorLocalTime } from '@mojo/scheduling/domain';
 import { Badge, Button, Card, CardContent, Empty, EmptyDescription } from '@mojo/shared/ui';
 import { segmentsBetween } from '@mojo/shared/util';
-import { CalendarDays, Play, Sparkles } from 'lucide-react';
+import { CalendarDays, Play, Sparkles, Users } from 'lucide-react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { BookButton } from '../../../../components/book-button';
+import { JoinLabButton } from '../../../../components/join-lab-button';
 import { SaveTutorButton } from '../../../../components/save-tutor-button';
 import {
   durationMinutes,
@@ -63,6 +64,29 @@ export default async function TutorDetailPage({
     exceptions,
     existingSessions: sessions,
   });
+
+  const openLabs = await hub.groups.openLabs(tutorId);
+  const labCards = await Promise.all(
+    openLabs.map(async (lab) => {
+      const members = await hub.groups.members(lab.id);
+      const active = members.filter((m) => m.status !== 'cancelled' && m.status !== 'no_show');
+      const quote = await hub.billing
+        .quote({
+          tutorId,
+          startIso: lab.startIso,
+          endIso: lab.endIso,
+          isTrial: false,
+          groupSize: active.length > 1 ? active.length : undefined,
+        })
+        .catch(() => null);
+      return {
+        lab,
+        seatsTaken: active.length,
+        perStudentMinor: quote?.totalMinor ?? null,
+        joinedSessionId: active.find((m) => m.studentId === user.id)?.id ?? null,
+      };
+    }),
+  );
 
   return (
     <main className="mx-auto max-w-6xl p-6">
@@ -124,6 +148,52 @@ export default async function TutorDetailPage({
           </a>
         )}
       </div>
+
+      {labCards.length > 0 && (
+        <>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 font-display text-lg font-bold text-headline">
+              <Users className="size-5 text-primary" aria-hidden />
+              Group labs
+              <span className="text-sm font-medium text-muted-foreground">
+                ({labCards.length})
+              </span>
+            </h2>
+          </div>
+          <div className="mb-6 flex flex-col gap-4">
+            {labCards.map(({ lab, seatsTaken, perStudentMinor, joinedSessionId }) => (
+              <SessionListCard
+                key={lab.id}
+                startIso={lab.startIso}
+                endIso={lab.endIso}
+                tone="teal"
+                title={lab.title}
+                subtitle={
+                  perStudentMinor !== null
+                    ? `${formatMinor(perStudentMinor)} per seat · price drops as seats fill`
+                    : 'Group lab'
+                }
+                badges={
+                  <Badge variant="secondary" className="gap-1">
+                    <Users className="size-3" aria-hidden />
+                    Group · {seatsTaken}/{lab.maxSeats}
+                  </Badge>
+                }
+                actions={
+                  <JoinLabButton
+                    labId={lab.id}
+                    perStudentMinor={perStudentMinor}
+                    seatsTaken={seatsTaken}
+                    seatsTotal={lab.maxSeats}
+                    joinedSessionId={joinedSessionId}
+                    priceLabel={(minor) => formatMinor(minor)}
+                  />
+                }
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 font-display text-lg font-bold text-headline">

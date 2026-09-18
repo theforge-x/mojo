@@ -29,6 +29,7 @@ import {
 } from '../../components/session-feedback';
 import { SessionStatusBadge } from '../../components/session-status-badge';
 import { SessionViewToggle } from '../../components/session-view-toggle';
+import { GroupLabBadge } from '../../components/group-lab-badge';
 import { getHub } from '../../demo/composition-root';
 import { formatWhen } from '../../lib/format';
 import { currentUser } from '../../lib/session';
@@ -134,7 +135,13 @@ export async function StudentHome({ view }: { view: SessionView }) {
               tone={toneForStatus(session.status)}
               title={tutor}
               subtitle={session.isTrial ? 'Trial lesson' : undefined}
-              badges={<StudentSessionBadges status={session.status} isTrial={session.isTrial} />}
+              badges={
+              <StudentSessionBadges
+                status={session.status}
+                isTrial={session.isTrial}
+                groupSize={session.groupSize}
+              />
+            }
               actions={<StudentSessionActions session={session} tutorName={tutor} />}
             >
               <StudentSessionExtras
@@ -157,7 +164,13 @@ export async function StudentHome({ view }: { view: SessionView }) {
               tone={toneForStatus(session.status)}
               title={tutor}
               subtitle={session.isTrial ? 'Trial lesson' : undefined}
-              badges={<StudentSessionBadges status={session.status} isTrial={session.isTrial} />}
+              badges={
+              <StudentSessionBadges
+                status={session.status}
+                isTrial={session.isTrial}
+                groupSize={session.groupSize}
+              />
+            }
               actions={<StudentSessionActions session={session} tutorName={tutor} />}
             >
               <StudentSessionExtras
@@ -180,10 +193,19 @@ export async function StudentHome({ view }: { view: SessionView }) {
   );
 }
 
-function StudentSessionBadges({ status, isTrial }: { status: string; isTrial: boolean }) {
+function StudentSessionBadges({
+  status,
+  isTrial,
+  groupSize,
+}: {
+  status: string;
+  isTrial: boolean;
+  groupSize?: number | null;
+}) {
   return (
     <>
       <SessionStatusBadge status={status} />
+      {typeof groupSize === 'number' && groupSize > 1 && <GroupLabBadge seats={groupSize} />}
       {isTrial && (
         <Badge variant="secondary" className="gap-1">
           <Sparkles className="size-3" aria-hidden />

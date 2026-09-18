@@ -1,7 +1,7 @@
 import { DEFAULT_SEGMENT_RATE_NGN } from '@mojo/pricing/domain';
 import { CalendarView } from '@mojo/scheduling/feature';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
-import { CalendarDays, Handshake, Sparkles } from 'lucide-react';
+import { CalendarDays, Handshake, Sparkles, Users } from 'lucide-react';
 import Link from 'next/link';
 import { CalendarExportButton } from '../../components/calendar-export-button';
 import { DisputeButton } from '../../components/dispute-button';
@@ -22,6 +22,9 @@ import {
 import { NoShowButton, RecapCard, RescheduleForm } from '../../components/session-feedback';
 import { SessionStatusBadge } from '../../components/session-status-badge';
 import { SessionViewToggle } from '../../components/session-view-toggle';
+import { GroupLabBadge } from '../../components/group-lab-badge';
+import { GroupLabCreateForm } from '../../components/group-lab-create-form';
+import { GroupLabManage } from '../../components/group-lab-manage';
 import { getHub } from '../../demo/composition-root';
 import { formatMinor } from '../../lib/format';
 import { currentUser } from '../../lib/session';
@@ -48,6 +51,26 @@ export default async function TutorHome({
   ]);
 
   const upcoming = sessions.filter((s) => s.status === 'booked' || s.status === 'confirmed');
+
+  const groupLabs = await hub.groups.labsByTutor(user.id);
+  const groupLabRows = await Promise.all(
+    groupLabs.map(async (lab) => {
+      const members = await hub.groups.members(lab.id);
+      const seatsTaken = members.filter(
+        (m) => m.status !== 'cancelled' && m.status !== 'no_show',
+      ).length;
+      return {
+        id: lab.id,
+        title: lab.title,
+        startIso: lab.startIso,
+        endIso: lab.endIso,
+        maxSeats: lab.maxSeats,
+        status: lab.status,
+        lockedSize: lab.lockedSize,
+        seatsTaken,
+      };
+    }),
+  );
 
   return (
     <main className="mx-auto max-w-6xl p-6">
@@ -137,6 +160,22 @@ export default async function TutorHome({
 
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 font-display text-lg font-bold text-headline">
+          <Users className="size-5 text-primary" aria-hidden />
+          Group labs
+          <span className="text-sm font-medium text-muted-foreground">({groupLabRows.length})</span>
+        </h2>
+      </div>
+      <div className="mb-6 flex flex-col gap-4">
+        <GroupLabManage initialLabs={groupLabRows} />
+        <GroupLabCreateForm />
+        <p className="text-xs text-muted-foreground">
+          Each extra 10 seats drops the per-student price 10%. Locking freezes the size and
+          refunds any seats that overpaid on the way in.
+        </p>
+      </div>
+
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold text-headline">
           <CalendarDays className="size-5 text-primary" aria-hidden />
           Sessions
           <span className="text-sm font-medium text-muted-foreground">({sessions.length})</span>
@@ -168,7 +207,13 @@ export default async function TutorHome({
                 tone={toneForStatus(session.status)}
                 title={student}
                 subtitle={session.isTrial ? 'Trial lesson' : undefined}
-                badges={<TutorSessionBadges status={session.status} isTrial={session.isTrial} />}
+                badges={
+                  <TutorSessionBadges
+                    status={session.status}
+                    isTrial={session.isTrial}
+                    groupSize={session.groupSize}
+                  />
+                }
                 actions={<TutorSessionActions session={session} studentName={student} />}
               >
                 {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
@@ -206,7 +251,13 @@ export default async function TutorHome({
                 tone={toneForStatus(session.status)}
                 title={student}
                 subtitle={session.isTrial ? 'Trial lesson' : undefined}
-                badges={<TutorSessionBadges status={session.status} isTrial={session.isTrial} />}
+                badges={
+                  <TutorSessionBadges
+                    status={session.status}
+                    isTrial={session.isTrial}
+                    groupSize={session.groupSize}
+                  />
+                }
                 actions={<TutorSessionActions session={session} studentName={student} />}
               >
                 {recap && <RecapCard summary={recap.summary} focusAreas={recap.focusAreas} />}
@@ -236,10 +287,19 @@ function formatHours(hours: number): string {
   return hours >= 1000 ? `${(hours / 1000).toFixed(1)}k h` : `${hours.toFixed(0)} h`;
 }
 
-function TutorSessionBadges({ status, isTrial }: { status: string; isTrial: boolean }) {
+function TutorSessionBadges({
+  status,
+  isTrial,
+  groupSize,
+}: {
+  status: string;
+  isTrial: boolean;
+  groupSize?: number | null;
+}) {
   return (
     <>
       <SessionStatusBadge status={status} />
+      {typeof groupSize === 'number' && groupSize > 1 && <GroupLabBadge seats={groupSize} />}
       {isTrial && (
         <Badge variant="secondary" className="gap-1">
           <Sparkles className="size-3" aria-hidden />

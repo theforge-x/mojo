@@ -18,7 +18,8 @@ export default async function TutorLabPage({ params }: { params: Promise<{ sessi
 
   const hub = getHub();
   const mine = await hub.scheduling.sessionsByTutor(user.id);
-  if (!mine.some((s) => s.id === sessionId)) redirect('/tutor');
+  const session = mine.find((s) => s.id === sessionId);
+  if (!session) redirect('/tutor');
 
   const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } = process.env;
   if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
@@ -30,6 +31,8 @@ export default async function TutorLabPage({ params }: { params: Promise<{ sessi
     sessionId,
     participantId: user.id,
     participantName: user.email,
+    // Group seats share one room keyed by the lab, not per-seat rooms.
+    roomKey: session.groupId ?? undefined,
   });
 
   return (
