@@ -20,6 +20,7 @@ import type {
   TutorInterest,
 } from '@mojo/messaging/domain';
 import type { MojoPlusRepository, MojoPlusSubscription } from '@mojo/mojo-plus/domain';
+import type { PushDevice, PushDeviceRepository } from '@mojo/notifications/domain';
 import type {
   ChargeRefund,
   ChargeRepository,
@@ -615,6 +616,28 @@ export class InMemoryMessageRepository implements MessageRepository {
     const message = this.state.messages.get(id);
     if (!message) return;
     this.state.messages.set(id, { ...message, readAt: at });
+  }
+}
+
+export class InMemoryPushDeviceRepository implements PushDeviceRepository {
+  constructor(private readonly state: DemoState) {}
+
+  async save(device: PushDevice): Promise<void> {
+    const existing = (this.state.pushDevices.get(device.userId) ?? []).filter(
+      (d) => d.token !== device.token,
+    );
+    this.state.pushDevices.set(device.userId, [...existing, device]);
+  }
+
+  async listByUser(userId: string): Promise<PushDevice[]> {
+    return this.state.pushDevices.get(userId) ?? [];
+  }
+
+  async remove(userId: string, token: string): Promise<void> {
+    this.state.pushDevices.set(
+      userId,
+      (this.state.pushDevices.get(userId) ?? []).filter((d) => d.token !== token),
+    );
   }
 }
 

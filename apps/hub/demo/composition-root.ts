@@ -74,6 +74,8 @@ import {
   dueSessionReminders,
   type NotificationDispatcher,
   type NotificationPreferences,
+  type PushDevice,
+  type PushDeviceRepository,
 } from '@mojo/notifications/domain';
 import {
   type ChargeStudentInput,
@@ -175,6 +177,7 @@ import {
   PrismaMessageRepository,
   PrismaMojoPlusRepository,
   PrismaPaymentMethodRepository,
+  PrismaPushDeviceRepository,
   PrismaRecapRepository,
   PrismaReferralRepository,
   PrismaReplacementGrantRepository,
@@ -189,6 +192,7 @@ import {
   PrismaUserRepository,
   PrismaWalletRepository,
   summarizerFromEnv,
+  ExpoPushDispatcher,
   WhatsAppDispatcher,
 } from './prisma-repos';
 import {
@@ -202,6 +206,7 @@ import {
   InMemoryMessageRepository,
   InMemoryMojoPlusRepository,
   InMemoryPayoutRail,
+  InMemoryPushDeviceRepository,
   InMemoryRecapRepository,
   InMemoryReferralRepository,
   InMemoryReplacementGrantRepository,
@@ -240,7 +245,8 @@ interface Repositories {
   grants: ReplacementGrantRepository;
   performances: TutorPerformanceRepository;
   mojoPlus: MojoPlusRepository;
-  notifications: Record<'email' | 'whatsapp', NotificationDispatcher>;
+  notifications: Record<'email' | 'whatsapp' | 'push', NotificationDispatcher>;
+  pushDevices: PushDeviceRepository;
   recaps: RecapRepository;
   summarizer: TranscriptSummarizer;
   reviews: ReviewRepository;
@@ -424,6 +430,9 @@ export interface HubApp {
     log(): readonly SentNotification[];
     preferences(userId: string): Promise<NotificationPreferences>;
     savePreferences(userId: string, prefs: NotificationPreferences): Promise<void>;
+    devices(userId: string): Promise<PushDevice[]>;
+    registerDevice(device: PushDevice): Promise<void>;
+    removeDevice(userId: string, token: string): Promise<void>;
     fireDueReminders(userId: string, nowIso: string): Promise<{ sent: number; due: number }>;
     /** Sweep every active student — the cron entrypoint. Never throws per-user. */
     fireAllDueReminders(nowIso: string): Promise<{ users: number; sent: number; due: number }>;
@@ -499,6 +508,7 @@ function buildInMemoryRepositories(state: DemoState): Repositories {
     performances: new InMemoryTutorPerformanceRepository(state),
     mojoPlus: new InMemoryMojoPlusRepository(state),
     notifications: inMemoryDispatchers(state),
+    pushDevices: new InMemoryPushDeviceRepository(state),
     recaps: new InMemoryRecapRepository(state),
     summarizer: summarizerFromEnv(demoTranscriptSummarizer),
     reviews: new InMemoryReviewRepository(state),
@@ -545,6 +555,7 @@ function buildPrismaRepositories(_state: DemoState): Repositories {
     performances: new PrismaTutorPerformanceRepository(prisma),
     mojoPlus: new PrismaMojoPlusRepository(prisma),
     notifications: externalDispatchers(),
+    pushDevices: new PrismaPushDeviceRepository(prisma),
     recaps: new PrismaRecapRepository(prisma),
     summarizer: summarizerFromEnv(demoTranscriptSummarizer),
     reviews: new PrismaReviewRepository(prisma),
@@ -585,7 +596,7 @@ async function listSessions(
   }));
 }
 
-function externalDispatchers(): Record<'email' | 'whatsapp', NotificationDispatcher> {
+function externalDispatchers(): Record<'email' | 'whatsapp' | 'push', NotificationDispatcher> {
   const email = process.env.RESEND_API_KEY ? new EmailDispatcher(process.env.RESEND_API_KEY) : null;
   const whatsapp =
     process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_ACCESS_TOKEN
@@ -594,13 +605,17 @@ function externalDispatchers(): Record<'email' | 'whatsapp', NotificationDispatc
           process.env.WHATSAPP_ACCESS_TOKEN,
         )
       : null;
+  const push = process.env.EXPO_ACCESS_TOKEN
+    ? new ExpoPushDispatcher(process.env.EXPO_ACCESS_TOKEN)
+    : null;
   return {
     email: (email ?? inMemoryChannel('email')) as NotificationDispatcher,
     whatsapp: (whatsapp ?? inMemoryChannel('whatsapp')) as NotificationDispatcher,
+    push: (push ?? inMemoryChannel('push')) as NotificationDispatcher,
   };
 }
 
-function inMemoryChannel(channel: 'email' | 'whatsapp'): NotificationDispatcher {
+function inMemoryChannel(channel: 'email' | 'whatsapp' | 'push'): NotificationDispatcher {
   return {
     send: async (_c, _to, _templateId) => {
       void channel;
@@ -610,9 +625,9 @@ function inMemoryChannel(channel: 'email' | 'whatsapp'): NotificationDispatcher 
 
 function inMemoryDispatchers(
   state: DemoState,
-): Record<'email' | 'whatsapp', NotificationDispatcher> {
+): Record<'email' | 'whatsapp' | 'push', NotificationDispatcher> {
   const push =
-    (channel: 'email' | 'whatsapp') =>
+    (channel: 'email' | 'whatsapp' | 'push') =>
     (to: string, templateId: string, data: Record<string, unknown>) => {
       state.notifications.push({
         id: demoId('n'),
@@ -626,6 +641,7 @@ function inMemoryDispatchers(
   return {
     email: { send: async (_c, to, templateId, data) => push('email')(to, templateId, data) },
     whatsapp: { send: async (_c, to, templateId, data) => push('whatsapp')(to, templateId, data) },
+    push: { send: async (_c, to, templateId, data) => push('push')(to, templateId, data) },
   };
 }
 
@@ -802,7 +818,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   };
 
   const safeNotify = (
-    channel: 'email' | 'whatsapp',
+    channel: 'email' | 'whatsapp' | 'push',
     to: string,
     templateId: string,
     data: Record<string, unknown>,
@@ -828,17 +844,42 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       prefs,
     );
     let sent = 0;
+    const pushTokens = prefs.channels.includes('push')
+      ? await repos.pushDevices.listByUser(userId).catch(() => [])
+      : [];
     for (const signal of due) {
       const key = `${signal.sessionId}:${signal.templateId}`;
       if (state.reminderJournal.has(key)) continue;
       state.reminderJournal.set(key, nowIso);
+      const data = { sessionId: signal.sessionId, leadMinutes: signal.leadMinutes };
       for (const channel of prefs.channels) {
+        // Push journals one entry per registered device and actually sends
+        // each; users with no device simply get no push entry.
+        if (channel === 'push') {
+          for (const device of pushTokens) {
+            state.notifications.push({
+              id: demoId('n'),
+              channel,
+              to: device.token,
+              templateId: signal.templateId,
+              data,
+              sentAt: nowIso,
+            });
+            dispatchNotification({
+              channel,
+              to: device.token,
+              templateId: signal.templateId,
+              data,
+            }).catch(() => {});
+          }
+          continue;
+        }
         state.notifications.push({
           id: demoId('n'),
           channel,
           to: `${userId}@mojo.dev`,
           templateId: signal.templateId,
-          data: { sessionId: signal.sessionId, leadMinutes: signal.leadMinutes },
+          data,
           sentAt: nowIso,
         });
       }
@@ -1239,6 +1280,9 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       savePreferences: async (userId, prefs) => {
         state.notificationPreferences.set(userId, prefs);
       },
+      devices: (userId) => repos.pushDevices.listByUser(userId),
+      registerDevice: (device) => repos.pushDevices.save(device),
+      removeDevice: (userId, token) => repos.pushDevices.remove(userId, token),
       fireDueReminders: (userId, nowIso) => fireDueFor(userId, nowIso),
       fireAllDueReminders: async (nowIso) => {
         const students = await repos.users.listByRole('student');

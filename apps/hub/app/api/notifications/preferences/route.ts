@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getHub } from '../../../../demo/composition-root';
 import { currentUser } from '../../../../lib/session';
 
-const CHANNELS = ['email', 'whatsapp'] as const;
+const CHANNELS = ['email', 'whatsapp', 'push'] as const;
 
 export async function GET() {
   const user = await currentUser();

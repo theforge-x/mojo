@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { resolvePaymentCallbackUrl } from '@mojo/payments/domain';
 import { getHub } from '../../../../demo/composition-root';
 import { requireRole } from '../../../../lib/session';
 
@@ -6,6 +7,9 @@ import { requireRole } from '../../../../lib/session';
  * Redirect checkout for students without a saved card: books the slot, opens
  * a Paystack transaction for it, and returns the authorization URL. The slot
  * is released again if anything fails, so an unpaid booking never lingers.
+ * Web callers land back on `/payments/verify`; programmatic callers (mobile)
+ * may pass their own `callbackUrl` — same-origin https or the `mojo://`
+ * deep-link scheme — which Paystack redirects to with the reference.
  */
 export async function POST(request: Request) {
   const user = await requireRole('student');
@@ -27,6 +31,11 @@ export async function POST(request: Request) {
 
   const hub = getHub();
   const nowIso = new Date().toISOString();
+  const origin = new URL(request.url).origin;
+  const requestedCallback = typeof body.callbackUrl === 'string' ? body.callbackUrl : '';
+  // Deep-link callbacks stay inside the app's control: the web origin or the
+  // registered `mojo://` scheme. Anything else falls back to the web page.
+  const callbackUrl = resolvePaymentCallbackUrl(requestedCallback, origin);
   let sessionId: string | null = null;
   try {
     const session = await hub.scheduling.book({
@@ -39,7 +48,6 @@ export async function POST(request: Request) {
       nowIso,
     });
     sessionId = session.id;
-    const callbackUrl = `${new URL(request.url).origin}/payments/verify`;
     const { charge, authorizationUrl } = await hub.billing.initializeCharge({
       studentId: user.id,
       tutorId,

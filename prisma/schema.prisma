@@ -38,6 +38,7 @@ model User {
   schedulingCfg     SchedulingSettings?
   sessionsAsTutor   Session[]           @relation("TutorSessions")
   sessionsAsStudent Session[]           @relation("StudentSessions")
+  pushDevices       PushDevice[]
   groupLabsAsTutor  GroupLab[]          @relation("TutorGroupLabs")
   reviewsWritten    Review[]            @relation("ReviewAuthor")
   auditLogEntries   AuditLogEntry[]
@@ -58,6 +59,21 @@ model SessionToken {
 
   @@index([userId])
   @@map("session_tokens")
+}
+
+// ---------- push devices (mobile channel registry) ----------
+
+model PushDevice {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String
+  platform  String   @default("android")
+  createdAt DateTime @default(now())
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@map("push_devices")
 }
 
 // ---------- tutor-profile ----------

@@ -19,6 +19,12 @@ export interface LabProvider {
     sessionId: string;
     participantId: string;
     participantName: string;
+    /**
+     * Shared-room key — group lab seats pass their `groupId` so every seat
+     * lands in one `mojo-lab-<group>` room instead of per-seat rooms.
+     * Defaults to the session id (one-on-one rooms are unchanged).
+     */
+    roomKey?: string;
   }): Promise<LabAccess>;
 }
 

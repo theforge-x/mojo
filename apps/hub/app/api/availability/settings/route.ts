@@ -9,19 +9,22 @@ export async function PUT(request: Request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const patch: {
-    timezone: string;
-    bufferMinutes: number;
-    minimumNoticeMinutes: number;
-    pausedForNewBookings: boolean;
-  } = {
-    timezone: typeof body.timezone === 'string' ? body.timezone : '',
-    bufferMinutes: Number.isFinite(body.bufferMinutes) ? Number(body.bufferMinutes) : 15,
+  // Partial update — omitted fields keep their current values instead of
+  // resetting to defaults (a bare `{minimumNoticeMinutes: 0}` must not wipe
+  // the tutor's timezone or unpause bookings as a side effect).
+  const current = await getHub().scheduling.settings(user.id);
+  const patch = {
+    timezone: typeof body.timezone === 'string' ? body.timezone : current.timezone,
+    bufferMinutes: Number.isFinite(body.bufferMinutes)
+      ? Number(body.bufferMinutes)
+      : current.bufferMinutes,
     minimumNoticeMinutes: Number.isFinite(body.minimumNoticeMinutes)
       ? Number(body.minimumNoticeMinutes)
-      : 60,
+      : current.minimumNoticeMinutes,
     pausedForNewBookings:
-      typeof body.pausedForNewBookings === 'boolean' ? body.pausedForNewBookings : false,
+      typeof body.pausedForNewBookings === 'boolean'
+        ? body.pausedForNewBookings
+        : current.pausedForNewBookings,
   };
 
   try {

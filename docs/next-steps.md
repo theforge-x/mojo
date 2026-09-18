@@ -200,21 +200,24 @@ Tutor cancel / no-show / start + student confirm + `RecapCard` on both homes
   
 ## Suggestions (Manual work)
 Three deploy-time items before you call it launched (not code work):
-1. Prod DB: prisma migrate deploy — the group_labs migration has only applied to dev so far.
+1. Prod DB: prisma migrate deploy — the group_labs + push_devices migrations have only applied to dev so far.
 2. Prod env: USE_PRISMA, DATABASE_URL, live Paystack secret, LiveKit prod creds, plus the cron hits for auto-confirm/reminders workers.
 3. Known untested-at-scale: the 11+ seat discount leg is covered by unit tests + the live quote endpoint (E2E ran with 2 seats); LiveKit room joins can't be exercised until prod creds exist — same standing as 1-on-1 rooms.
 
 ## Mobile client backend gaps (React Native — next build session)
 Auth is ready (Bearer sessions + `/api/auth` login/signup/logout, all `{ok,…}`
-enveloped). Everything CRUD is plain JSON REST. Still missing:
-1. **Lab token endpoint** — the hard blocker for video: `POST /api/lab/[sessionId]/token`
-   returning the existing `LabAccess` JSON (`roomName`, `serverUrl`, `participantToken`),
-   with the same seat/ownership checks the lab pages do. RN joins via `@livekit/react-native`.
-2. **Push channel** — notifications only know `email | whatsapp` behind the
-   `NotificationDispatcher` port; add `push` + an Expo dispatcher, plus a device-token registry.
-3. **Payment callbacks** — the redirect flow lands on `/payments/verify` (a web page);
-   mobile needs a JSON sibling + deep link back into the app. Saved-card charging already
-   works headless.
+enveloped). Everything CRUD is plain JSON REST. Backend gaps 1–3 shipped and
+live-verified 2026-09-18:
+1. **Lab token endpoint** ✅ — `POST /api/lab/[id]/token` returns the existing
+   `LabAccess` JSON with seat/ownership checks (401/403/404 guardrails verified;
+   LiveKit 503 surfaces as `{ok:false}` JSON without creds).
+2. **Push channel** ✅ — `push` channel + `ExpoPushDispatcher` (13 unit tests) +
+   `PushDevice` registry (`GET/POST/DELETE /api/notifications/devices`) + prefs
+   channel; reminder sweep fans out per device (verified in delivery journal).
+3. **Payment callbacks** ✅ — `GET /api/payments/verify?reference=` answers JSON;
+   `POST /api/payments/initialize` accepts `callbackUrl`, allowlisted to the web
+   verify page or `mojo://` (`resolvePaymentCallbackUrl`, 5 unit tests).
+Remaining:
 4. **RN UI rebuild** — `@mojo/shared/ui` is DOM-only; pure domain libs (ladder math,
    segments, money) are importable as-is, everything else stays server-side behind the
    boundary lint (`apps/mobile`, ideally via the Nx Expo plugin).

@@ -4,7 +4,7 @@ import type { DeliveryConfirmation } from '@mojo/booking/domain';
 import type { User } from '@mojo/identity/domain';
 import type { Message, TutorInterest } from '@mojo/messaging/domain';
 import type { MojoPlusSubscription } from '@mojo/mojo-plus/domain';
-import type { NotificationPreferences } from '@mojo/notifications/domain';
+import type { NotificationPreferences, PushDevice } from '@mojo/notifications/domain';
 import type {
   ChargeRefund,
   PayoutRequest,
@@ -29,7 +29,7 @@ import type { TutorApplication, TutorProfile } from '@mojo/tutor-profile/domain'
 
 export interface SentNotification {
   readonly id: string;
-  readonly channel: 'email' | 'whatsapp';
+  readonly channel: 'email' | 'whatsapp' | 'push';
   readonly to: string;
   readonly templateId: string;
   readonly data: Record<string, unknown>;
@@ -90,6 +90,8 @@ export class DemoState {
   readonly taxonomy: SubjectTaxonomyEntry[] = [];
   readonly notifications: SentNotification[] = [];
   readonly notificationPreferences = new Map<string, NotificationPreferences>();
+  /** Push devices per user id — the mobile channel's recipient registry. */
+  readonly pushDevices = new Map<string, PushDevice[]>();
 
   /** sessionId:templateId -> firedAt (dedupes scheduled reminder leads). */
   readonly reminderJournal = new Map<string, string>();
