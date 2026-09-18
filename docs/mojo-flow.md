@@ -7,15 +7,26 @@ the Prisma-backed deployment — only the repositories change.
 
 ## 1. Authenticate
 
-`/login` renders `LoginForm` (`@mojo/identity/feature`). Submitting calls the
-server action `loginWithDemo` (`apps/hub/lib/actions.ts`), which runs
-`makeAuthenticateUser` through the hub's composition root and stores two
-httpOnly cookies:
+Web forms (`/login`, `/signup`) call the server actions `loginWithDemo` /
+`signupWithDemo` (`apps/hub/lib/actions.ts`). Both actions delegate to the
+single credential funnel `apps/hub/lib/credential-auth.ts`
+(`authenticateCredentials` / `registerAccount`), which runs
+`makeAuthenticateUser` / `makeRegisterUser` through the hub's composition root
+and stores two httpOnly cookies:
 
 | Cookie | Value | Used by |
 |---|---|---|
 | `mojo_user` | opaque session token | `currentUser()` resolves it back to a user via `identity.userByToken` |
 | `mojo_role` | `tutor` / `student` (admin on the admin app) | route-level gate `apps/hub/proxy.ts` + role-aware UIs |
+
+The same funnel backs the programmatic auth contract for the future mobile
+client — `POST /api/auth/login`, `POST /api/auth/signup` (register as student
++ auto-sign-in, 201), `POST /api/auth/logout` (server-side revoke). All three
+use the `{ok, ...}` envelope and return the session `token` in the body for
+clients without a cookie jar. `currentUser()` / `requireUser()` /
+`requireRole()` accept the token either as the `mojo_user` cookie (web) or an
+`Authorization: Bearer <token>` header (mobile) — every guarded route works
+for both transports with no further changes.
 
 Role routing: `/` is the landing page for guests and the student home for
 students; it redirects tutors to `/tutor` and everyone else to `/`. Student
@@ -58,10 +69,12 @@ Receipts live at `/payments` (`GET /api/charges`): segment breakdown, trial
 discount, refund state, and `Refund` for cancelled sessions
 (`POST /api/charges/[id]/refund`, cancelled-only). Cancelling
 (`POST /api/sessions/[id]/cancel`) auto-refunds via
-`billing.refundForSession(..., 'cancelled')`. Reschedule is a thin
-`POST /api/sessions/[id]/reschedule` (re-books then cancels the old session;
-student `booked` sessions only, no charge move yet, no domain use-case or
-`SessionRescheduled` event). The free-replacement guarantee is not built.
+`billing.refundForSession(..., 'cancelled')`, and a cancelled trial banks a
+single-use free replacement (`ReplacementGrant`, redeemable on rebook, never
+for group labs). Reschedule (`POST /api/sessions/[id]/reschedule`) moves the
+booking in place through the scheduling domain (one charge, `SessionRescheduled`
+event). `GET /api/quote` returns the checkout breakdown (segments, standard
+total, trial discount) using the same code that settles the charge.
 
 ## 4. Start and join the lab
 
@@ -84,6 +97,12 @@ Both lab pages verify the participant is the tutor/student of record and
 redirect to `/tutor` (tutor) or `/` (student/guest) otherwise. The UI is
 guarded in-app with `currentUser()` from `apps/hub/lib/session.ts`.
 
+Group-lab seats share one room keyed by the lab (`mojo-lab-<groupId>`,
+via the adapter's `roomKey`) instead of per-seat rooms. Tutors hold no seat
+row, so they enter through `/tutor/lab/group/[groupId]`, gated on lab
+ownership. (Mobile has no token endpoint yet — see the mobile gaps in
+`docs/next-steps.md`.)
+
 ## 5. Confirm delivery → wallet credit (charge already captured)
 
 After the lesson, the student confirms delivery (`/` → **Confirm delivery** →
@@ -95,8 +114,9 @@ After the lesson, the student confirms delivery (`/` → **Confirm delivery** �
 
 Reviews unlock here (`POST /api/reviews`, one per `completed` session, rendered
 on the tutor profile), and the recap is generated + rendered on both homes via
-`RecapCard`. No tutor-side complete and no auto-confirm worker exist yet —
-completion is student-confirm only.
+`RecapCard`. Tutors can also complete directly, and unconfirmed deliveries
+auto-confirm past their grace window (cron worker); completion settles through
+`confirmDelivery` either way.
 
 The hub's event subscribers react to `SessionCompleted` (see
 `apps/hub/demo/composition-root.ts`):
@@ -113,6 +133,31 @@ The hub's event subscribers react to `SessionCompleted` (see
 `SessionDeliveryConfirmed` marks the payout as eligible to release — the tutor
 withdraws via **Request payout** (`POST /api/payouts` →
 `makeReleasePayout`), which in production pushes through the Paystack rail.
+
+## 6. Group labs (pricing ladder + full group booking)
+
+Tutors open seat-limited labs inside their availability
+(`POST /api/groups` → `makeCreateGroupLab`; 2–100 seats, availability- and
+notice-checked, no overlap with other open labs). Students enroll from the
+tutor page (`POST /api/groups/[id]/join`), which books a regular member
+session carrying `groupId`/`groupSize` and charges the per-student group price
+— same rail as one-on-one, seat released if the charge fails. Trials and
+replacement grants are rejected for groups (`GroupTrialBookingError`).
+
+**Pricing ladder** (`libs/pricing/.../group-pricing.ts`, pure, unit-tested):
+1–10 seats pay full price, then −10% per extra 10 seats, compounded
+(`0.9^steps`), floored per currency ($1 / ₦500). The ladder applies to the
+tutor's 1-on-1 base (custom Mojo+ rate included). `GET /api/quote` and the lab
+detail endpoint accept `groupSize` so the UI never does pricing math.
+
+**Lock & settle** (`POST /api/groups/[id]/lock`): freezes enrollment and the
+ladder size (`GroupLabLocked` event), backfills member sessions to the locked
+size, and true-ups captured charges — live sizes only grow toward the lock, so
+members can only have overpaid, and the difference refunds automatically
+(`group_true_up` partial refunds; never collects more). Needs ≥2 active seats.
+**Cancel** (`POST /api/groups/[id]/cancel`) unwinds every seat through the
+normal cancel path (full refunds). Completion, auto-confirm, reminders, and
+disputes all work unchanged because member seats are ordinary sessions.
 
 ## Status timeline
 

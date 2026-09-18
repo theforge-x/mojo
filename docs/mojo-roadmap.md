@@ -280,8 +280,9 @@ polish on top of a working marketplace, not a substitute for one.
 
 ## Deliberately deferred
 
-- **Group/cohort classes** — not core to Mojo's 1:1 model; treat as a future
-  experiment, not a roadmap gap.
+- ~~**Group/cohort classes**~~ — **shipped**: seat-limited group labs with a
+  per-student pricing ladder (−10% per extra 10 seats), lock-time true-up
+  refunds, and shared lab rooms (see §6 in `docs/mojo-flow.md`).
 - **A public, tunable ranking algorithm** — start simple (response time, conversion,
   cancellation rate as inputs) and resist over-engineering the scoring formula before
   there's enough tutor volume for it to matter.
