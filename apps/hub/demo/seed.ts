@@ -89,6 +89,17 @@ export async function seedDemo(state: DemoState): Promise<void> {
       suspendedAt: null,
       createdAt: daysAgoIso(180),
     },
+    {
+      id: 'st_2',
+      name: 'Chidi Eze',
+      email: 'student2@mojo.dev',
+      role: 'student',
+      passwordHash,
+      timezone: 'Africa/Lagos',
+      locale: 'en-NG',
+      suspendedAt: null,
+      createdAt: daysAgoIso(90),
+    },
   ];
   for (const user of users) state.users.set(user.id, user);
 
