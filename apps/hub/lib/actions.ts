@@ -47,8 +47,10 @@ export async function signupWithDemo(input: {
   password: string;
   timezone: string;
   locale: string;
+  subject?: string;
 }): Promise<{ redirectTo: string } | { error: string }> {
-  const result = await registerAccount({ ...input, clientKey: await actionIp() });
+  const { subject: subjectIntent, ...account } = input;
+  const result = await registerAccount({ ...account, clientKey: await actionIp() });
   if (!result.ok) return { error: result.error };
   const { token, role, user } = result.account;
 
@@ -57,5 +59,9 @@ export async function signupWithDemo(input: {
   store.set('mojo_user', token, options);
   store.set('mojo_role', role, options);
 
-  return { redirectTo: user.role === 'tutor' ? '/tutor' : '/' };
+  if (user.role === 'tutor') return { redirectTo: '/tutor' };
+  // Carries the landing-page subject search into the first signed-in view,
+  // where `/` feeds it to the tutor directory filter.
+  const subject = (subjectIntent ?? '').trim().slice(0, 40);
+  return { redirectTo: subject === '' ? '/' : `/?subject=${encodeURIComponent(subject)}` };
 }

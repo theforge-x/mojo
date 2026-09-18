@@ -3,10 +3,13 @@ import {
   BadgeCheck,
   BookOpen,
   Bot,
+  Briefcase,
   CalendarCheck2,
   CalendarClock,
   CheckCircle2,
+  Code2,
   Eye,
+  FlaskConical,
   GraduationCap,
   Heart,
   HeartHandshake,
@@ -14,10 +17,10 @@ import {
   Mic,
   MonitorPlay,
   Music,
+  Palette,
   PartyPopper,
   PhoneOff,
   Plus,
-  Rocket,
   Sparkles,
   Star,
   Target,
@@ -29,6 +32,9 @@ import {
   Zap,
 } from 'lucide-react';
 import Link from 'next/link';
+import type { LandingData, LandingTutor } from '../lib/landing-data';
+import { HeroSearch } from './hero-search';
+import { TutorGrid } from './tutor-grid';
 
 export interface SubjectCategory {
   label: string;
@@ -220,114 +226,24 @@ export const SUBJECT_CATEGORIES: SubjectCategory[] = [
   },
 ];
 
-type Tutor = {
-  name: string;
-  initials: string;
-  tint: string;
-  tagline: string;
-  subjects: string[];
-  rating: number;
-  reviews: number;
-  segmentsCents: number;
-};
-
-const TUTORS: Tutor[] = [
-  {
-    name: 'Amara O.',
-    initials: 'AO',
-    tint: 'bg-[color-mix(in_oklab,var(--primary)_28%,var(--background))]',
-    tagline: 'Make math click — from fractions to calculus',
-    subjects: ['Math', 'SAT Prep'],
-    rating: 4.9,
-    reviews: 214,
-    segmentsCents: 1800,
-  },
-  {
-    name: 'Diego R.',
-    initials: 'DR',
-    tint: 'bg-[color-mix(in_oklab,var(--secondary)_22%,var(--background))]',
-    tagline: 'Conversational Spanish from day one',
-    subjects: ['Spanish'],
-    rating: 5.0,
-    reviews: 168,
-    segmentsCents: 1500,
-  },
-  {
-    name: 'Priya S.',
-    initials: 'PS',
-    tint: 'bg-[color-mix(in_oklab,var(--tertiary)_38%,var(--background))]',
-    tagline: 'Physics without the fear — clear, visual, patient',
-    subjects: ['Physics', 'Calculus'],
-    rating: 4.8,
-    reviews: 97,
-    segmentsCents: 2200,
-  },
-  {
-    name: 'Tom W.',
-    initials: 'TW',
-    tint: 'bg-[color-mix(in_oklab,var(--primary)_20%,var(--secondary)_10%,var(--background))]',
-    tagline: 'Piano fundamentals for busy teens & adults',
-    subjects: ['Piano', 'Music Theory'],
-    rating: 4.9,
-    reviews: 143,
-    segmentsCents: 2000,
-  },
-];
-
-const TESTIMONIALS = [
-  {
-    quote:
-      "My daughter went from dreading algebra to asking for extra sessions. Being charged by the segment means we never pay for time we don't use.",
-    name: 'Rachel M.',
-    detail: 'parent of a 9th-grader',
-  },
-  {
-    quote:
-      'I booked my first Spanish lesson on a Sunday night and was speaking in full sentences within three weeks. The scheduling just works.',
-    name: 'Kevin L.',
-    detail: 'learner since January',
-  },
-  {
-    quote:
-      "As a tutor, verification gave me instant credibility. Lessons auto-publish once I'm approved, and payouts land after every completed session.",
-    name: 'Diego R.',
-    detail: 'verified tutor',
-  },
-];
-
-const FALLBACK_CATEGORIES = [
-  { icon: Languages, label: 'Spanish' },
-  { icon: Languages, label: 'English' },
-  { icon: GraduationCap, label: 'Math' },
-  { icon: Rocket, label: 'Physics' },
-  { icon: Music, label: 'Piano' },
-  { icon: Video, label: 'Robotics' },
-];
+/** Best-effort icon per catalogue subject; anything else gets the cap. */
+function subjectIcon(name: string) {
+  const lower = name.toLowerCase();
+  if (/(spanish|french|english|yoruba|igbo|hausa|language)/.test(lower)) return Languages;
+  if (/(physics|chemistry|biology|science)/.test(lower)) return FlaskConical;
+  if (/(piano|guitar|music)/.test(lower)) return Music;
+  if (/(python|coding|robotics|tech)/.test(lower)) return Code2;
+  if (/(business|economics)/.test(lower)) return Briefcase;
+  if (/(art|design)/.test(lower)) return Palette;
+  if (/(math|calculus|algebra|statistic|geometry)/.test(lower)) return GraduationCap;
+  return GraduationCap;
+}
 
 const AVATAR_TINTS = [
   'bg-[color-mix(in_oklab,var(--primary)_45%,var(--background))]',
   'bg-[color-mix(in_oklab,var(--secondary)_40%,var(--background))]',
   'bg-[color-mix(in_oklab,var(--tertiary)_55%,var(--background))]',
 ];
-
-/** Best-effort icon per known subject; anything else gets the graduation cap.
-function categoryIcon(label: string) {
-  const known: Record<string, typeof Languages> = {
-    spanish: Languages,
-    english: Languages,
-    french: Languages,
-    german: Languages,
-    math: GraduationCap,
-    physics: Rocket,
-    chemistry: Rocket,
-    biology: Rocket,
-    piano: Music,
-    guitar: Music,
-    robotics: Video,
-    coding: Video,
-  };
-  return known[label.toLowerCase()] ?? GraduationCap;
-} */
 
 const FEATURES = [
   {
@@ -371,82 +287,40 @@ const goals = [
   { label: 'Watch a film without subtitles', done: false },
 ];
 
-function Stars({ className = '' }: { className?: string }) {
+function Stars({ value = 5, className = '' }: { value?: number; className?: string }) {
+  const full = Math.round(value);
   return (
     <span className={`inline-flex items-center gap-0.5 ${className}`}>
       {[0, 1, 2, 3, 4].map((i) => (
-        <Star key={i} className="size-4 fill-tertiary text-tertiary" />
+        <Star
+          key={i}
+          className={`size-4 ${i < full ? 'fill-tertiary text-tertiary' : 'text-muted-foreground'}`}
+        />
       ))}
-      <span className="sr-only">Rated 5 out of 5</span>
+      <span className="sr-only">Rated {value} out of 5</span>
     </span>
   );
 }
 
-function AvatarStack() {
+function AvatarStack({ tutors }: { tutors: readonly LandingTutor[] }) {
   return (
     <div className="flex -space-x-2">
-      {['KL', 'RM', 'JT', 'AS'].map((initials, i) => (
+      {tutors.slice(0, 4).map((tutor, i) => (
         <span
-          key={initials}
+          key={tutor.id}
+          title={tutor.name}
           className={`grid size-9 place-items-center rounded-full border-2 border-background text-xs font-semibold text-headline ${AVATAR_TINTS[i % AVATAR_TINTS.length]}`}
         >
-          {initials}
+          {tutor.initials}
         </span>
       ))}
     </div>
   );
 }
 
-function TutorCard({ tutor }: { tutor: Tutor }) {
-  return (
-    <article className="group flex flex-col rounded-lg border border-border bg-card p-5 transition-shadow hover:shadow-md">
-      <div className="flex items-center gap-3">
-        <span
-          className={`font-display grid size-14 shrink-0 place-items-center rounded-full text-lg font-semibold text-headline ${tutor.tint}`}
-        >
-          {tutor.initials}
-        </span>
-        <div className="min-w-0">
-          <h3 className="flex items-center gap-1 truncate font-semibold text-headline">
-            {tutor.name}
-            <BadgeCheck className="size-4 shrink-0 text-primary" aria-label="Verified" />
-          </h3>
-          <p className="truncate text-sm text-muted-foreground">{tutor.tagline}</p>
-        </div>
-      </div>
-      <ul className="mt-4 flex flex-wrap gap-1.5">
-        {tutor.subjects.map((s) => (
-          <li
-            key={s}
-            className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground"
-          >
-            {s}
-          </li>
-        ))}
-      </ul>
-      <div className="mt-auto flex items-end justify-between pt-5">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <Stars />
-            <span className="text-sm font-semibold text-headline">{tutor.rating.toFixed(1)}</span>
-            <span className="text-xs text-muted-foreground">({tutor.reviews})</span>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            <strong className="text-base text-headline">${tutor.segmentsCents / 100}</strong> per
-            segment
-          </p>
-        </div>
-        <Button asChild variant="outline" size="sm" className="rounded-full">
-          <Link href="/register">Book</Link>
-        </Button>
-      </div>
-    </article>
-  );
-}
-
-export function LandingPage() {
-  // const subjects = SUBJECT_CATEGORIES;
-  const categories = FALLBACK_CATEGORIES;
+export function LandingPage({ data }: { data: LandingData }) {
+  const { subjects, tutors, stats, testimonials, upcoming } = data;
+  const hasMarketplace = stats.tutorCount > 0;
 
   return (
     <main className="bg-background">
@@ -470,43 +344,107 @@ export function LandingPage() {
             the time you actually spend learning.
           </p>
 
-          <form action="/signup" className="mx-auto mt-8 flex max-w-xl flex-col gap-2 sm:flex-row">
-            <label className="sr-only" htmlFor="subject">
-              What do you want to learn?
-            </label>
-            <input
-              id="subject"
-              name="subject"
-              placeholder="What do you want to learn?"
-              className="h-12 flex-1 rounded-full border border-input bg-background px-5 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30"
-            />
-            <Button type="submit" size="lg" className="rounded-full px-8">
-              Find a tutor
-            </Button>
-          </form>
-
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
-            <AvatarStack />
-            <Stars />
-            <span>
-              <strong className="text-headline">4.9</strong> average across 2,300+ sessions
-            </span>
-          </div>
-
-          <ul className="mt-8 flex flex-wrap justify-center gap-2">
-            {categories.map(({ icon: Icon, label }) => (
-              <li key={label}>
-                <Link
-                  href="/signup"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium transition-colors hover:border-primary hover:bg-accent"
-                >
-                  <Icon className="size-3.5" /> {label}
-                </Link>
+          <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-medium text-headline">
+            {[
+              { icon: Sparkles, label: 'Free trial lesson' },
+              { icon: Wallet, label: 'Refunds on cancellation' },
+              { icon: CalendarCheck2, label: 'Free re-booking on no-shows' },
+              { icon: Timer, label: 'Pay per segment' },
+            ].map(({ icon: Icon, label }) => (
+              <li key={label} className="inline-flex items-center gap-1.5">
+                <Icon className="size-4 text-primary" />
+                {label}
               </li>
             ))}
           </ul>
+
+          <HeroSearch subjects={subjects} />
+
+          {subjects.length > 0 && (
+            <ul className="mt-6 flex flex-wrap justify-center gap-2">
+              {subjects.slice(0, 10).map((subject) => {
+                const Icon = subjectIcon(subject.name);
+                return (
+                  <li key={subject.name}>
+                    <Link
+                      href={`/signup?subject=${encodeURIComponent(subject.name)}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium transition-colors hover:border-primary hover:bg-accent"
+                    >
+                      <Icon className="size-3.5" /> {subject.name}
+                      <span className="text-xs text-muted-foreground">
+                        · {subject.tutorCount}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {hasMarketplace && (
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
+              <AvatarStack tutors={tutors} />
+              <Stars value={stats.averageRating} />
+              <span>
+                <strong className="text-headline">{stats.averageRating.toFixed(1)}</strong>{' '}
+                average across {stats.reviewCount} reviews · {stats.completedSessions} lessons
+                taught
+              </span>
+            </div>
+          )}
         </div>
       </section>
+
+      {tutors.length > 0 && (
+        <section id="tutors" className="border-b border-border bg-card/60 py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 className="font-display text-4xl font-semibold tracking-tight text-headline">
+                  Meet a few of our tutors
+                </h2>
+                <p className="mt-3 max-w-lg text-muted-foreground">
+                  {stats.tutorCount} verified tutors · {stats.studentCount} learners
+                  {stats.timezones > 1 ? ` across ${stats.timezones} time zones` : ''}.
+                  Identity-checked, learner-rated, paid by the segment they actually teach.
+                </p>
+              </div>
+              <Link href="/signup">
+                <Button size="default" variant="outline">
+                  <Plus /> See all tutors
+                </Button>
+              </Link>
+            </div>
+            <div className="mt-10">
+              <TutorGrid tutors={tutors} />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {testimonials.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+          <h2 className="text-center font-display text-4xl font-semibold tracking-tight text-headline">
+            Loved by learners
+          </h2>
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {testimonials.map((t) => (
+              <figure key={`${t.studentName}-${t.tutorName}`} className="rounded-lg border border-border bg-card p-6">
+                <Stars value={t.rating} />
+                <blockquote className="mt-3 text-sm leading-relaxed text-foreground">
+                  “{t.quote}”
+                </blockquote>
+                <figcaption className="mt-4 text-sm">
+                  <span className="font-semibold text-headline">{t.studentName}</span>{' '}
+                  <span className="text-muted-foreground">
+                    · learned {t.subject} with {t.tutorName}
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="relative overflow-hidden border-b border-border px-4 py-20 sm:px-6">
         <div className="mx-auto grid max-w-7xl gap-12 px-4 py-20 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:py-28">
@@ -539,48 +477,51 @@ export function LandingPage() {
             <div className="mt-10 flex items-center gap-8 text-sm text-muted-foreground">
               <span className="flex items-center gap-2">
                 <GraduationCap className="size-4 text-primary" />
-                4.9/5 rated by students
+                {hasMarketplace
+                  ? `${stats.averageRating.toFixed(1)}/5 rated by students`
+                  : 'Rated by every student, every lesson'}
               </span>
               <span className="flex items-center gap-2">
                 <Users className="size-4 text-primary" />
-                200+ vetted tutors
+                {hasMarketplace ? `${stats.tutorCount} vetted tutors` : 'Vetted tutors only'}
               </span>
             </div>
           </div>
 
           <div className="hidden lg:block">
-            <Card className="p-6 shadow-[0_20px_60px_-20px_var(--primary)]">
-              <CardContent className="flex flex-col gap-4 p-0">
-                {[
-                  {
-                    subj: 'Maths · Amara O.',
-                    when: 'Today · 4:00 PM',
-                    tint: 'bg-primary/15 text-primary',
-                  },
-                  {
-                    subj: 'Physics · Tunde A.',
-                    when: 'Wed · 6:30 PM',
-                    tint: 'bg-tertiary/20 text-tertiary-foreground',
-                  },
-                  {
-                    subj: 'English · Ngozi E.',
-                    when: 'Fri · 5:00 PM',
-                    tint: 'bg-secondary/15 text-secondary',
-                  },
-                ].map(({ subj, when, tint }) => (
-                  <div
-                    key={subj}
-                    className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3"
-                  >
-                    <div>
-                      <p className="text-sm font-bold text-headline">{subj}</p>
-                      <p className="text-xs text-muted-foreground">{when}</p>
+            {upcoming.length > 0 && (
+              <Card className="p-6 shadow-[0_20px_60px_-20px_var(--primary)]">
+                <CardContent className="flex flex-col gap-4 p-0">
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Happening on Mojo
+                  </p>
+                  {upcoming.slice(0, 3).map((lesson, i) => (
+                    <div
+                      key={`${lesson.subject}-${lesson.tutorName}-${lesson.when}`}
+                      className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3"
+                    >
+                      <div>
+                        <p className="text-sm font-bold text-headline">
+                          {lesson.subject} · {lesson.tutorName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{lesson.when}</p>
+                      </div>
+                      <Badge
+                        className={
+                          [
+                            'bg-primary/15 text-primary',
+                            'bg-tertiary/20 text-tertiary-foreground',
+                            'bg-secondary/15 text-secondary',
+                          ][i % 3] ?? 'bg-primary/15 text-primary'
+                        }
+                      >
+                        Booked
+                      </Badge>
                     </div>
-                    <Badge className={tint}>Live</Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </section>
@@ -1003,51 +944,6 @@ export function LandingPage() {
               </span>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section id="tutors" className="border-b border-border bg-card/60 py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h2 className="font-display text-4xl font-semibold tracking-tight text-headline">
-                Meet a few of our tutors
-              </h2>
-              <p className="mt-3 max-w-lg text-muted-foreground">
-                Identity-checked, learner-rated, paid by the segment they actually teach.
-              </p>
-            </div>
-            <Link href="/signup">
-              <Button size="default" variant="outline">
-                <Plus /> See all tutors
-              </Button>
-            </Link>
-          </div>
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {TUTORS.map((tutor) => (
-              <TutorCard key={tutor.name} tutor={tutor} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
-        <h2 className="text-center font-display text-4xl font-semibold tracking-tight text-headline">
-          Loved by learners and tutors
-        </h2>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
-            <figure key={t.name} className="rounded-lg border border-border bg-card p-6">
-              <Stars />
-              <blockquote className="mt-3 text-sm leading-relaxed text-foreground">
-                “{t.quote}”
-              </blockquote>
-              <figcaption className="mt-4 text-sm">
-                <span className="font-semibold text-headline">{t.name}</span>{' '}
-                <span className="text-muted-foreground">· {t.detail}</span>
-              </figcaption>
-            </figure>
-          ))}
         </div>
       </section>
 

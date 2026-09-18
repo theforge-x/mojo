@@ -15,7 +15,7 @@ import { signupWithDemo } from '../lib/actions';
 
 const POLICY_HINT = 'At least 10 characters, one capital letter and one number.';
 
-export function SignupForm() {
+export function SignupForm({ subject }: { subject?: string }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +45,7 @@ export function SignupForm() {
     const locale = navigator.language || 'en';
 
     startTransition(async () => {
-      const result = await signupWithDemo({ name, email, password, timezone, locale });
+      const result = await signupWithDemo({ name, email, password, timezone, locale, subject });
       if ('error' in result) {
         setError(result.error);
         return;

@@ -4,6 +4,7 @@ import '../../../libs/shared/ui/src/styles/globals.css';
 import { ThemeProvider } from '@mojo/shared/ui';
 import { SiteFooter } from '../components/site-footer';
 import { SiteHeader } from '../components/site-header';
+import { getLandingSubjects } from '../lib/landing-data';
 import { currentUser } from '../lib/session';
 
 const manrope = Manrope({
@@ -30,6 +31,8 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
   const headerUser = user ? { name: user.name, email: user.email, role: user.role } : null;
+  // Shared React cache with the landing page: one subjects query per request.
+  const subjects = await getLandingSubjects();
 
   return (
     <html
@@ -40,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <ThemeProvider>
           <div className="flex min-h-svh flex-col">
-            <SiteHeader user={headerUser} />
+            <SiteHeader user={headerUser} subjects={subjects} />
             <div className="flex-1">{children}</div>
             <SiteFooter user={headerUser} />
           </div>
