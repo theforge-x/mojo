@@ -197,3 +197,9 @@ Tutor cancel / no-show / start + student confirm + `RecapCard` on both homes
   + `userByToken`, as the applications route does.
 - The admin app and hub app each own an in-memory store in the demo; Steps 1 and 2
   above are the places that split has to be bridged (shared `DemoState`).
+  
+## Suggestions (Manual work)
+Three deploy-time items before you call it launched (not code work):
+1. Prod DB: prisma migrate deploy — the group_labs migration has only applied to dev so far.
+2. Prod env: USE_PRISMA, DATABASE_URL, live Paystack secret, LiveKit prod creds, plus the cron hits for auto-confirm/reminders workers.
+3. Known untested-at-scale: the 11+ seat discount leg is covered by unit tests + the live quote endpoint (E2E ran with 2 seats); LiveKit room joins can't be exercised until prod creds exist — same standing as 1-on-1 rooms.

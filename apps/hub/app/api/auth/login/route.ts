@@ -1,39 +1,37 @@
 import { NextResponse } from 'next/server';
-import { getHub } from '../../../../demo/composition-root';
-import { checkRateLimit, clientIp } from '../../../../lib/rate-limit';
+import { authenticateCredentials } from '../../../../lib/credential-auth';
+import { clientIp } from '../../../../lib/rate-limit';
 import { sessionCookieOptions } from '../../../../lib/session';
 
+/**
+ * Programmatic sign-in — the mobile auth contract (web forms use the
+ * `loginWithDemo` server action; both funnel through
+ * `authenticateCredentials`). Returns the session token in the body for
+ * clients that don't run a cookie jar, and also sets it as an httpOnly
+ * cookie for browser callers. 429 when rate-limited, 401 on bad credentials.
+ */
 export async function POST(request: Request) {
-  const limited = checkRateLimit(`login:${clientIp(request)}`, 10, 60_000);
-  if (!limited.ok) {
-    return NextResponse.json(
-      { ok: false, error: `Too many attempts — try again in ${limited.retryAfterSeconds}s.` },
-      { status: 429 },
-    );
-  }
-
   const body = await request.json().catch(() => ({}));
   const email = typeof body.email === 'string' ? body.email : '';
   const password = typeof body.password === 'string' ? body.password : '';
 
-  try {
-    const { token, role, user } = await getHub().identity.authenticate(email, password);
-
-    const response = NextResponse.json({
-      ok: true,
-      role,
-      user: { id: user.id, email: user.email, role },
-    });
-
-    const options = sessionCookieOptions();
-    response.cookies.set('mojo_user', token, options);
-    response.cookies.set('mojo_role', role, options);
-
-    return response;
-  } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Sign-in failed.' },
-      { status: 401 },
-    );
+  const result = await authenticateCredentials({ email, password, clientKey: clientIp(request) });
+  if (!result.ok) {
+    const status = result.error.startsWith('Too many attempts') ? 429 : 401;
+    return NextResponse.json({ ok: false, error: result.error }, { status });
   }
+
+  const { token, role, user } = result.account;
+  const response = NextResponse.json({
+    ok: true,
+    role,
+    user: { id: user.id, email: user.email, role },
+    token,
+  });
+
+  const options = sessionCookieOptions();
+  response.cookies.set('mojo_user', token, options);
+  response.cookies.set('mojo_role', role, options);
+
+  return response;
 }

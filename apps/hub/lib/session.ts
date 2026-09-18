@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { getHub } from '../demo/composition-root';
 
 export interface CurrentUser {
@@ -25,15 +25,22 @@ export function sessionCookieOptions(): {
 }
 
 /**
- * Resolves the signed-in user from the session cookie (# token issued by
- * @mojo/identity and stored by /api/auth/login). Reads go through the
- * application layer at the composition root, never to a raw store.
- * The role always comes from the stored user — the `mojo_role` cookie is
- * treated as a UI hint only and never trusted for authorization.
+ * Resolves the signed-in user from the session token issued by @mojo/identity
+ * at sign-in/sign-up. Web callers carry it in the `mojo_user` httpOnly cookie;
+ * programmatic callers (the future mobile client) send it as
+ * `Authorization: Bearer <token>` instead — both resolve identically through
+ * the application layer, never a raw store. The role always comes from the
+ * stored user — the `mojo_role` cookie is treated as a UI hint only and never
+ * trusted for authorization.
  */
 export async function currentUser(): Promise<CurrentUser | null> {
-  const store = await cookies();
-  const token = store.get('mojo_user')?.value;
+  const [store, headerList] = await Promise.all([cookies(), headers()]);
+  const authorization = headerList.get('authorization');
+  const bearer =
+    authorization?.startsWith('Bearer ') && authorization.length > 7
+      ? authorization.slice(7).trim()
+      : null;
+  const token = bearer || store.get('mojo_user')?.value;
   if (!token) return null;
 
   const user = await getHub().identity.userByToken(token);
