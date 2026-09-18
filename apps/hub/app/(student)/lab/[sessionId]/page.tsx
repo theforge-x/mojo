@@ -22,7 +22,8 @@ export default async function StudentLabPage({
 
   const hub = getHub();
   const mine = await hub.scheduling.sessionsByStudent(user.id);
-  if (!mine.some((s) => s.id === sessionId)) redirect('/');
+  const session = mine.find((s) => s.id === sessionId);
+  if (!session) redirect('/');
 
   const { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } = process.env;
   if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || !LIVEKIT_URL) {
@@ -34,6 +35,8 @@ export default async function StudentLabPage({
     sessionId,
     participantId: user.id,
     participantName: user.email,
+    // Group seats share one room keyed by the lab, not per-seat rooms.
+    roomKey: session.groupId ?? undefined,
   });
 
   return (

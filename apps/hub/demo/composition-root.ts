@@ -137,6 +137,7 @@ import type {
   ScheduledSession,
   SchedulingSettings,
   SessionRepository,
+  GroupLab,
   GroupLabRepository,
 } from '@mojo/scheduling/domain';
 import type { Money } from '@mojo/shared/domain';
@@ -298,6 +299,28 @@ export interface HubApp {
       date: string,
       exceptions: Omit<AvailabilityException, 'tutorId' | 'date' | 'id'>[],
     ): Promise<void>;
+  };
+  groups: {
+    create(input: {
+      tutorId: string;
+      title: string;
+      startIso: string;
+      endIso: string;
+      maxSeats: number;
+    }): Promise<GroupLab>;
+    lab(groupId: string): Promise<GroupLab | null>;
+    labsByTutor(tutorId: string): Promise<GroupLab[]>;
+    openLabs(tutorId: string): Promise<GroupLab[]>;
+    members(groupId: string): Promise<ScheduledSession[]>;
+    lock(input: { groupId: string; tutorId: string }): Promise<{
+      group: GroupLab;
+      memberSessionIds: string[];
+      adjustments: { sessionId: string; studentId: string; refundedMinor: number }[];
+    }>;
+    cancel(input: { groupId: string; tutorId: string }): Promise<{
+      group: GroupLab;
+      unwoundSessionIds: string[];
+    }>;
   };
   booking: {
     confirmDelivery(input: ConfirmDeliveryInput): Promise<void>;
@@ -643,6 +666,19 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     availability: repos.availability,
     sessions: repos.sessions,
   });
+  const createGroupLab = makeCreateGroupLab({
+    groups: repos.groups,
+    sessions: repos.sessions,
+    availability: repos.availability,
+  });
+  const lockGroupLabUseCase = makeLockGroupLab({
+    groups: repos.groups,
+    sessions: repos.sessions,
+  });
+  const cancelGroupLabUseCase = makeCancelGroupLab({
+    groups: repos.groups,
+    sessions: repos.sessions,
+  });
   const setAvailability = makeSetAvailability({ availability: repos.availability });
   const setExceptions = makeSetExceptions({ availability: repos.availability });
   const updateSchedulingSettings = makeUpdateSchedulingSettings({
@@ -966,6 +1002,82 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       exceptions: (tutorId, fromDate, toDate) =>
         repos.availability.listExceptions(tutorId, fromDate, toDate),
       saveExceptions: (tutorId, date, exceptions) => setExceptions({ tutorId, date, exceptions }),
+    },
+    groups: {
+      create: (input) =>
+        createGroupLab({ ...input, groupId: crypto.randomUUID(), nowIso: new Date().toISOString() }),
+      lab: (groupId) => repos.groups.findById(groupId),
+      labsByTutor: (tutorId) => repos.groups.listByTutor(tutorId),
+      openLabs: (tutorId) => repos.groups.listOpenByTutor(tutorId),
+      members: (groupId) => repos.sessions.listByGroup(groupId),
+      lock: async ({ groupId, tutorId }) => {
+        const nowIso = new Date().toISOString();
+        const { group, memberSessionIds } = await lockGroupLabUseCase({
+          groupId,
+          tutorId,
+          nowIso,
+        });
+        // True-up: every active seat settles at the locked ladder size. Live
+        // sizes only grow toward the lock, so members can only have overpaid —
+        // refund the difference, never collect more.
+        const lockedSize = group.lockedSize ?? 0;
+        const perSegment = await chargeRateReader.groupPerSegmentMinor(
+          group.tutorId,
+          lockedSize,
+        );
+        const adjustments: { sessionId: string; studentId: string; refundedMinor: number }[] = [];
+        for (const sessionId of memberSessionIds) {
+          const [session, charge] = await Promise.all([
+            repos.sessions.findById(sessionId),
+            repos.charges.findBySession(sessionId),
+          ]);
+          if (!session || !charge || charge.status !== 'captured') continue;
+          const expected = charge.segments * perSegment;
+          const overpaid = charge.totalMinor - expected;
+          if (overpaid <= 0) continue;
+          await refundCharge({
+            chargeId: charge.id,
+            studentId: charge.studentId,
+            amountMinor: overpaid,
+            reason: 'group_true_up',
+            nowIso,
+          }).catch(() => {});
+          adjustments.push({ sessionId, studentId: charge.studentId, refundedMinor: overpaid });
+        }
+        return { group, memberSessionIds, adjustments };
+      },
+      cancel: async ({ groupId, tutorId }) => {
+        const nowIso = new Date().toISOString();
+        const group = await cancelGroupLabUseCase({ groupId, tutorId });
+        // Unwind every member through the normal cancel path so charges
+        // refund in full and no paid seat survives a dead lab.
+        const members = await repos.sessions.listByGroup(groupId);
+        const unwoundSessionIds: string[] = [];
+        for (const member of members) {
+          if (member.status === 'cancelled') continue;
+          await cancelSession({
+            sessionId: member.id,
+            cancelledBy: 'tutor',
+            withinNoticeWindow: true,
+            nowIso,
+          }).catch(() => {});
+          await repos.charges
+            .findBySession(member.id)
+            .then((charge) =>
+              charge && charge.status !== 'refunded' && charge.status !== 'failed'
+                ? refundCharge({
+                    chargeId: charge.id,
+                    studentId: charge.studentId,
+                    reason: 'cancelled',
+                    nowIso,
+                  })
+                : null,
+            )
+            .catch(() => null);
+          unwoundSessionIds.push(member.id);
+        }
+        return { group, unwoundSessionIds };
+      },
     },
     booking: {
       confirmDelivery: (input) => confirmDelivery(input),

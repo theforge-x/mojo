@@ -23,8 +23,14 @@ export class LiveKitLabProvider implements LabProvider {
     sessionId: string;
     participantId: string;
     participantName: string;
+    /**
+     * Shared-room key — group lab members pass their `groupId` so every seat
+     * lands in one `mojo-lab-<group>` room instead of per-seat rooms.
+     * Defaults to the session id (one-on-one rooms are unchanged).
+     */
+    roomKey?: string;
   }): Promise<LabAccess> {
-    const roomName = `mojo-lab-${input.sessionId}`;
+    const roomName = `mojo-lab-${input.roomKey ?? input.sessionId}`;
 
     const at = new AccessToken(this.apiKey, this.apiSecret, {
       identity: input.participantId,

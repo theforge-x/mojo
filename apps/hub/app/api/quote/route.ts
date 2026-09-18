@@ -17,6 +17,8 @@ export async function GET(request: Request) {
   const startIso = params.get('startIso') ?? '';
   const endIso = params.get('endIso') ?? '';
   const isTrial = params.get('isTrial') === 'true';
+  const groupSizeRaw = Number(params.get('groupSize') ?? '');
+  const groupSize = Number.isInteger(groupSizeRaw) && groupSizeRaw > 1 ? groupSizeRaw : undefined;
   if (!tutorId || !startIso || !endIso) {
     return NextResponse.json(
       { ok: false, error: 'tutorId, startIso and endIso are required.' },
@@ -24,7 +26,7 @@ export async function GET(request: Request) {
     );
   }
   try {
-    const quote = await getHub().billing.quote({ tutorId, startIso, endIso, isTrial });
+    const quote = await getHub().billing.quote({ tutorId, startIso, endIso, isTrial, groupSize });
     return NextResponse.json({ ok: true, quote });
   } catch (error) {
     return NextResponse.json(

@@ -37,7 +37,7 @@ export interface StudentCharge {
   readonly createdAt: string;
 }
 
-export type RefundReason = 'cancelled' | 'dispute' | 'no_show' | 'goodwill';
+export type RefundReason = 'cancelled' | 'dispute' | 'no_show' | 'goodwill' | 'group_true_up';
 
 export interface ChargeRefund {
   readonly id: string;
