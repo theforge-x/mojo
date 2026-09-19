@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@mojo/shared/ui';
+import { cn } from '@mojo/shared/util';
 import { LayoutGrid, Rows3 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -37,6 +38,16 @@ const HORIZON_OPTIONS = [
 ];
 
 const CLEAR = '__all__';
+
+/** shadcn-tabs look for the domain tab strip inside the subject menu. */
+function tabClass(active: boolean): string {
+  return cn(
+    'inline-flex flex-1 items-center justify-center rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring',
+    active
+      ? 'bg-background text-foreground shadow-sm'
+      : 'text-muted-foreground hover:text-foreground',
+  );
+}
 
 function groupOfSubject(
   groups: readonly SubjectGroup[],
@@ -70,13 +81,24 @@ export function TutorFilterBar({
   const searchParams = useSearchParams();
   const basePath = pathname || '/tutors';
 
-  // Native domain select drives which subjects the subject select offers:
-  // pick a domain and only that domain's subjects appear as options.
-  const [domain, setDomain] = useState(() => groupOfSubject(subjectGroups, subject));
+  // Tabbed subject menu, Preply-style: the domain tabs across the top of
+  // the open panel decide which subjects appear as options below. null tabs
+  // to All (grouped by domain); a domain tab shows that domain's subjects
+  // alone. Tabs only browse — picking a subject applies the filter.
+  const [tab, setTab] = useState<string | null>(() => {
+    const initial = groupOfSubject(subjectGroups, subject);
+    return initial === CLEAR ? null : initial;
+  });
   useEffect(() => {
-    // URL-driven subjects (e.g. the landing search intent) re-seat the domain.
-    setDomain(groupOfSubject(subjectGroups, subject));
+    // URL-driven subjects (e.g. the landing search intent) re-seat the tab.
+    const reseated = groupOfSubject(subjectGroups, subject);
+    setTab(reseated === CLEAR ? null : reseated);
   }, [subjectGroups, subject]);
+
+  const activeSubjects =
+    tab === null
+      ? null
+      : (subjectGroups.find((group) => group.domain === tab)?.subjects ?? []);
 
   function apply(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -106,61 +128,75 @@ export function TutorFilterBar({
   return (
     <div className="mb-6 rounded-xl border border-border bg-card p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="sr-only" htmlFor="filter-domain">
-          Subject domain
-        </label>
-        <select
-          id="filter-domain"
-          value={domain}
-          onChange={(event) => {
-            const next = event.target.value;
-            setDomain(next);
-            // Drop a subject that lives outside the newly selected domain.
-            if (subject && next !== CLEAR) {
-              const group = subjectGroups.find((candidate) => candidate.domain === next);
-              if (group && !group.subjects.includes(subject)) apply('subject', CLEAR);
+        <Select
+          value={subject || CLEAR}
+          onValueChange={(value) => apply('subject', value)}
+          onOpenChange={(open) => {
+            // Re-seat the tab on the current selection every time the menu opens.
+            if (open) {
+              const reseated = groupOfSubject(subjectGroups, subject);
+              setTab(reseated === CLEAR ? null : reseated);
             }
           }}
-          className="h-10 w-44 max-w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring"
         >
-          <option value={CLEAR}>All domains</option>
-          {subjectGroups.map((group) => (
-            <option key={group.domain} value={group.domain}>
-              {group.domain}
-            </option>
-          ))}
-        </select>
-
-        <label className="sr-only" htmlFor="filter-subject">
-          Subject
-        </label>
-        <select
-          id="filter-subject"
-          value={subject || CLEAR}
-          onChange={(event) => apply('subject', event.target.value)}
-          className="h-10 w-44 max-w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring"
-        >
-          <option value={CLEAR}>Any subject</option>
-          {(() => {
-            const active = subjectGroups.find((group) => group.domain === domain);
-            if (active) {
-              return active.subjects.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ));
-            }
-            return subjectGroups.map((group) => (
-              <optgroup key={group.domain} label={group.domain}>
-                {group.subjects.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Subject" />
+          </SelectTrigger>
+          <SelectContent className="w-72">
+            <div className="sticky top-0 z-10 bg-popover pb-2">
+              <div
+                role="tablist"
+                aria-label="Subject domains"
+                className="flex flex-wrap gap-1 rounded-lg bg-muted p-1"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === null}
+                  onClick={() => setTab(null)}
+                  className={tabClass(tab === null)}
+                >
+                  All
+                </button>
+                {subjectGroups.map((group) => (
+                  <button
+                    key={group.domain}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === group.domain}
+                    onClick={() => setTab(group.domain)}
+                    className={tabClass(tab === group.domain)}
+                  >
+                    {group.domain}
+                  </button>
                 ))}
-              </optgroup>
-            ));
-          })()}
-        </select>
+              </div>
+            </div>
+            <SelectGroup>
+              <SelectItem value={CLEAR}>Any subject</SelectItem>
+            </SelectGroup>
+            {activeSubjects === null ? (
+              subjectGroups.map((group) => (
+                <SelectGroup key={group.domain}>
+                  <SelectLabel>{group.domain}</SelectLabel>
+                  {group.subjects.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              ))
+            ) : (
+              <SelectGroup>
+                {activeSubjects.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )}
+          </SelectContent>
+        </Select>
 
         <Select value={language || CLEAR} onValueChange={(value) => apply('language', value)}>
           <SelectTrigger className="w-40">
