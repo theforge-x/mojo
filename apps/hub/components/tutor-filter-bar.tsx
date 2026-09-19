@@ -12,6 +12,7 @@ import {
 } from '@mojo/shared/ui';
 import { LayoutGrid, Rows3 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export interface SubjectGroup {
   readonly domain: string;
@@ -37,6 +38,14 @@ const HORIZON_OPTIONS = [
 
 const CLEAR = '__all__';
 
+function groupOfSubject(
+  groups: readonly SubjectGroup[],
+  subject: string,
+): string {
+  if (!subject) return CLEAR;
+  return groups.find((group) => group.subjects.includes(subject))?.domain ?? CLEAR;
+}
+
 export type TutorDirectoryView = 'list' | 'grid';
 
 export function TutorFilterBar({
@@ -60,6 +69,14 @@ export function TutorFilterBar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const basePath = pathname || '/tutors';
+
+  // Native domain select drives which subjects the subject select offers:
+  // pick a domain and only that domain's subjects appear as options.
+  const [domain, setDomain] = useState(() => groupOfSubject(subjectGroups, subject));
+  useEffect(() => {
+    // URL-driven subjects (e.g. the landing search intent) re-seat the domain.
+    setDomain(groupOfSubject(subjectGroups, subject));
+  }, [subjectGroups, subject]);
 
   function apply(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -89,26 +106,61 @@ export function TutorFilterBar({
   return (
     <div className="mb-6 rounded-xl border border-border bg-card p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={subject || CLEAR} onValueChange={(value) => apply('subject', value)}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Subject" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value={CLEAR}>Any subject</SelectItem>
-            </SelectGroup>
-            {subjectGroups.map((group) => (
-              <SelectGroup key={group.domain}>
-                <SelectLabel>{group.domain}</SelectLabel>
+        <label className="sr-only" htmlFor="filter-domain">
+          Subject domain
+        </label>
+        <select
+          id="filter-domain"
+          value={domain}
+          onChange={(event) => {
+            const next = event.target.value;
+            setDomain(next);
+            // Drop a subject that lives outside the newly selected domain.
+            if (subject && next !== CLEAR) {
+              const group = subjectGroups.find((candidate) => candidate.domain === next);
+              if (group && !group.subjects.includes(subject)) apply('subject', CLEAR);
+            }
+          }}
+          className="h-10 w-44 max-w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring"
+        >
+          <option value={CLEAR}>All domains</option>
+          {subjectGroups.map((group) => (
+            <option key={group.domain} value={group.domain}>
+              {group.domain}
+            </option>
+          ))}
+        </select>
+
+        <label className="sr-only" htmlFor="filter-subject">
+          Subject
+        </label>
+        <select
+          id="filter-subject"
+          value={subject || CLEAR}
+          onChange={(event) => apply('subject', event.target.value)}
+          className="h-10 w-44 max-w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring"
+        >
+          <option value={CLEAR}>Any subject</option>
+          {(() => {
+            const active = subjectGroups.find((group) => group.domain === domain);
+            if (active) {
+              return active.subjects.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ));
+            }
+            return subjectGroups.map((group) => (
+              <optgroup key={group.domain} label={group.domain}>
                 {group.subjects.map((option) => (
-                  <SelectItem key={option} value={option}>
+                  <option key={option} value={option}>
                     {option}
-                  </SelectItem>
+                  </option>
                 ))}
-              </SelectGroup>
-            ))}
-          </SelectContent>
-        </Select>
+              </optgroup>
+            ));
+          })()}
+        </select>
 
         <Select value={language || CLEAR} onValueChange={(value) => apply('language', value)}>
           <SelectTrigger className="w-40">

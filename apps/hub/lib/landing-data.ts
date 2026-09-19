@@ -12,13 +12,6 @@ export interface LandingSubject {
   readonly tutorCount: number;
 }
 
-/** Taxonomy domain (parent) with its tutored leaf subjects. */
-export interface LandingDomain {
-  readonly id: string;
-  readonly name: string;
-  readonly subjects: readonly LandingSubject[];
-}
-
 export interface LandingTutor {
   readonly id: string;
   readonly name: string;
@@ -57,7 +50,6 @@ export interface LandingUpcoming {
 
 export interface LandingData {
   readonly subjects: readonly LandingSubject[];
-  readonly domains: readonly LandingDomain[];
   readonly tutors: readonly LandingTutor[];
   readonly stats: LandingStats;
   readonly testimonials: readonly LandingTestimonial[];
@@ -98,45 +90,6 @@ export const getLandingSubjects = cache(async (): Promise<readonly LandingSubjec
     .sort((a, b) => b.tutorCount - a.tutorCount || a.name.localeCompare(b.name));
 });
 
-/** Domains with their tutored leaves, busiest domain first. Empty domains hidden. */
-export const getSubjectDomains = cache(async (): Promise<readonly LandingDomain[]> => {
-  const prisma = sharedPrismaClient();
-  const entries = await prisma.subjectTaxonomyEntry.findMany({
-    where: { active: true },
-    select: { id: true, name: true, parentId: true },
-  });
-  const parents = entries.filter((entry) => entry.parentId === null);
-  const leaves = entries.filter((entry) => entry.parentId !== null);
-  const profiles = await prisma.tutorProfile.findMany({ select: { subjects: true } });
-  const counts = new Map<string, number>();
-  for (const profile of profiles) {
-    for (const subject of profile.subjects) {
-      counts.set(subject, (counts.get(subject) ?? 0) + 1);
-    }
-  }
-  const byParent = new Map<string, LandingSubject[]>();
-  for (const leaf of leaves) {
-    const tutorCount = counts.get(leaf.name) ?? 0;
-    if (tutorCount === 0 || leaf.parentId === null) continue;
-    const list = byParent.get(leaf.parentId) ?? [];
-    list.push({ name: leaf.name, tutorCount });
-    byParent.set(leaf.parentId, list);
-  }
-  return parents
-    .map((parent) => ({
-      id: parent.id,
-      name: parent.name,
-      subjects: (byParent.get(parent.id) ?? []).sort(
-        (a, b) => b.tutorCount - a.tutorCount || a.name.localeCompare(b.name),
-      ),
-    }))
-    .filter((domain) => domain.subjects.length > 0)
-    .sort(
-      (a, b) =>
-        b.subjects.reduce((sum, s) => sum + s.tutorCount, 0) -
-        a.subjects.reduce((sum, s) => sum + s.tutorCount, 0),
-    );
-});
 /** Top-rated tutors with live aggregates. Empty when nobody teaches yet. */
 export const getLandingTutors = cache(async (): Promise<readonly LandingTutor[]> => {
   const prisma = sharedPrismaClient();
@@ -226,15 +179,14 @@ export const getLandingTestimonials = cache(async (): Promise<readonly LandingTe
 });
 
 export const getLandingData = cache(async (): Promise<LandingData> => {
-  const [subjects, domains, tutors, stats, testimonials, upcoming] = await Promise.all([
+  const [subjects, tutors, stats, testimonials, upcoming] = await Promise.all([
     getLandingSubjects(),
-    getSubjectDomains(),
     getLandingTutors(),
     getLandingStats(),
     getLandingTestimonials(),
     getLandingUpcoming(),
   ]);
-  return { subjects, domains, tutors, stats, testimonials, upcoming };
+  return { subjects, tutors, stats, testimonials, upcoming };
 });
 
 /** Next few booked lessons, formatted in each tutor's timezone. */

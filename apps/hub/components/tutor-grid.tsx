@@ -5,8 +5,7 @@ import { cn } from '@mojo/shared/util';
 import { BadgeCheck, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import type { LandingDomain, LandingTutor } from '../lib/landing-data';
-import { DomainTabRow } from './subject-tabs';
+import type { LandingTutor } from '../lib/landing-data';
 
 const AVATAR_TINTS = [
   'bg-[color-mix(in_oklab,var(--primary)_45%,var(--background))]',
@@ -62,55 +61,28 @@ function TutorCard({ tutor }: { tutor: LandingTutor }) {
 }
 
 /**
- * Tutor grid with Preply-style domain tabs: pick a domain, then narrow to
- * one of its subjects. All rows are real Postgres tutors; guests book
- * through signup (the directory itself needs an account).
+ * Tutor grid with subject filter pills. All rows are real Postgres tutors;
+ * guests book through signup (the directory itself needs an account).
  */
-export function TutorGrid({
-  tutors,
-  domains,
-}: {
-  tutors: readonly LandingTutor[];
-  domains: readonly LandingDomain[];
-}) {
-  const [domainId, setDomainId] = useState<string | null>(null);
+export function TutorGrid({ tutors }: { tutors: readonly LandingTutor[] }) {
   const [filter, setFilter] = useState<string | null>(null);
 
-  const tutorSubjects = useMemo(() => {
+  const subjects = useMemo(() => {
     const seen = new Map<string, number>();
     for (const tutor of tutors) {
       for (const subject of tutor.subjects) {
         seen.set(subject, (seen.get(subject) ?? 0) + 1);
       }
     }
-    return seen;
+    return [...seen.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [tutors]);
-
-  const pills = useMemo(() => {
-    const names =
-      domainId === null
-        ? [...tutorSubjects.keys()]
-        : (domains.find((domain) => domain.id === domainId)?.subjects.map((s) => s.name) ?? []);
-    return names
-      .filter((name) => tutorSubjects.has(name))
-      .map((name) => ({ name, count: tutorSubjects.get(name) ?? 0 }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [domainId, domains, tutorSubjects]);
-
-  function selectDomain(id: string | null) {
-    setDomainId(id);
-    setFilter(null);
-  }
 
   const visible =
     filter === null ? tutors : tutors.filter((tutor) => tutor.subjects.includes(filter));
 
   return (
     <div>
-      {domains.length > 0 && (
-        <DomainTabRow domains={domains} activeId={domainId} onSelect={selectDomain} allowAll />
-      )}
-      <ul className="mt-4 flex flex-wrap gap-2">
+      <ul className="flex flex-wrap gap-2">
         <li>
           <button
             type="button"
@@ -122,22 +94,22 @@ export function TutorGrid({
                 : 'border-border bg-card hover:border-primary hover:bg-accent',
             )}
           >
-            All{domainId === null ? ' tutors' : ''}
+            All tutors
           </button>
         </li>
-        {pills.map(({ name, count }) => (
-          <li key={name}>
+        {subjects.map(([subject, count]) => (
+          <li key={subject}>
             <button
               type="button"
-              onClick={() => setFilter(filter === name ? null : name)}
+              onClick={() => setFilter(filter === subject ? null : subject)}
               className={cn(
                 'rounded-full border px-4 py-1.5 text-sm font-medium transition-colors',
-                filter === name
+                filter === subject
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-card hover:border-primary hover:bg-accent',
               )}
             >
-              {name} · {count}
+              {subject} · {count}
             </button>
           </li>
         ))}

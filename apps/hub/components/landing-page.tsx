@@ -3,10 +3,13 @@ import {
   BadgeCheck,
   BookOpen,
   Bot,
+  Briefcase,
   CalendarCheck2,
   CalendarClock,
   CheckCircle2,
+  Code2,
   Eye,
+  FlaskConical,
   GraduationCap,
   Heart,
   HeartHandshake,
@@ -14,6 +17,7 @@ import {
   Mic,
   MonitorPlay,
   Music,
+  Palette,
   PartyPopper,
   PhoneOff,
   Plus,
@@ -30,8 +34,20 @@ import {
 import Link from 'next/link';
 import type { LandingData, LandingTutor } from '../lib/landing-data';
 import { HeroSearch } from './hero-search';
-import { SubjectExplorer } from './subject-tabs';
 import { TutorGrid } from './tutor-grid';
+
+/** Best-effort icon per catalogue subject; anything else gets the cap. */
+function subjectIcon(name: string) {
+  const lower = name.toLowerCase();
+  if (/(spanish|french|english|yoruba|igbo|hausa|language)/.test(lower)) return Languages;
+  if (/(physics|chemistry|biology|science)/.test(lower)) return FlaskConical;
+  if (/(piano|guitar|music)/.test(lower)) return Music;
+  if (/(python|coding|robotics|tech)/.test(lower)) return Code2;
+  if (/(business|economics)/.test(lower)) return Briefcase;
+  if (/(art|design)/.test(lower)) return Palette;
+  if (/(math|calculus|algebra|statistic|geometry)/.test(lower)) return GraduationCap;
+  return GraduationCap;
+}
 
 export interface SubjectCategory {
   label: string;
@@ -303,12 +319,12 @@ function AvatarStack({ tutors }: { tutors: readonly LandingTutor[] }) {
 }
 
 export function LandingPage({ data }: { data: LandingData }) {
-  const { subjects, domains, tutors, stats, testimonials, upcoming } = data;
+  const { subjects, tutors, stats, testimonials, upcoming } = data;
   const hasMarketplace = stats.tutorCount > 0;
 
   return (
-    <main className="bg-background">
-      <section id="hero" className="relative overflow-hidden">
+    <main className="bg-background -mt-16">
+      <section id="hero" className="relative overflow-hidden pt-20">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 -top-40 mx-auto h-96 max-w-3xl rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--primary)_25%,transparent),transparent)] blur-2xl"
@@ -344,7 +360,26 @@ export function LandingPage({ data }: { data: LandingData }) {
 
           <HeroSearch subjects={subjects} />
 
-          {domains.length > 0 && <SubjectExplorer domains={domains} />}
+          {subjects.length > 0 && (
+            <ul className="mt-6 flex flex-wrap justify-center gap-2">
+              {subjects.slice(0, 10).map((subject) => {
+                const Icon = subjectIcon(subject.name);
+                return (
+                  <li key={subject.name}>
+                    <Link
+                      href={`/signup?subject=${encodeURIComponent(subject.name)}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium transition-colors hover:border-primary hover:bg-accent"
+                    >
+                      <Icon className="size-3.5" /> {subject.name}
+                      <span className="text-xs text-muted-foreground">
+                        · {subject.tutorCount}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
 
           {hasMarketplace && (
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
@@ -381,7 +416,7 @@ export function LandingPage({ data }: { data: LandingData }) {
               </Link>
             </div>
             <div className="mt-10">
-              <TutorGrid tutors={tutors} domains={domains} />
+              <TutorGrid tutors={tutors} />
             </div>
           </div>
         </section>
