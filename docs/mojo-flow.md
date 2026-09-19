@@ -34,6 +34,16 @@ routes live at the root (`/tutors`, `/lab/[sessionId]`); tutor routes are
 under `/tutor`. Demo accounts (password `Password123`): `tutor@mojo.dev`,
 `student@mojo.dev`.
 
+The guest landing page renders live Postgres rows, never marketing copy:
+subjects, tutor cards, ratings, testimonials, and stats come from
+`apps/hub/lib/landing-data.ts` (seeded locally by
+`prisma/seed-marketplace.mjs`; sections hide gracefully on an empty DB).
+Hero search and subject chips carry intent through signup
+(`/signup?subject=` → `/?subject=`), so a new student lands on an already
+filtered directory. First-lesson students also get
+`GET /api/sessions` — role-aware session summaries (students see bookings,
+tutors their schedule) backing both the mobile home screen and the web homes.
+
 ## 2. Find a tutor
 
 A student on `/` clicks **Find a tutor** → `/tutors`.
@@ -41,8 +51,10 @@ That page runs `makeSearchTutors` against the discovery index (`InMemoryTutorSea
 in the demo; `PrismaTutorSearchIndex` in prod) via `hub.discovery.search(filters)`.
 All five filters — subject, level, language, `minRating`, `availableWithinHours`
 (2/24/48/72h shortcuts, 1–168h accepted) — are implemented in both indexes and
-exposed in `tutor-filter-bar.tsx`. Tutor cards show photo, level, price/segment,
-response time, and rating. Intro-video thumbnails are still missing (video URLs
+exposed in `tutor-filter-bar.tsx` — the subject control is a shadcn `Select`
+whose open panel leads with domain tabs (All + each taxonomy domain), so
+picking a tab shows that domain's subjects alone. Tutor cards show photo,
+level, price/segment, response time, and rating. Intro-video thumbnails are still missing (video URLs
 live only on `TutorApplication`, not on `TutorProfile`/`TutorSearchResult`).
 
 Pre-booking chat is wired: **Message tutor** on `/tutors/[tutorId]` opens
@@ -100,8 +112,10 @@ guarded in-app with `currentUser()` from `apps/hub/lib/session.ts`.
 Group-lab seats share one room keyed by the lab (`mojo-lab-<groupId>`,
 via the adapter's `roomKey`) instead of per-seat rooms. Tutors hold no seat
 row, so they enter through `/tutor/lab/group/[groupId]`, gated on lab
-ownership. (Mobile has no token endpoint yet — see the mobile gaps in
-`docs/next-steps.md`.)
+ownership. Programmatic clients join through `POST /api/lab/[id]/token`,
+which mints the same per-participant `LabAccess` JSON with the same
+seat/ownership checks the pages enforce (401/403/404; 503 as `{ok:false}`
+JSON when LiveKit isn't configured).
 
 ## 5. Confirm delivery → wallet credit (charge already captured)
 

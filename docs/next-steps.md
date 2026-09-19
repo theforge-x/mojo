@@ -1,6 +1,6 @@
 # Mojo — Phase 1 MVP: what's left and how to finish it
 
-Status snapshot taken against `dev` @ `a08eca7` (2026-09-16). Legend used through
+Status snapshot taken against `dev` @ `b770057` (2026-09-19). Legend used through
 this doc and the roadmap / roles-features checklists:
 
 | Mark | Meaning |
@@ -21,9 +21,9 @@ that loop.
 |---|---|---|---|
 | Tutor profile & application | `[x]` | 8-step wizard (`apply-form.tsx`) — displayName, photo (5MB validated), education, timezone, availability, subjects, languages, bio, certs, intro video; submission stored via `tutor-profile/submit-application`; review → live hand-off wired (admin queue reads the hub over `HUB_URL`, approval publishes a searchable profile); applicant status view (`/apply`) | Rejected → resubmit dead-end (no edit form, no reason surfaced); `in_review` unreachable; no download/edit of an already-approved profile; admin card hides languages/certs/video |
 | Tutor search & discovery | `[x]` | `TutorSearchFilters` (subject, level, language, minRating, availableWithinHours) implemented in **both** `InMemoryTutorSearchIndex` and `PrismaTutorSearchIndex`; `/tutors` filter bar exposes all five; cards show photo, level, rating, price/segment, response time | No intro-video thumbnail on cards/detail (`introVideoUrl` lives only on `TutorApplication`, dropped in `profileFromApplication`); no sort/pagination |
-| Trial lesson + booking | `[x]` | `isTrial` bookings against live availability (min-notice + conflict validation); booked→confirmed→completed with timestamped `statusHistory`; **charge at booking** via `billing.charge` (segments × rate, 50% trial off, one-trial-per-tutor guard, rollback on failure); trial banner + totals in `BookButton`; domain `reschedule-session` use-case (in-place move, same id → exactly one charge, booked + confirmed, tutor-side `RescheduleForm`); `SessionRescheduled` event; cancel with UI + auto-refund; **free-replacement entitlement** (`ReplacementGrant`: cancelled trial banks one free rebook, single-use, chain terminates; redeem at checkout for ₦0); `GET /api/quote` breakdown used by checkout; availability-aware reschedule picker | Calendar export is client-side ICS/Google links; Mojo+ UI done (see Step 4) |
+| Trial lesson + booking | `[x]` | `isTrial` bookings against live availability (min-notice + conflict validation); booked→confirmed→completed with timestamped `statusHistory`; **charge at booking** via `billing.charge` (segments × rate, 50% trial off, one-trial-per-tutor guard, rollback on failure); trial banner + totals in `BookButton`; domain `reschedule-session` use-case (in-place move, same id → exactly one charge, booked + confirmed, student + tutor `RescheduleForm`); `SessionRescheduled` event; cancel with UI + auto-refund; **free-replacement entitlement** (`ReplacementGrant`: cancelled trial banks one free rebook, single-use, chain terminates; redeem at checkout for ₦0); `GET /api/quote` breakdown used by checkout; availability-aware reschedule picker | Calendar export is client-side ICS/Google links; Mojo+ UI done (see Step 4) |
 | Virtual lab | `[x]` | LiveKit per-request participant tokens, room per session; video + whiteboard + text chat + file sharing (in-browser in demo); both-role join guards | (none for MVP scope — deep-link status gate and 3h token refresh are polish) |
-| Payments — Nigeria-first | `[x]` | 15-min segments as the pricing atom; level-fixed segment rates; `StudentCharge`/`ChargeRefund` ledger (demo + Prisma); charge at booking, auto-refund on cancel, student-initiated refund for cancelled sessions; `/payments` receipts with segment/trial/refund breakdown; internal wallet ledger; payout request + release via `/api/payouts` | Stub rail only (no real Paystack/Flutterwave collect); Mojo+ subscribe / custom pricing use-cases exist but are unwired (no UI/API); no payout threshold / history view |
+| Payments — Nigeria-first | `[x]` | 15-min segments as the pricing atom; level-fixed segment rates; `StudentCharge`/`ChargeRefund` ledger (demo + Prisma); charge at booking, auto-refund on cancel, student-initiated refund for cancelled sessions; `/payments` receipts with segment/trial/refund breakdown; internal wallet ledger; payout request + release via `/api/payouts`; real collect wired (Paystack redirect + saved-card rails, HMAC webhook, idempotent capture — see Step 4) | Point the Paystack dashboard webhook at the deployed hub URL; no payout threshold / history view |
 | Messaging | `[x]` | Hub facade `messaging.send/threadBetween/threadsFor/markRead`; `POST/GET /api/messages` + `POST /api/messages/read`; `/messages` thread list + `MessageChat` composer (4s poll, read receipts); pre-booking gating (student→real tutor, tutor→interest/session); entry via **Message tutor** button | No attachments, no moderation/report UI, no search |
 | Reviews | `[x]` | `POST /api/reviews` gated to student-of-record + `completed` + one-per-session; `ReviewForm` on student home; review list (first 10) on tutor profile; aggregate rating on cards | No edit/delete, no tutor reply, no flag/moderation UI |
 | Notifications | `[x]` | Event-driven dispatchers (email + whatsapp, in-memory by default, `RESEND_API_KEY` switches a real email channel); subscribers on book/complete/cancel/submit events; per-channel prefs (`GET/PUT /api/notifications/preferences`, `/settings`); cron/worker (`POST /api/workers/reminders` sweeps all students with per-user isolation + sent journal, `vercel.json` schedules, `CRON_SECRET` auth; manual fire retained); calendar export (ICS download + Google link on every upcoming session card) | Done |
@@ -32,10 +32,10 @@ that loop.
 
 The calendar foundation is complete — recurring rules, one-off exceptions,
 inter-session buffer, minimum notice, pause-new-bookings, and conflict
-detection are built and validated at book time. What remains is operational:
-- **Reminder scheduling** — `dueSessionReminders` (day-before + T-30) + prefs +
-  `POST /api/notifications/reminders` exist, but nothing fires on a time basis
-  (no cron/worker; manual "Check reminders" only).
+detection are built and validated at book time. Time-based firing is wired too:
+`POST /api/workers/reminders` (day-before + T-30 sweep) and
+`POST /api/workers/auto-confirm` run on `vercel.json` cron schedules with
+`CRON_SECRET` auth.
 
 ## The application → live loop (was the biggest blocker; now wired)
 
@@ -165,14 +165,15 @@ Tutor cancel / no-show / start + student confirm + `RecapCard` on both homes
       (Left: intro-video thumbnails.)
 - [x] A student can find → message → book a paid trial against live availability,
       with the discount visible at checkout.
-      (Charge-at-booking + trial banner/totals + `/payments` receipts done;
-      quote endpoint + real rail remain.)
+      (Charge-at-booking + trial banner/totals + `/payments` receipts +
+      quote endpoint + real Paystack rail done.)
 - [x] Both participants can join the in-platform lab; the session status timeline
       stays truthful (booked → confirmed → completed/cancelled/no_show).
 - [x] On booking: segments × rate charges the student's recorded payment method;
       on completion: the wallet credits the tutor's take-home, and the recap is
       generated + visible.
-      (Completion is student-confirm only — no tutor complete / auto-confirm yet.)
+      (Completion closes from either side — tutor complete + student confirm +
+      auto-confirm worker.)
 - [x] The free-replacement entitlement and reschedule/cancel policy hold for trials.
        (Cancel + auto-refund; reschedule moves in place with exactly one charge;
        cancelled trials bank one single-use free rebook that settles at ₦0.)
@@ -182,7 +183,8 @@ Tutor cancel / no-show / start + student confirm + `RecapCard` on both homes
 - [~] No demos-only seat left — every flow works against the Prisma repositories too.
        (`StudentCharge`/`ChargeRefund`, search, sessions, messaging, reviews,
        replacement grants, disputes, reschedule clock moves all have Prisma repos;
-       Mojo+ UI remains unwired.)
+       Mojo+ subscribe/cancel + custom pricing surfaced via `GET/POST /api/mojo-plus`
+       with tutor dashboard card + bounded rates.)
 - [x] Hub dispute filing is wired (file from session cards, status visible to the
        student; resolution in admin).
 

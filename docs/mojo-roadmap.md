@@ -43,20 +43,20 @@ backfilling it once levels, payouts, and rankings are all already reading from i
 The goal of this phase alone: a tutor can be found, booked for a trial, and paid for a
 completed lesson. Nothing else matters until this loop works end to end.
 
-**Status as of 2026-09-16** (`dev` @ `a08eca7`). Legend: `[x]` built · `[~]` partial
+**Status as of 2026-09-19** (`dev` @ `b770057`). Legend: `[x]` built · `[~]` partial
 · `[ ]` missing. The concrete work list is `docs/next-steps.md`; the table below
 is the at-a-glance view.
 
 | Mechanic | Status | One-line delta |
 |---|---|---|
 | Tutor profile & application | `[x]` | Wizard captures photo/displayName/education/timezone/availability; review → live wired; applicant status view done — rejected-resubmit and edit-approved-profile still missing |
-| Tutor search & discovery | `[x]` | All 5 filters (subject/level/language/rating/availability-window) work in demo + Prisma + UI; only intro-video thumbnails missing |
-| Trial lesson + booking | `[~]` | Trial charge at booking (50% off, one-per-tutor guard), cancel + auto-refund, thin reschedule route; no free-replacement guarantee, no quote endpoint, stub capture only |
+| Tutor search & discovery | `[x]` | All 5 filters (subject/level/language/rating/availability-window) work in demo + Prisma + UI, with a tabbed domain subject picker; only intro-video thumbnails missing |
+| Trial lesson + booking | `[x]` | Trial charge at booking (50% off, one-per-tutor guard), cancel + auto-refund, in-place domain reschedule, free-replacement grants, quote endpoint, real Paystack rail |
 | Virtual lab | `[x]` | LiveKit video/whiteboard/chat/files, both role joins — complete for MVP scope |
-| Payments — Nigeria-first | `[~]` | Charge/refund ledger + `/payments` receipts + wallet/payout done; stub rail only, no Mojo+ UI, no payout history/threshold view |
+| Payments — Nigeria-first | `[x]` | Charge/refund ledger + `/payments` receipts + wallet/payout + Mojo+ UI done; real Paystack collect (redirect + saved-card, webhook, idempotent capture); live keys + webhook pointing left |
 | Messaging | `[x]` | Pre-booking chat wired (`POST /api/messages`, `/messages` + composer, auth-gated) |
 | Reviews | `[x]` | Submit gated to `completed` (one per session) + list on tutor profile; no edit/moderation |
-| Notifications | `[~]` | Event dispatchers + prefs + manual reminders wired; no cron/worker, no calendar sync |
+| Notifications | `[x]` | Event dispatchers + email/whatsapp/push prefs + cron workers (reminders + auto-confirm) + calendar sync |
 
 **Tutor profile & application**
 A multi-section application — photo, intro video, certifications, education, written
@@ -264,9 +264,11 @@ polish on top of a working marketplace, not a substitute for one.
 
 ## Phase 4 — Scale
 
-- **Native mobile apps** (iOS/Android) once the web product's core flows are stable —
-  treat the app as a first-class surface eventually, but building it too early splits
-  a solo dev's attention before the web flow is proven.
+- **Native mobile app** (started) — `apps/mobile` (Expo) ships the auth →
+  sessions → lab → checkout vertical slice against the hub's REST API
+  (see *Where mobile fits* in the monorepo doc). Left: on-device runs,
+  production hub URL plumbing, EAS builds. Treat the app as a first-class
+  surface from here — the web flow it exercises is proven.
 - **Institutional/B2B accounts** — seat-based access for schools or companies, admin
   dashboards, centralized billing. Only worth building once organic B2C demand
   validates the core product.

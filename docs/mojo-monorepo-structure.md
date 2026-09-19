@@ -11,15 +11,20 @@ TypeScript contracts underneath the business logic.
 ```
 mojo/
 ├── apps/
-│   ├── web/                 # Next.js — student + tutor marketplace (one app,
-│   │                        #   role-aware layouts after login)
-│   └── admin/                # Next.js — admin, deployed and reasoned about
-│                              #   separately given its trust boundary
+│   ├── hub/                 # Next.js — student + tutor marketplace (one app,
+│   │                        #   role-aware layouts after login) + the JSON API
+│   │                        #   the mobile client calls
+│   ├── admin/                # Next.js — admin, deployed and reasoned about
+│   │                         #   separately given its trust boundary
+│   └── mobile/               # Expo (React Native) — student client: auth,
+│                             #   sessions, lab video, push, checkout loop
 ├── libs/
 │   ├── shared/
 │   │   ├── ui/                # shadcn/ui components + Mojo design tokens
 │   │   ├── util/               # cn(), date/timezone helpers, formatting
 │   │   ├── domain/             # cross-module value objects (Money, TimeRange…)
+│   │   ├── api-contract/       # hub↔mobile HTTP contract: route paths,
+│   │   │                       #   `{ok,…}` envelopes, deep-link parsing
 │   │   └── events/             # domain event contracts + the in-process bus
 │   ├── identity/
 │   ├── tutor-profile/
@@ -45,16 +50,20 @@ mojo/
 └── package.json
 ```
 
-Two apps, not three. Student and Tutor share too much — auth, the lab,
-messaging, notifications UI — to justify separate deployments, and their
-dashboards are just different views composed from the same feature libs. Admin
-stands alone because it has a different trust boundary (see the permissions
+Three apps, each on its own cadence. Student and Tutor share the hub — auth,
+the lab, messaging, notifications UI — because their dashboards are just
+different views composed from the same feature libs. Admin stands alone
+because it has a different trust boundary (see the permissions
 matrix's note on `admin_role.assign` and `wallet.manual_adjust`) and benefits from
 shipping on its own cadence without every admin-panel change triggering a rebuild
-of the public app.
+of the public app. Mobile (`apps/mobile`, Expo) stands alone because it is a
+different runtime entirely (native UI, EAS builds) and talks to the hub over
+HTTP, never by importing its code — the reuse channel is `libs/` pure-domain
+modules plus the `api-contract` lib both sides type against.
 
-No `apps/api` yet — see *Where mobile fits* below for why that's a deliberate
-deferral, not an oversight.
+No `apps/api` — the hub's `app/api` REST routes *are* the API the mobile
+client calls (Bearer sessions, `{ok,…}` envelopes), so no separate API surface
+was ever needed.
 
 ---
 
@@ -185,7 +194,7 @@ export function makeRecordSessionCompletion(levels: TutorLevelReader) {
 The trial-lesson rule (tutor always earns ₦0) and the "price locked at booking
 time, not recalculated on level change" rule from the roadmap both belong in this
 same `domain` layer as explicit, tested cases — not as an `if` buried in a route
-handler somewhere in `apps/web`.
+handler somewhere in `apps/hub`.
 
 ---
 
@@ -199,20 +208,22 @@ its CLI at the shared lib instead of an app:
 { "aliases": { "components": "@mojo/shared/ui", "utils": "@mojo/shared/util" } }
 ```
 
-Every `shadcn add <component>` lands in `libs/shared/ui`, both apps import from
-`@mojo/shared/ui`, and the Mojo tokens (`globals.css` from the design system doc)
+Every `shadcn add <component>` lands in `libs/shared/ui`, hub + admin import from
+`@mojo/shared/ui` (mobile is React Native and keeps its own components), and the Mojo tokens (`globals.css` from the design system doc)
 live in that same lib as the single source of truth both apps' Tailwind configs
 point back to.
 
 ---
 
-## Where mobile fits (Phase 4, not now)
+## Where mobile fits (as built)
 
 The reason business logic lives entirely in `application/` use-cases rather than
-inside Next.js Server Actions: when the native app from Phase 4 shows up, it needs
-the *same* `bookSession`, `calculateLessonCharge`, and `submitReview` logic the web
-app uses — not a reimplementation. The plan for that day is a thin `apps/api`
-(tRPC or REST route handlers) that does nothing but call the same `application`
-layer libs Server Actions already call. Nothing about the module structure has to
-change to support that later — which is the actual payoff of doing the layering
-this way now, while it's still just one developer and one app.
+inside Next.js Server Actions is exactly what the mobile client now relies on —
+with one adjustment to the old plan. There is no thin `apps/api`: the hub's own
+`app/api` REST routes *are* the mobile API (Bearer sessions, `{ok,…}` envelopes
+on `POST /api/auth/*`, `GET /api/sessions`, `POST /api/lab/[id]/token`,
+device registry, JSON payment verify). `apps/mobile` (Expo, `type:app` like the
+web apps) calls those routes over HTTP and types every call through
+`libs/shared/api-contract`, so a hub route change that breaks mobile fails in
+types/specs instead of at runtime. Nothing about the module structure had to
+change to support it — which was the actual payoff of the layering.

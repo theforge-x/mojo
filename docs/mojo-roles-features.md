@@ -4,7 +4,7 @@ A companion to the phased roadmap, organized by who uses each feature instead of
 it ships. Written as checklists — pull items into whichever phase they belong to as
 you build.
 
-Status as of 2026-09-16 (`dev` @ `a08eca7`): `[x]` built & wired · `[~]` partial
+Status as of 2026-09-19 (`dev` @ `b770057`): `[x]` built & wired · `[~]` partial
 (exists but incomplete or unwired) · `[ ]` not started. The completion plan for the
 Phase 1 loop is `docs/next-steps.md`.
 
@@ -18,9 +18,10 @@ Phase 1 loop is `docs/next-steps.md`.
 - [~] Profile photo, display name, timezone, locale settings — display name +
       photo (5MB validated) + timezone captured on the tutor application and
       surfaced on profiles; generic timezone & locale prefs are not modeled
-- [x] Notification channel preferences (email vs. WhatsApp, per notification type)
+- [x] Notification channel preferences (email vs. WhatsApp vs. push, per notification type)
       — `GET/PUT /api/notifications/preferences` + `/settings` (reminders, recap,
-      marketing); no cron yet so timed reminders only fire manually
+      marketing); settings UI toggles email/whatsapp, push arrives via the
+      device registry; timed reminders fire on cron workers
 - [ ] Help center / support contact access
 - [ ] Delete account / export personal data
 
@@ -41,8 +42,9 @@ Phase 1 loop is `docs/next-steps.md`.
 **Account control**
 - [ ] Suspend / reinstate tutor or student accounts
 - [ ] Appeal handling for suspended accounts
-- [~] Dispute resolution view — admin `/trust/disputes` renders disputes; filing from
-      the hub (`trust-safety/file-dispute`) is not wired
+- [x] Dispute resolution view — admin `/trust/disputes` renders disputes; hub
+      filing wired (`POST /api/disputes` + `DisputeButton` on finished/cancelled
+      cards, one open dispute per session)
 - [ ] View-as / impersonation for support troubleshooting (permission-gated, logged)
 
 **Financial control**
@@ -98,18 +100,20 @@ Phase 1 loop is `docs/next-steps.md`.
 - [x] Add one-off exceptions (time off, extra hours)
 - [x] Set buffer time between sessions and minimum booking notice, plus
       pause-new-bookings mode (slots hidden and bookings rejected while paused)
-- [x] View calendar (week view of upcoming and past sessions)
-- [~] Reschedule or cancel a session, subject to the cancellation policy — cancel is
-      built with auto-refund; **reschedule** is a thin `POST
-      /api/sessions/[id]/reschedule` (book-then-cancel, student `booked` only, no
-      charge move, no domain use-case/event, no tutor-side UI)
+- [x] View calendar (week view of upcoming and past sessions, opened from a
+      "This week" dialog trigger on both dashboards)
+- [x] Reschedule or cancel a session, subject to the cancellation policy — cancel
+      with auto-refund; reschedule moves in place (same id, exactly one charge)
+      via the domain use-case for booked + confirmed sessions, student and tutor
+      `RescheduleForm`
 
 **Teaching**
 - [x] Access the in-platform virtual lab (video, whiteboard, chat, file sharing)
-- [~] Mark a lesson complete, cancelled, or no-show — student `Confirm delivery`
-      (`POST /api/sessions/[id]/confirm`), tutor cancel + `NoShowButton`
-      (`POST /api/sessions/[id]/no-show`), tutor `Start live lab`; no tutor-side
-      complete and no auto-confirm worker (student-confirm only stalls payout/recap)
+- [x] Mark a lesson complete, cancelled, or no-show — student `Confirm delivery`
+      (`POST /api/sessions/[id]/confirm`), tutor complete
+      (`POST /api/sessions/[id]/complete`), tutor cancel + `NoShowButton`,
+      tutor `Start live lab`, plus the auto-confirm worker so a silent student
+      never stalls payout/recap
 - [ ] Add private notes on a lesson or student
 - [x] Review the AI-generated post-lesson recap — generated on `SessionCompleted`
       and rendered both sides via `RecapCard` (no tutor edit-before-send)
@@ -127,8 +131,9 @@ Phase 1 loop is `docs/next-steps.md`.
       no ledger/history view
 - [~] View current level (Entry / Established / Expert), take-home percentage, and
       progress toward the next level — level shown; progress-to-next not
-- [ ] Subscribe to or cancel **Mojo+** (adds +10 points of take-home and unlocks
-      custom per-segment pricing) — use-case exists in the lib; no UI
+- [x] Subscribe to or cancel **Mojo+** (adds +10 points of take-home and unlocks
+      custom per-segment pricing) — `GET/POST /api/mojo-plus` + tutor dashboard
+      card with bounded rates
 - [ ] Set a custom per-segment price, if subscribed to Mojo+
 - [x] Withdraw funds (demo rail via `POST /api/payouts`; Paystack/Flutterwave on the
       Prisma path)
@@ -149,8 +154,9 @@ Phase 1 loop is `docs/next-steps.md`.
 
 **Discovery & booking**
 - [~] Set learning goals / subject / proficiency level at signup, to shortlist
-      relevant tutors — captured at signup; not yet surfaced as a shortlist
-- [x] Search and filter tutors — subject, level, language, rating,
+      relevant tutors — subject intent is captured (landing search →
+      `signup?subject=` → filtered directory); goals/level are not captured
+- [x] Search and filter tutors — subject (domain-tabbed picker), level, language, rating,
       availability-window all filter in demo + Prisma + UI (only intro-video
       thumbnails missing)
 - [~] View a tutor's full profile — bio, level, price/segment, avatar, languages,
@@ -159,11 +165,14 @@ Phase 1 loop is `docs/next-steps.md`.
 - [x] Save / shortlist favorite tutors
 - [x] Book a trial lesson at the discounted rate — `isTrial` bookings charge at
       booking (50% off, one-per-tutor guard, banner + totals pre-book, receipt on
-      `/payments`); stub capture only, no quote endpoint
-- [ ] Request a free replacement lesson if the trial isn't a fit
+      `/payments`); real Paystack rail (redirect + saved-card) with quote endpoint
+- [x] Free replacement lesson if the trial isn't a fit — cancelling a trial banks
+      a single-use `ReplacementGrant`, redeemed at checkout for ₦0 (automatic,
+      no separate request step)
 - [ ] Start, adjust, or cancel a recurring subscription with a chosen tutor
-- [~] Reschedule or cancel an upcoming lesson, subject to the cancellation policy —
-      cancel + auto-refund done; reschedule is student `booked`-only with no charge move
+- [x] Reschedule or cancel an upcoming lesson, subject to the cancellation policy —
+      cancel + auto-refund; reschedule moves in place with exactly one charge
+      (booked + confirmed, both roles)
 
 **Learning**
 - [x] Access the in-platform virtual lab
@@ -174,8 +183,8 @@ Phase 1 loop is `docs/next-steps.md`.
 - [ ] Track progress over time
 
 **Payments & subscription**
-- [~] Manage payment method (demo stub via `provisionDemoMethod`; no real
-      Paystack/Flutterwave card UI)
+- [x] Manage payment method (Paystack redirect + saved-card authorizations listed
+      in settings; demo stub via `provisionDemoMethod` when unconfigured)
 - [ ] Adjust lesson frequency on an active subscription
 - [x] View payment history and receipts (`/payments`: totals, segment/trial/refund
       breakdown, cancelled-only `Refund`)

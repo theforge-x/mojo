@@ -17,6 +17,7 @@ deploys — public repos on GitHub get free Actions minutes.
 | Lab file storage | Supabase Storage | 1 GB | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
 | Transactional email | Resend | 3k emails/mo | `RESEND_API_KEY` |
 | Payouts | Paystack sandbox | test keys free | `PAYSTACK_SECRET_KEY` |
+| Mobile builds | EAS (Expo) | limited free builds | — (see §7) |
 | CI/CD | GitHub Actions | 2k min/mo (public repo) | repo secrets |
 
 One app runs in **demo mode** by default (`USE_PRISMA=false`): the composition
@@ -132,13 +133,39 @@ PR and production on `main`, with checks surfaced in the PR.
 npm install
 npm run prisma:generate        # generate Prisma client
 npx prisma migrate deploy      # apply schema to Supabase (prod path)
+node prisma/seed-marketplace.mjs  # DEV ONLY: tutors/students/sessions/reviews
+                               # for the landing page (prod starts empty;
+                               # landing sections hide gracefully)
 npm test                       # vitest run
 npm run lint:boundaries
 npx tsc --noEmit -p apps/hub/tsconfig.json
 npx tsc --noEmit -p apps/admin/tsconfig.json
-npm run build                  # lint:boundaries && nx run-many --target=build --all
+npm run build                  # lint:boundaries && hub+admin builds (mobile
+                               # excluded — EAS stays explicit, see §7)
+npx nx export mobile           # Metro bundle check (ios/android/web)
 ```
 
 Production URLs land at `https://<hub>.vercel.app` and
 `https://<admin>.vercel.app`; the hub serves the student/tutor marketplaces,
 the admin app the ops console.
+
+## 7. Mobile (EAS, free tier)
+
+`apps/mobile` talks to the deployed hub over HTTPS — no mobile-specific
+server work needed. It authenticates with Bearer tokens (`POST
+/api/auth/login`), joins labs via `POST /api/lab/[id]/token`, registers push
+tokens at `/api/notifications/devices`, and settles checkout through the
+`mojo://` deep link + JSON verify. The full client contract lives in
+`libs/shared/api-contract` (paths, `{ok,…}` envelopes, deep-link parsing).
+
+1. `npm install -g eas-cli && eas login`, then `eas build:configure` inside
+   `apps/mobile` (the `eas.json` profiles already exist).
+2. Point the app at the production hub: today the sign-in screen carries an
+   editable hub-URL field (dev default derives from the Expo host); before
+   store submission, bake the production URL in via app config
+   (`EXPO_PUBLIC_HUB_URL` → `defaultHubUrl`) so release builds never prompt.
+3. `eas build --platform all --profile production`, then `eas submit`.
+   Push needs a physical device + Expo push credentials (`eas credentials`);
+   LiveKit video needs a dev/native build (it cannot run in Expo Go).
+4. Store fees are the one unavoidable cost: Apple Developer ($99/yr) +
+   Google Play ($25 one-time). Everything else on this page is $0.
