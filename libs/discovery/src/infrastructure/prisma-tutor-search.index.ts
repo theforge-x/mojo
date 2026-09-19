@@ -29,6 +29,16 @@ export class PrismaTutorSearchIndex implements TutorSearchIndex {
       where: { tutorId: { in: tutorIds } },
     });
     const performanceByTutorId = new Map(performances.map((p) => [p.tutorId, p]));
+    // Active Mojo+ custom rates overlay the level defaults in a single query —
+    // cards, detail pages, and quotes must show the price a booking would use.
+    const subscriptions = await this.prisma.mojoPlusSubscription.findMany({
+      where: { tutorId: { in: tutorIds }, status: 'active' },
+    });
+    const customByTutorId = new Map(
+      subscriptions
+        .filter((s) => s.customSegmentRateMinor !== null)
+        .map((s) => [s.tutorId, s.customSegmentRateMinor as number]),
+    );
 
     const availabilityByTutorId = new Map<string, AvailabilityView>();
     if (filters.availableWithinHours !== undefined) {
@@ -101,7 +111,7 @@ export class PrismaTutorSearchIndex implements TutorSearchIndex {
           education: profile.education,
           timezone: profile.timezone,
           level,
-          perSegmentMinor: DEFAULT_SEGMENT_RATE_NGN[level],
+          perSegmentMinor: customByTutorId.get(profile.tutorId) ?? DEFAULT_SEGMENT_RATE_NGN[level],
           rating: perf?.averageRating ?? 0,
           responseTimeMinutesAvg: perf?.responseTimeMinutesAvg ?? 0,
           introVideoUrl: profile.introVideoUrl,

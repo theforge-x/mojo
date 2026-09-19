@@ -691,6 +691,13 @@ export class InMemoryTutorSearchIndex implements TutorSearchIndex {
       .map((profile) => {
         const perf = this.state.performances.get(profile.tutorId);
         const level = perf?.level ?? 'entry';
+        // Active Mojo+ custom rates overlay the level defaults so cards,
+        // detail pages, and quotes show the price a booking would use.
+        const sub = this.state.mojoPlus.get(profile.tutorId);
+        const custom =
+          sub?.status === 'active' && sub.customSegmentRateMinor !== null
+            ? sub.customSegmentRateMinor
+            : null;
         return {
           tutorId: profile.tutorId,
           displayName: profile.displayName,
@@ -698,7 +705,7 @@ export class InMemoryTutorSearchIndex implements TutorSearchIndex {
           education: profile.education,
           timezone: profile.timezone,
           level,
-          perSegmentMinor: DEFAULT_RATE_MINOR[level],
+          perSegmentMinor: custom ?? DEFAULT_RATE_MINOR[level],
           rating: perf?.averageRating ?? 0,
           responseTimeMinutesAvg: perf?.responseTimeMinutesAvg ?? 0,
           introVideoUrl: profile.introVideoUrl,

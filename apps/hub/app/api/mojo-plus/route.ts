@@ -26,7 +26,9 @@ export async function GET() {
 
 /**
  * Mojo+ membership and custom per-segment pricing. Custom rates apply to
- * future bookings through the shared rate reader — past charges never move.
+ * future bookings through the shared rate reader — search results, tutor
+ * pages, quotes, and charges all resolve through it — while past charges
+ * never move.
  */
 export async function POST(request: Request) {
   const user = await requireRole('tutor');
