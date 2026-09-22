@@ -64,10 +64,15 @@ import type {
 } from '@mojo/messaging/domain';
 import {
   makeCancelMojoPlus,
+  makeListOutreachLeads,
   makeSetCustomRate,
   makeSubscribeMojoPlus,
 } from '@mojo/mojo-plus/application';
-import type { MojoPlusRepository, MojoPlusSubscription } from '@mojo/mojo-plus/domain';
+import type {
+  MojoPlusRepository,
+  MojoPlusSubscription,
+  OutreachLead,
+} from '@mojo/mojo-plus/domain';
 import { makeDispatchNotification } from '@mojo/notifications/application';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
@@ -350,6 +355,8 @@ export interface HubApp {
     subscribe(tutorId: string): Promise<void>;
     cancel(tutorId: string): Promise<void>;
     setCustomRate(tutorId: string, rateMinor: number): Promise<void>;
+    /** Tutor-outreach leads — throws unless the tutor holds active Mojo+. */
+    outreachLeads(tutorId: string): Promise<OutreachLead[]>;
   };
   billing: {
     quote(input: QuoteSessionChargeInput): Promise<ChargeQuote>;
@@ -725,6 +732,12 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const subscribeMojoPlus = makeSubscribeMojoPlus({ subscriptions: repos.mojoPlus });
   const cancelMojoPlus = makeCancelMojoPlus({ subscriptions: repos.mojoPlus });
   const setCustomRate = makeSetCustomRate({ subscriptions: repos.mojoPlus });
+  // Outreach leads live in the messaging store; the mojo-plus use-case gates
+  // reads behind the subscription (same rows unlock on activation).
+  const listOutreachLeads = makeListOutreachLeads({
+    subscriptions: repos.mojoPlus,
+    leads: { forTutor: (tutorId) => repos.interests.forTutor(tutorId) },
+  });
   const fileDispute = makeFileDispute({ disputes: repos.disputes });
   const autoConfirmDeliveries = makeAutoConfirmDeliveries({
     listAwaitingConfirmation: (endBeforeIso) =>
@@ -1157,6 +1170,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       subscribe: (tutorId) => subscribeMojoPlus(tutorId, new Date().toISOString()),
       cancel: (tutorId) => cancelMojoPlus(tutorId, new Date().toISOString()),
       setCustomRate: (tutorId, rateMinor) => setCustomRate(tutorId, rateMinor),
+      outreachLeads: (tutorId) => listOutreachLeads(tutorId),
     },
     billing: {
       quote: (input) => quoteSessionCharge(input),

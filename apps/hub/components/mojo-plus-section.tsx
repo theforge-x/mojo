@@ -76,7 +76,12 @@ export function MojoPlusSection({
           <p className="text-sm text-muted-foreground">
             Set your own per-lesson rate instead of the level rate ({formatMinor(defaultRateMinor)}{' '}
             now
-            {customRateMinor ? `, yours ${formatMinor(customRateMinor)}` : ''}).
+            {customRateMinor ? `, yours ${formatMinor(customRateMinor)}` : ''}), keep +10% more of
+            every payout, and see which students are interested in you on the{' '}
+            <a href="/tutor/outreach" className="font-medium text-primary hover:underline">
+              outreach
+            </a>{' '}
+            page.
           </p>
           {status === 'active' ? (
             <>

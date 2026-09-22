@@ -1,7 +1,9 @@
+import { isMojoPlusActive } from '@mojo/mojo-plus/domain';
+import { TutorOutreachCard } from '@mojo/mojo-plus/feature';
 import { DEFAULT_SEGMENT_RATE_NGN } from '@mojo/pricing/domain';
 import { CalendarDialog } from '@mojo/scheduling/feature';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
-import { CalendarDays, Handshake, Sparkles, Users } from 'lucide-react';
+import { CalendarDays, Sparkles, Users } from 'lucide-react';
 import Link from 'next/link';
 import { CalendarExportButton } from '../../components/calendar-export-button';
 import { DisputeButton } from '../../components/dispute-button';
@@ -127,19 +129,10 @@ export default async function TutorHome({
           </CardContent>
         </Card>
         <Link href="/tutor/outreach">
-          <Card className="h-full transition-opacity hover:opacity-90">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Handshake className="size-4 text-primary" />
-                Outreach
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <span className="font-display text-3xl font-extrabold text-headline">
-                {interests.length}
-              </span>
-            </CardContent>
-          </Card>
+          <TutorOutreachCard
+            leadCount={interests.length}
+            hasAccess={isMojoPlusActive(subscription)}
+          />
         </Link>
       </div>
 

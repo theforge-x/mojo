@@ -28,8 +28,8 @@ export function makeCancelMojoPlus(deps: { subscriptions: MojoPlusRepository }) 
 }
 
 export class MojoPlusRequiredError extends Error {
-  constructor() {
-    super('Custom pricing requires an active Mojo+ subscription.');
+  constructor(feature = 'Custom pricing') {
+    super(`${feature} requires an active Mojo+ subscription.`);
   }
 }
 
