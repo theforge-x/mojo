@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
-import type { BookingSession } from '../domain/booking-session.types';
 import type { BookingRepository } from '../domain/booking.ports';
+import type { BookingSession } from '../domain/booking-session.types';
 import type { DeliveryConfirmation } from '../domain/session-lifecycle.types';
 
 export class PrismaBookingRepository implements BookingRepository {
@@ -9,14 +9,15 @@ export class PrismaBookingRepository implements BookingRepository {
   async findById(sessionId: string): Promise<BookingSession | null> {
     const row = await this.prisma.session.findUnique({ where: { id: sessionId } });
     if (!row) return null;
-    return {
-      id: row.id,
-      tutorId: row.tutorId,
-      studentId: row.studentId,
-      startIso: row.startAt.toISOString(),
-      endIso: row.endAt.toISOString(),
-      isTrial: row.isTrial,
-    };
+    return toBookingSession(row);
+  }
+
+  async listAwaitingConfirmation(endBeforeIso: string): Promise<BookingSession[]> {
+    const rows = await this.prisma.session.findMany({
+      where: { status: 'confirmed', endAt: { lt: new Date(endBeforeIso) } },
+      orderBy: { endAt: 'asc' },
+    });
+    return rows.map(toBookingSession);
   }
 
   async markCompleted(sessionId: string, at: string): Promise<void> {
@@ -49,4 +50,26 @@ export class PrismaBookingRepository implements BookingRepository {
       },
     });
   }
+}
+
+function toBookingSession(row: {
+  id: string;
+  tutorId: string;
+  studentId: string;
+  startAt: Date;
+  endAt: Date;
+  isTrial: boolean;
+  status: BookingSession['status'];
+  groupSize: number | null;
+}): BookingSession {
+  return {
+    id: row.id,
+    tutorId: row.tutorId,
+    studentId: row.studentId,
+    startIso: row.startAt.toISOString(),
+    endIso: row.endAt.toISOString(),
+    isTrial: row.isTrial,
+    status: row.status,
+    groupSize: row.groupSize,
+  };
 }

@@ -2,6 +2,7 @@ export type Role = 'admin' | 'tutor' | 'student';
 
 export interface User {
   readonly id: string;
+  readonly name: string;
   readonly email: string;
   readonly role: Role;
   readonly passwordHash: string;

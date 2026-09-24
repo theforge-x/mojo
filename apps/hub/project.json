@@ -1,10 +1,9 @@
 {
   "name": "hub",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/hub",
   "projectType": "application",
   "tags": ["type:app", "scope:hub"],
-  "targets": {
-    "build": { "executor": "@nx/next:build", "options": { "outputPath": "dist/apps/hub" } },
-    "dev": { "executor": "@nx/next:server", "options": { "buildTarget": "hub:build", "dev": true } }
-  }
+  "// targets": "to see all targets run: nx show project hub --web",
+  "targets": {}
 }

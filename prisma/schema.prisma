@@ -23,6 +23,7 @@ enum Role {
 
 model User {
   id           String    @id @default(cuid())
+  name         String    @default("")
   email        String    @unique
   role         Role
   passwordHash String
@@ -31,16 +32,48 @@ model User {
   suspendedAt  DateTime?
   createdAt    DateTime  @default(now())
 
-  tutorProfile   TutorProfile?
-  tutorPerf      TutorPerformance?
-  wallet         Wallet?
-  schedulingCfg  SchedulingSettings?
-  sessionsAsTutor   Session[] @relation("TutorSessions")
-  sessionsAsStudent Session[] @relation("StudentSessions")
-  reviewsWritten Review[]     @relation("ReviewAuthor")
-  auditLogEntries AuditLogEntry[]
+  tutorProfile      TutorProfile?
+  tutorPerf         TutorPerformance?
+  wallet            Wallet?
+  schedulingCfg     SchedulingSettings?
+  sessionsAsTutor   Session[]           @relation("TutorSessions")
+  sessionsAsStudent Session[]           @relation("StudentSessions")
+  pushDevices       PushDevice[]
+  groupLabsAsTutor  GroupLab[]          @relation("TutorGroupLabs")
+  reviewsWritten    Review[]            @relation("ReviewAuthor")
+  auditLogEntries   AuditLogEntry[]
+  sessionTokens     SessionToken[]
 
   @@map("users")
+}
+
+// ---------- session tokens (DB-backed sessions, Prisma mode) ----------
+
+model SessionToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("session_tokens")
+}
+
+// ---------- push devices (mobile channel registry) ----------
+
+model PushDevice {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String
+  platform  String   @default("android")
+  createdAt DateTime @default(now())
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@map("push_devices")
 }
 
 // ---------- tutor-profile ----------
@@ -53,26 +86,37 @@ enum ApplicationStatus {
 }
 
 model TutorApplication {
-  id             String            @id @default(cuid())
-  tutorId        String
-  subjects       String[]
-  bio            String
-  introVideoUrl  String
-  certifications String[]
-  status         ApplicationStatus @default(pending)
-  submittedAt    DateTime          @default(now())
+  id                String            @id @default(cuid())
+  tutorId           String
+  displayName       String            @default("")
+  photoUrl          String            @default("")
+  education         String            @default("")
+  subjects          String[]
+  languages         String[]          @default([])
+  bio               String
+  introVideoUrl     String
+  certifications    String[]
+  timezone          String            @default("Africa/Lagos")
+  availabilityRules Json              @default("[]")
+  status            ApplicationStatus @default(pending)
+  reviewNote        String            @default("")
+  submittedAt       DateTime          @default(now())
 
   @@map("tutor_applications")
 }
 
 model TutorProfile {
-  tutorId           String  @id
-  user              User    @relation(fields: [tutorId], references: [id])
+  tutorId           String   @id
+  user              User     @relation(fields: [tutorId], references: [id])
   displayName       String
   photoUrl          String?
+  education         String   @default("")
   subjects          String[]
+  languages         String[] @default([])
   bio               String
-  moderationFlagged Boolean @default(false)
+  introVideoUrl     String   @default("")
+  timezone          String   @default("Africa/Lagos")
+  moderationFlagged Boolean  @default(false)
 
   @@map("tutor_profiles")
 }
@@ -86,15 +130,15 @@ enum TutorLevel {
 }
 
 model TutorPerformance {
-  tutorId                     String     @id
-  user                        User       @relation(fields: [tutorId], references: [id])
-  level                       TutorLevel @default(entry)
-  cumulativeHoursTaught       Float      @default(0)
-  responseTimeMinutesAvg      Float      @default(0)
-  trialToPaidConversionRate   Float      @default(0)
-  cancellationRate            Float      @default(0)
-  averageRating               Float      @default(0)
-  updatedAt                   DateTime   @updatedAt
+  tutorId                   String     @id
+  user                      User       @relation(fields: [tutorId], references: [id])
+  level                     TutorLevel @default(entry)
+  cumulativeHoursTaught     Float      @default(0)
+  responseTimeMinutesAvg    Float      @default(0)
+  trialToPaidConversionRate Float      @default(0)
+  cancellationRate          Float      @default(0)
+  averageRating             Float      @default(0)
+  updatedAt                 DateTime   @updatedAt
 
   @@map("tutor_performance")
 }
@@ -140,12 +184,12 @@ model AvailabilityException {
 }
 
 model SchedulingSettings {
-  tutorId                 String  @id
-  user                    User    @relation(fields: [tutorId], references: [id])
-  timezone                String  @default("Africa/Lagos")
-  bufferMinutes           Int     @default(15)
-  minimumNoticeMinutes    Int     @default(60)
-  pausedForNewBookings    Boolean @default(false)
+  tutorId              String  @id
+  user                 User    @relation(fields: [tutorId], references: [id])
+  timezone             String  @default("Africa/Lagos")
+  bufferMinutes        Int     @default(15)
+  minimumNoticeMinutes Int     @default(60)
+  pausedForNewBookings Boolean @default(false)
 
   @@map("scheduling_settings")
 }
@@ -168,16 +212,42 @@ model Session {
   endAt     DateTime
   status    SessionStatus @default(booked)
   isTrial   Boolean       @default(false)
+  groupId   String?
+  groupSize Int?
   createdAt DateTime      @default(now())
 
-  statusHistory         SessionStatusEvent[]
-  deliveryConfirmation  DeliveryConfirmation?
-  review                Review?
-  dispute               Dispute?
+  statusHistory        SessionStatusEvent[]
+  deliveryConfirmation DeliveryConfirmation?
+  review               Review?
+  dispute              Dispute?
 
   @@index([tutorId, startAt])
   @@index([studentId, startAt])
+  @@index([groupId])
   @@map("sessions")
+}
+
+enum GroupLabStatus {
+  open
+  locked
+  cancelled
+}
+
+model GroupLab {
+  id         String         @id @default(cuid())
+  tutorId    String
+  tutor      User           @relation("TutorGroupLabs", fields: [tutorId], references: [id])
+  title      String
+  startAt    DateTime
+  endAt      DateTime
+  maxSeats   Int
+  status     GroupLabStatus @default(open)
+  lockedSize Int?
+  lockedAt   DateTime?
+  createdAt  DateTime       @default(now())
+
+  @@index([tutorId, status])
+  @@map("group_labs")
 }
 
 model SessionStatusEvent {
@@ -191,10 +261,10 @@ model SessionStatusEvent {
 }
 
 model DeliveryConfirmation {
-  sessionId    String   @id
-  session      Session  @relation(fields: [sessionId], references: [id])
-  confirmedBy  String // student | auto_window
-  confirmedAt  DateTime
+  sessionId   String   @id
+  session     Session  @relation(fields: [sessionId], references: [id])
+  confirmedBy String // student | tutor | auto_window
+  confirmedAt DateTime
 
   @@map("delivery_confirmations")
 }
@@ -212,24 +282,24 @@ model Wallet {
 }
 
 model WalletTransaction {
-  id                String   @id @default(cuid())
-  tutorId           String
-  wallet            Wallet   @relation(fields: [tutorId], references: [tutorId])
-  kind              String // credit | debit | payout | manual_adjustment
-  amountMinor       Int
-  relatedSessionId  String?
-  createdAt         DateTime @default(now())
+  id               String   @id @default(cuid())
+  tutorId          String
+  wallet           Wallet   @relation(fields: [tutorId], references: [tutorId])
+  kind             String // credit | debit | payout | manual_adjustment
+  amountMinor      Int
+  relatedSessionId String?
+  createdAt        DateTime @default(now())
 
   @@map("wallet_transactions")
 }
 
 model PayoutRequest {
-  id           String   @id @default(cuid())
-  tutorId      String
-  amountMinor  Int
-  rail         String // paystack | flutterwave | payoneer | wise
-  status       String @default("pending") // pending | approved | completed | rejected
-  requestedAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  tutorId     String
+  amountMinor Int
+  rail        String // paystack | flutterwave | payoneer | wise
+  status      String   @default("pending") // pending | approved | completed | rejected
+  requestedAt DateTime @default(now())
 
   @@map("payout_requests")
 }
@@ -237,11 +307,12 @@ model PayoutRequest {
 // ---------- billing (student side) ----------
 
 model PaymentMethod {
-  id         String  @id @default(cuid())
-  studentId  String
-  rail       String // paystack | flutterwave | stripe
-  last4      String?
-  isDefault  Boolean @default(false)
+  id                String  @id @default(cuid())
+  studentId         String
+  rail              String // paystack | flutterwave | stripe
+  last4             String?
+  authorizationCode String?
+  isDefault         Boolean @default(false)
 
   @@map("payment_methods")
 }
@@ -258,6 +329,45 @@ model LessonSubscription {
   @@map("lesson_subscriptions")
 }
 
+model StudentCharge {
+  id                 String   @id @default(cuid())
+  studentId          String
+  tutorId            String
+  sessionId          String   @unique
+  segments           Int
+  perSegmentMinor    Int
+  standardTotalMinor Int
+  trialDiscountMinor Int      @default(0)
+  totalMinor         Int
+  currency           String   @default("NGN")
+  isTrial            Boolean  @default(false)
+  level              String // entry | established | expert
+  isCustomRate       Boolean  @default(false)
+  paymentMethodId    String
+  status             String   @default("captured") // pending | failed | captured | partially_refunded | refunded
+  providerReference  String?
+  createdAt          DateTime @default(now())
+
+  refunds ChargeRefund[]
+
+  @@index([studentId])
+  @@map("student_charges")
+}
+
+model ChargeRefund {
+  id          String        @id @default(cuid())
+  chargeId    String
+  charge      StudentCharge @relation(fields: [chargeId], references: [id])
+  studentId   String
+  amountMinor Int
+  currency    String        @default("NGN")
+  reason      String // cancelled | dispute | no_show | goodwill
+  createdAt   DateTime      @default(now())
+
+  @@index([studentId])
+  @@map("charge_refunds")
+}
+
 // ---------- engagement ----------
 
 model Message {
@@ -272,17 +382,28 @@ model Message {
   @@map("messages")
 }
 
+model TutorInterest {
+  id        String   @id @default(cuid())
+  studentId String
+  tutorId   String
+  source    String   @default("view") // search | view
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, tutorId])
+  @@map("tutor_interests")
+}
+
 model Review {
-  id         String   @id @default(cuid())
-  sessionId  String   @unique
-  session    Session  @relation(fields: [sessionId], references: [id])
-  tutorId    String
-  studentId  String
-  student    User     @relation("ReviewAuthor", fields: [studentId], references: [id])
-  rating     Int
-  body       String
-  flagged    Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  session   Session  @relation(fields: [sessionId], references: [id])
+  tutorId   String
+  studentId String
+  student   User     @relation("ReviewAuthor", fields: [studentId], references: [id])
+  rating    Int
+  body      String
+  flagged   Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   @@map("reviews")
 }
@@ -308,13 +429,13 @@ model ReferralConversion {
 // ---------- trust & safety ----------
 
 model Dispute {
-  id         String   @id @default(cuid())
-  sessionId  String   @unique
-  session    Session  @relation(fields: [sessionId], references: [id])
+  id         String    @id @default(cuid())
+  sessionId  String    @unique
+  session    Session   @relation(fields: [sessionId], references: [id])
   filedBy    String
   reason     String
-  status     String   @default("open") // open | upheld | dismissed
-  filedAt    DateTime @default(now())
+  status     String    @default("open") // open | upheld | dismissed
+  filedAt    DateTime  @default(now())
   resolvedAt DateTime?
 
   @@map("disputes")
@@ -323,22 +444,22 @@ model Dispute {
 // ---------- AI learning ----------
 
 model LessonRecap {
-  sessionId        String   @id
-  summary          String
-  focusAreas       String[]
-  generatedAt      DateTime @default(now())
-  reviewedByTutor  Boolean  @default(false)
+  sessionId       String   @id
+  summary         String
+  focusAreas      String[]
+  generatedAt     DateTime @default(now())
+  reviewedByTutor Boolean  @default(false)
 
   @@map("lesson_recaps")
 }
 
 model PracticeItem {
-  id           String    @id @default(cuid())
-  sessionId    String
-  studentId    String
-  kind         String // daily_exercise | scenario_drill
-  prompt       String
-  completedAt  DateTime?
+  id          String    @id @default(cuid())
+  sessionId   String
+  studentId   String
+  kind        String // daily_exercise | scenario_drill
+  prompt      String
+  completedAt DateTime?
 
   @@map("practice_items")
 }
@@ -354,12 +475,12 @@ model FeatureFlag {
 }
 
 model AuditLogEntry {
-  id        String   @id @default(cuid())
-  adminId   String
-  admin     User     @relation(fields: [adminId], references: [id])
-  action    String
-  targetId  String?
-  at        DateTime @default(now())
+  id       String   @id @default(cuid())
+  adminId  String
+  admin    User     @relation(fields: [adminId], references: [id])
+  action   String
+  targetId String?
+  at       DateTime @default(now())
 
   @@map("audit_log_entries")
 }
@@ -368,6 +489,20 @@ model SubjectTaxonomyEntry {
   id       String  @id @default(cuid())
   name     String
   parentId String?
+  active   Boolean @default(true)
 
   @@map("subject_taxonomy")
+}
+
+model ReplacementGrant {
+  id                String    @id @default(cuid())
+  studentId         String
+  tutorId           String
+  sourceSessionId   String    @unique
+  status            String    @default("granted")
+  createdAt         DateTime  @default(now())
+  redeemedSessionId String?
+  redeemedAt        DateTime?
+
+  @@map("replacement_grants")
 }

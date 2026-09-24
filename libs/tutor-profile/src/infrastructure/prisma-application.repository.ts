@@ -1,6 +1,10 @@
 import type { PrismaClient } from '@prisma/client';
 import type { ApplicationRepository, TutorProfileRepository } from '../domain/tutor-profile.ports';
-import type { TutorApplication, TutorProfile } from '../domain/tutor-profile.types';
+import type {
+  AvailabilityWindow,
+  TutorApplication,
+  TutorProfile,
+} from '../domain/tutor-profile.types';
 
 export class PrismaApplicationRepository implements ApplicationRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -11,43 +15,87 @@ export class PrismaApplicationRepository implements ApplicationRepository {
     return this.toDomain(row);
   }
 
+  async list(): Promise<TutorApplication[]> {
+    const rows = await this.prisma.tutorApplication.findMany();
+    return rows.map((row) => this.toDomain(row));
+  }
+
   async save(application: TutorApplication): Promise<void> {
     await this.prisma.tutorApplication.upsert({
       where: { id: application.id },
       create: {
         id: application.id,
         tutorId: application.tutorId,
+        displayName: application.displayName,
+        photoUrl: application.photoUrl,
+        education: application.education,
         subjects: [...application.subjects],
+        languages: [...application.languages],
         bio: application.bio,
         introVideoUrl: application.introVideoUrl,
         certifications: [...application.certifications],
+        timezone: application.timezone,
+        availabilityRules: application.availability as unknown as object,
         status: application.status,
+        reviewNote: application.reviewNote,
         submittedAt: new Date(application.submittedAt),
       },
-      update: { status: application.status },
+      update: {
+        displayName: application.displayName,
+        photoUrl: application.photoUrl,
+        education: application.education,
+        subjects: [...application.subjects],
+        languages: [...application.languages],
+        bio: application.bio,
+        introVideoUrl: application.introVideoUrl,
+        certifications: [...application.certifications],
+        timezone: application.timezone,
+        availabilityRules: application.availability as unknown as object,
+        status: application.status,
+        reviewNote: application.reviewNote,
+      },
     });
   }
 
   private toDomain(row: {
     id: string;
     tutorId: string;
+    displayName: string;
+    photoUrl: string;
+    education: string;
     subjects: string[];
+    languages: string[];
     bio: string;
     introVideoUrl: string;
     certifications: string[];
+    timezone: string;
+    availabilityRules: unknown;
     status: string;
+    reviewNote: string;
     submittedAt: Date;
   }): TutorApplication {
     return {
       id: row.id,
       tutorId: row.tutorId,
+      displayName: row.displayName,
+      photoUrl: row.photoUrl,
+      education: row.education,
       subjects: row.subjects,
+      languages: row.languages,
       bio: row.bio,
       introVideoUrl: row.introVideoUrl,
       certifications: row.certifications,
+      timezone: row.timezone,
+      availability: this.toWindows(row.availabilityRules),
       status: row.status as TutorApplication['status'],
+      reviewNote: row.reviewNote,
       submittedAt: row.submittedAt.toISOString(),
     };
+  }
+
+  private toWindows(value: unknown): AvailabilityWindow[] {
+    if (!Array.isArray(value)) return [];
+    return value as AvailabilityWindow[];
   }
 }
 
@@ -61,8 +109,12 @@ export class PrismaTutorProfileRepository implements TutorProfileRepository {
       tutorId: row.tutorId,
       displayName: row.displayName,
       photoUrl: row.photoUrl ?? '',
+      education: row.education,
       subjects: row.subjects,
+      languages: row.languages,
       bio: row.bio,
+      introVideoUrl: row.introVideoUrl,
+      timezone: row.timezone,
       moderationFlagged: row.moderationFlagged,
     };
   }
@@ -74,15 +126,23 @@ export class PrismaTutorProfileRepository implements TutorProfileRepository {
         tutorId: profile.tutorId,
         displayName: profile.displayName,
         photoUrl: profile.photoUrl || null,
+        education: profile.education,
         subjects: [...profile.subjects],
+        languages: [...profile.languages],
         bio: profile.bio,
+        introVideoUrl: profile.introVideoUrl,
+        timezone: profile.timezone,
         moderationFlagged: profile.moderationFlagged,
       },
       update: {
         displayName: profile.displayName,
         photoUrl: profile.photoUrl || null,
+        education: profile.education,
         subjects: [...profile.subjects],
+        languages: [...profile.languages],
         bio: profile.bio,
+        introVideoUrl: profile.introVideoUrl,
+        timezone: profile.timezone,
         moderationFlagged: profile.moderationFlagged,
       },
     });

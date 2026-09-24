@@ -1,39 +1,125 @@
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@mojo/shared/ui';
+import {
+  Avatar,
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Empty,
+  EmptyDescription,
+  EmptyTitle,
+} from '@mojo/shared/ui';
 import type { TutorApplication } from '@mojo/tutor-profile/domain';
-
-async function getPendingApplications(): Promise<TutorApplication[]> {
-  return [
-    {
-      id: 'app_1', tutorId: 't_9', subjects: ['Spanish'], bio: '', introVideoUrl: '',
-      certifications: [], status: 'pending', submittedAt: '2026-08-28T02:00:00.000Z',
-    },
-  ];
-}
+import { redirect } from 'next/navigation';
+import { ReviewButtons } from '../../../components/review-buttons';
+import { getAdmin } from '../../../demo/composition-root';
+import { requireAdmin } from '../../../lib/session';
 
 export default async function ApplicationQueuePage() {
-  const applications = await getPendingApplications();
+  const adminUser = await requireAdmin();
+  if (!adminUser) redirect('/login');
+  const admin = getAdmin();
+  const applications = await admin.applications.list();
 
   return (
-    <main className="mx-auto max-w-4xl p-6">
+    <main className="mx-auto max-w-6xl p-6">
       <h1 className="mb-6 font-display text-2xl font-bold text-headline">Application queue</h1>
-      <div className="flex flex-col gap-3">
-        {applications.map((app) => (
-          <Card key={app.id}>
-            <CardHeader>
-              <CardTitle>{app.subjects.join(', ')}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <Badge variant="tertiary">{app.status}</Badge>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline">
-                  Reject
-                </Button>
-                <Button size="sm">Approve</Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {applications.length === 0 ? (
+        <Card>
+          <CardContent className="py-12">
+            <Empty>
+              <EmptyTitle>No applications</EmptyTitle>
+              <EmptyDescription>Applications from new tutors will show up here.</EmptyDescription>
+            </Empty>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {applications.map((app) => (
+            <ApplicationCard key={app.id} app={app} />
+          ))}
+        </div>
+      )}
     </main>
   );
+}
+
+function ApplicationCard({ app }: { app: TutorApplication }) {
+  const displayName = app.displayName || `applicant ${app.tutorId}`;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-3">
+          <Avatar name={displayName} src={app.photoUrl || undefined} size="sm" />
+          <span className="truncate">
+            {displayName}
+            <span className="ml-2 font-mono text-xs font-normal text-muted-foreground">
+              {app.subjects.join(', ')}
+            </span>
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-start justify-between gap-3">
+        <div className="max-w-prose">
+          {app.education && <p className="text-xs font-medium text-foreground">{app.education}</p>}
+          <p className="mt-1 text-sm text-muted-foreground">{app.bio}</p>
+          <p className="mt-2 flex flex-wrap gap-1.5">
+            <Badge variant="muted">{app.timezone || 'timezone unset'}</Badge>
+            {app.languages.map((language) => (
+              <Badge key={language} variant="outline">
+                {language}
+              </Badge>
+            ))}
+            {app.certifications.map((cert) => (
+              <Badge key={cert} variant="outline">
+                {cert}
+              </Badge>
+            ))}
+            {app.availability.map((w) => (
+              <Badge key={w.id} variant="outline">
+                {windowLabel(w.weekday, w.startMinute, w.endMinute)}
+              </Badge>
+            ))}
+          </p>
+          {app.introVideoUrl && (
+            <p className="mt-2 text-sm">
+              <a
+                href={app.introVideoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Watch intro video
+              </a>
+            </p>
+          )}
+          {app.status === 'rejected' && app.reviewNote && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Rejected — <span className="text-foreground">{app.reviewNote}</span>
+            </p>
+          )}
+          <p className="mt-2 text-xs text-muted-foreground">
+            submitted {new Date(app.submittedAt).toLocaleString()}
+          </p>
+        </div>
+        {app.status === 'pending' || app.status === 'in_review' ? (
+          <ReviewButtons applicationId={app.id} status={app.status} />
+        ) : (
+          <Badge variant={app.status === 'approved' ? 'primary' : 'muted'}>{app.status}</Badge>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function windowLabel(weekday: number, startMinute: number, endMinute: number): string {
+  return `${WEEKDAY_LABELS[weekday] ?? '?'} ${clock(startMinute)}–${clock(endMinute)}`;
+}
+
+function clock(minute: number): string {
+  const hours = Math.floor(minute / 60);
+  const mins = minute % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }

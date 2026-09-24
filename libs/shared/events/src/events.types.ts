@@ -33,9 +33,27 @@ export type SessionNoShow = DomainEvent<
   { sessionId: string; noShowBy: 'student' | 'tutor' }
 >;
 
+export type SessionRescheduled = DomainEvent<
+  'SessionRescheduled',
+  {
+    sessionId: string;
+    tutorId: string;
+    studentId: string;
+    oldStartIso: string;
+    oldEndIso: string;
+    newStartIso: string;
+    newEndIso: string;
+  }
+>;
+
 export type SessionDeliveryConfirmed = DomainEvent<
   'SessionDeliveryConfirmed',
-  { sessionId: string; confirmedBy: 'student' | 'auto_window' }
+  { sessionId: string; confirmedBy: 'student' | 'tutor' | 'auto_window' }
+>;
+
+export type GroupLabLocked = DomainEvent<
+  'GroupLabLocked',
+  { groupId: string; tutorId: string; lockedSize: number }
 >;
 
 export type TutorLevelChanged = DomainEvent<
@@ -81,6 +99,8 @@ export type MojoEvent =
   | SessionCancelled
   | SessionCompleted
   | SessionNoShow
+  | SessionRescheduled
+  | GroupLabLocked
   | SessionDeliveryConfirmed
   | TutorLevelChanged
   | MojoPlusSubscribed

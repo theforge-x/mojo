@@ -39,4 +39,26 @@ export class PrismaAnalyticsRepository implements AnalyticsRepository {
       };
     });
   }
+
+  async trialToPaidConversionRate(): Promise<number> {
+    const sessions = await this.prisma.session.findMany({
+      select: { studentId: true, isTrial: true },
+    });
+    return conversionRate(sessions);
+  }
+}
+
+function conversionRate(sessions: readonly { studentId: string; isTrial: boolean }[]): number {
+  const trial = new Set<string>();
+  const paid = new Set<string>();
+  for (const s of sessions) {
+    if (s.isTrial) trial.add(s.studentId);
+    else paid.add(s.studentId);
+  }
+  if (trial.size === 0) return 0;
+  let converted = 0;
+  for (const studentId of trial) {
+    if (paid.has(studentId)) converted += 1;
+  }
+  return converted / trial.size;
 }

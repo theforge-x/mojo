@@ -79,7 +79,7 @@
 html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after { animation-duration: 0.01ms; animation-iteration-count: 1; transition-duration: 0.01ms; }
 }
 body {
   margin: 0;
@@ -731,7 +731,7 @@ function swatchCard(t) {
   el.className = 'swatch-card';
   el.tabIndex = 0;
   el.setAttribute('role', 'button');
-  el.setAttribute('aria-label', 'Copy ' + t.name);
+  el.setAttribute('aria-label', `Copy ${t.name}`);
   el.innerHTML = `
     <div class="swatch-color" style="background:var(${t.name})"><span class="swatch-copied">Copied ${t.name}</span></div>
     <div class="swatch-meta">
@@ -786,7 +786,7 @@ const sections = links.map(a => document.querySelector(a.getAttribute('href')));
 const io = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
-      const id = '#' + entry.target.id;
+      const id = `#${entry.target.id}`;
       links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === id));
     }
   });

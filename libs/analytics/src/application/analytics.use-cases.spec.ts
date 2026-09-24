@@ -9,6 +9,7 @@ function fakeAnalytics(candidates: LeaderboardCandidate[] = []): AnalyticsReposi
     countActiveStudents: async () => 30,
     sumWalletCreditsMinor: async () => 4_000_000,
     listLeaderboardCandidates: async () => candidates,
+    trialToPaidConversionRate: async () => 0.4,
   };
 }
 
@@ -20,7 +21,7 @@ describe('computePlatformMetrics', () => {
       gmvMinor: 4_000_000,
       activeTutors: 12,
       activeStudents: 30,
-      trialToPaidConversionRate: 0,
+      trialToPaidConversionRate: 0.4,
       asOf: '2026-09-01T00:00:00.000Z',
     });
   });

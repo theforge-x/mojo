@@ -3,6 +3,12 @@ export interface AnalyticsRepository {
   countActiveStudents(): Promise<number>;
   sumWalletCreditsMinor(): Promise<number>;
   listLeaderboardCandidates(): Promise<LeaderboardCandidate[]>;
+  /**
+   * Trial→paid conversion: students with at least one trial session who went
+   * on to take at least one paid session, over students with a trial. 0 when
+   * no trials exist yet.
+   */
+  trialToPaidConversionRate(): Promise<number>;
 }
 
 export interface LeaderboardCandidate {

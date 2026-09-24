@@ -12,7 +12,8 @@ account. Checklist format again, to match the other companion docs.
 - [ ] Password change
 - [ ] Timezone and locale/language
 - [ ] Notification channels — email vs. WhatsApp, toggled per notification type
-      (reminders, messages, payments, product updates)
+      (reminders, messages, payments, product updates); `push` exists as a third
+      API channel (device registry, no settings-UI toggle yet)
 - [ ] Active sessions / login history, with remote sign-out
 - [ ] Who can message me (open / verified-contact-only)
 - [ ] Data export

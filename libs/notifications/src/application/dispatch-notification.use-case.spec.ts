@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { NotificationDispatcher } from '../domain/notifications.types';
 import {
-  UnsupportedChannelError,
   makeDispatchNotification,
+  UnsupportedChannelError,
 } from './dispatch-notification.use-case';
 
 function makeSpyDispatcher() {

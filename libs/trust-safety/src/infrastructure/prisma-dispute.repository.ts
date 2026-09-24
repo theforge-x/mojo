@@ -36,6 +36,11 @@ export class PrismaDisputeRepository implements DisputeRepository {
     });
   }
 
+  async list(): Promise<Dispute[]> {
+    const rows = await this.prisma.dispute.findMany({ orderBy: { filedAt: 'desc' } });
+    return rows.map((row) => this.toDomain(row));
+  }
+
   private toDomain(row: {
     id: string;
     sessionId: string;

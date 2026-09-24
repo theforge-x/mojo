@@ -29,17 +29,22 @@ stateDiagram-v2
 ```
 
 > The `session.mark_complete`, `mark_no_show`, `reschedule` actions from the
-> permissions matrix are partly represented (only `confirmDelivery`/`markNoShow` have
-> booking-layer code; `markNoShow` writes `no_show` and is only stubbed in the
-> repository). `reschedule` has **no** use-case yet.
+> permissions matrix are partly represented: `confirmDelivery` (student complete)
+> and `markNoShow` (`POST /api/sessions/[id]/no-show`, publishes `SessionNoShow`)
+> have booking-layer code and Prisma support; `reschedule` is route-level only
+> (`POST /api/sessions/[id]/reschedule` re-books + cancels, no domain use-case,
+> no `SessionRescheduled` event, no charge move). There is no tutor-side complete
+> and no auto-confirm worker.
 
 ---
 
 ## 2. Tutor application (state diagram)
 
-`TutorApplication`'s `ApplicationStatus` enum. Only `submitApplication` exists in
-code (writes a `pending` application); the review-queue transitions are admin-side
-and not implemented.
+`TutorApplication`'s `ApplicationStatus` enum. `submitApplication` writes a
+`pending` application; `reviewApplication` (`pending → approved|rejected`,
+`in_review` unreachable) is wired through the hub facade and the admin queue
+over the `HUB_URL` bridge (Prisma directly when `USE_PRISMA=true`), and approval
+upserts a live `TutorProfile`.
 
 ```mermaid
 stateDiagram-v2
@@ -301,7 +306,7 @@ subscriptions.
 | `SessionBooked` | scheduling `bookSession` | `{ sessionId, tutorId, studentId, isTrial }` |
 | `SessionCancelled` | scheduling `cancelSession` | `{ sessionId, cancelledBy, withinNoticeWindow }` |
 | `SessionCompleted` | booking `confirmDelivery` | `{ sessionId, tutorId, studentId, segmentCount, rate: Money }` |
-| `SessionNoShow` | *(not published in code)* | `{ sessionId, noShowBy }` |
+| `SessionNoShow` | booking `markNoShow` | `{ sessionId, noShowBy }` |
 | `SessionDeliveryConfirmed` | booking `confirmDelivery` | `{ sessionId, confirmedBy }` |
 | `TutorLevelChanged` | tutor-performance `recomputeLevel` | `{ tutorId, fromLevel, toLevel }` |
 | `MojoPlusSubscribed` | mojo-plus `subscribeMojoPlus` | `{ tutorId }` |
@@ -312,7 +317,7 @@ subscriptions.
 | `ReviewSubmitted` | reviews `submitReview` | `{ sessionId, tutorId, rating }` |
 | `ReferralConverted` | referrals `trackReferral` | `{ code, newUserId }` |
 | `DisputeFiled` | trust-safety `fileDispute` | `{ sessionId, filedBy, reason }` |
-| `DisputeResolved` | *(not published in code)* | `{ disputeId, outcome }` |
+| `DisputeResolved` | trust-safety `resolveDispute` | `{ disputeId, outcome }` |
 
 ### Events the planning docs list but the code catalog does NOT define
 
@@ -321,10 +326,8 @@ flowchart LR
     subgraph PLANNED["Roadmap event, absent from events.types.ts"]
         A[SessionRescheduled]
     end
-    A -.->|referenced in cancel-session TODO| SC[scheduling/src/application]
+    A -.->|thin route only, no event| SC[apps/hub/app/api/sessions/[id]/reschedule]
 ```
 
-`SessionRescheduled` is the only roadmap event still missing from the catalog; the
-`reschedule` action from the permissions matrix has no use-case or event yet (see
-§1 note). `DisputeResolved` and `SessionNoShow` are typed but nothing publishes
-them yet.
+`SessionRescheduled` is the only roadmap event still missing from the catalog;
+the thin reschedule route re-books + cancels with no event and no charge move.

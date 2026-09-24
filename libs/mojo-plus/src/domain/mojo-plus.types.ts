@@ -6,7 +6,6 @@ export interface MojoPlusSubscription {
   readonly cancelledAt: string | null;
 }
 
-export interface MojoPlusRepository {
-  find(tutorId: string): Promise<MojoPlusSubscription | null>;
-  save(subscription: MojoPlusSubscription): Promise<void>;
-}
+// Re-exported here so existing `.../domain` imports keep working; new code
+// should import the port from `./mojo-plus.ports`.
+export type { MojoPlusRepository } from './mojo-plus.ports';

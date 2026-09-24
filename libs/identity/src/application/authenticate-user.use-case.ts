@@ -33,7 +33,9 @@ export function makeAuthenticateUser(deps: {
   hasher: PasswordHasher;
   tokens: TokenIssuer;
 }) {
-  return async function authenticateUser(input: AuthenticateUserInput): Promise<AuthenticateUserResult> {
+  return async function authenticateUser(
+    input: AuthenticateUserInput,
+  ): Promise<AuthenticateUserResult> {
     const user = await deps.users.findByEmail(input.email);
     if (!user) throw new InvalidCredentialsError();
 

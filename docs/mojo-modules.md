@@ -71,16 +71,16 @@ Identity        identity  (foundation — depends on nothing else)
 | Module | Owns | Depends on |
 |---|---|---|
 | `discovery` | Search, filters, favorites | `tutor-profile`, `pricing` (for price bands) |
-| `scheduling` | Availability rules, exceptions — the calendar itself | `identity`, `tutor-profile` |
+| `scheduling` | Availability rules, exceptions, group labs (open/lock/cancel, member sessions) | `identity`, `tutor-profile` |
 | `booking` | Session lifecycle: book, reschedule, cancel, complete, no-show, delivery confirmation | `scheduling`, `identity` |
 | `lab` | Virtual-lab session access (thin wrapper over the video SDK) | `booking` |
 
 ### Commerce
 | Module | Owns | Depends on |
 |---|---|---|
-| `pricing` | Level → take-home %, segment rates, commission calculation — **pure domain logic, no I/O** | `tutor-performance` |
+| `pricing` | Level → take-home %, segment rates, commission calculation, **group pricing ladder** — **pure domain logic, no I/O** | `tutor-performance` |
 | `mojo-plus` | Subscription state, custom-pricing entitlement | `identity`, `pricing` |
-| `payments` | Tutor wallet ledger, payout rail integration, payout approval | `booking`, `pricing`, `mojo-plus` |
+| `payments` | Tutor wallet ledger, payout rail integration, payout approval, per-student group charges, lock true-up refunds | `booking`, `pricing`, `mojo-plus` |
 | `billing` | Student payment methods, lesson-package subscriptions | `identity`, `booking`, `pricing` |
 
 ### Engagement

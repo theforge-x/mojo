@@ -9,6 +9,7 @@ function fakeReviews(initial: Review | null = null) {
   const repo: ReviewRepository = {
     findById: async (id) => (store && store.id === id ? store : null),
     findBySession: async (sessionId) => (store && store.sessionId === sessionId ? store : null),
+    listByTutor: async (tutorId) => (store && store.tutorId === tutorId ? [store] : []),
     save: async (review) => {
       store = review;
     },

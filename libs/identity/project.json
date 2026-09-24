@@ -1,1 +1,6 @@
-{ "name": "identity", "sourceRoot": "libs/identity/src", "projectType": "library", "tags": ["scope:identity"] }
+{
+  "name": "identity",
+  "sourceRoot": "libs/identity/src",
+  "projectType": "library",
+  "tags": ["scope:identity"]
+}

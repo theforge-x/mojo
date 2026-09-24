@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { ReferralRepository } from '../domain/referrals.ports';
 import type { ReferralConversion, ReferralLink } from '../domain/referrals.types';
 import {
-  ReferralAlreadyTrackedError,
   makeTrackReferralConversion,
+  ReferralAlreadyTrackedError,
 } from './track-referral.use-case';
 
 function fakeReferrals() {

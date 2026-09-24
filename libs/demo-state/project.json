@@ -1,0 +1,6 @@
+{
+  "name": "demo-state",
+  "sourceRoot": "libs/demo-state/src",
+  "projectType": "library",
+  "tags": ["scope:demo-state"]
+}

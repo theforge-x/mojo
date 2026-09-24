@@ -1,1 +1,6 @@
-{ "name": "shared-events", "sourceRoot": "libs/shared/events/src", "projectType": "library", "tags": ["type:domain", "scope:shared"] }
+{
+  "name": "shared-events",
+  "sourceRoot": "libs/shared/events/src",
+  "projectType": "library",
+  "tags": ["type:domain", "scope:shared"]
+}

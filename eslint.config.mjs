@@ -1,4 +1,5 @@
 import nxPlugin from '@nx/eslint-plugin';
+import tsEsLint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import mojoCleanArchitecture from './tools/eslint/mojo-clean-architecture.mjs';
 
@@ -31,14 +32,25 @@ const withPeers = (module, peers) => ({
   onlyDependOnLibsWithTags: [...SHARED, ...peers],
 });
 
+const IGNORES = [
+  '**/vitest.config.ts',
+  '**/vitest.aliases.ts',
+  '**/*.config.mjs',
+  '**/.next/**',
+  '**/dist/**',
+  '**/node_modules/**',
+  '**/coverage/**',
+  '**/*.gen.ts',
+  '**/docs/**',
+];
+
 export default [
   ...nxPlugin.configs['flat/base'],
-  {
-    ignores: ['**/vitest.config.ts', '**/vitest.aliases.ts', '**/*.config.mjs'],
-  },
+  { ignores: IGNORES },
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
+      '@typescript-eslint': tsEsLint,
       '@mojo': { rules: { 'clean-architecture': mojoCleanArchitecture } },
     },
     languageOptions: {
@@ -60,6 +72,10 @@ export default [
           depConstraints: [
             // Shared libs may only depend on other shared libs (never on a domain module).
             { sourceTag: 'scope:shared', onlyDependOnLibsWithTags: SHARED },
+            // The demo-state lib aggregates the in-memory stores for both demo apps.
+            // Sits apart from the bounded modules because only the apps consume it;
+            // its layer discipline is guarded by @mojo/clean-architecture instead.
+            { sourceTag: 'scope:demo-state', onlyDependOnLibsWithTags: ['*'] },
             // Applications (hub, admin) may consume any module.
             { sourceTag: 'type:app', onlyDependOnLibsWithTags: ['*'] },
             // Each bounded module depends on the shared libs plus its explicit peers only.

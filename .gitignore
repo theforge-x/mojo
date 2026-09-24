@@ -4,6 +4,25 @@ dist
 .nx/cache
 .nx/workspace-data
 coverage
+*.tsbuildinfo
 *.env
 *.env.local
 prisma/dev.db
+
+docs/ai_sessions
+
+# Expo
+node_modules/
+.expo/
+.yarn/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+cache/
+

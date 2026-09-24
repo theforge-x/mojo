@@ -3,6 +3,7 @@ export interface PaymentMethod {
   readonly studentId: string;
   readonly rail: 'paystack' | 'flutterwave' | 'stripe';
   readonly last4: string | null;
+  readonly authorizationCode: string | null;
   readonly isDefault: boolean;
 }
 

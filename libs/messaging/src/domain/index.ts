@@ -1,2 +1,2 @@
-export * from './messaging.types';
 export * from './messaging.ports';
+export * from './messaging.types';

@@ -1,9 +1,9 @@
-import * as SeparatorPrimitive from "@radix-ui/react-separator";
-import type * as React from "react";
 import { cn } from '@mojo/shared/util';
+import * as SeparatorPrimitive from '@radix-ui/react-separator';
+import type * as React from 'react';
 
 export function Separator({
-  orientation = "horizontal",
+  orientation = 'horizontal',
   decorative = true,
   className,
   ...props
@@ -13,9 +13,9 @@ export function Separator({
       decorative={decorative}
       orientation={orientation}
       className={cn(
-        "shrink-0 bg-border",
-        orientation === "horizontal" ? "h-px w-full" : "h-full w-px",
-        className
+        'shrink-0 bg-border',
+        orientation === 'horizontal' ? 'h-px w-full' : 'h-full w-px',
+        className,
       )}
       {...props}
     />

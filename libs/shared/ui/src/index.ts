@@ -1,4 +1,5 @@
 export * from './alert';
+export * from './avatar';
 export * from './badge';
 export * from './brand';
 export * from './button';
@@ -21,6 +22,9 @@ export * from './sidebar';
 export * from './spinner';
 export * from './stepper';
 export * from './textarea';
+export * from './theme-provider';
+export * from './theme-toggle';
+export * from './time-select';
 export * from './toggle-group';
 export * from './tooltip';
 export * from './weekly-calendar';

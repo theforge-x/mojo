@@ -11,14 +11,20 @@ export class PrismaTutorLevelReader implements TutorLevelReader {
   }
 
   async hasMojoPlus(tutorId: string): Promise<boolean> {
-    const sub = await this.prisma.mojoPlusSubscription.findUnique({
+    // findFirst: (tutorId, status) is not a unique constraint, so findUnique
+    // would throw a validation error at runtime.
+    const sub = await this.prisma.mojoPlusSubscription.findFirst({
       where: { tutorId, status: 'active' },
     });
     return sub !== null;
   }
 
   async getCustomRateMinor(tutorId: string): Promise<number | null> {
-    const sub = await this.prisma.mojoPlusSubscription.findUnique({ where: { tutorId } });
+    // Active only — a cancelled subscription must fall back to the level
+    // rate for quotes, charges, and completion splits alike.
+    const sub = await this.prisma.mojoPlusSubscription.findFirst({
+      where: { tutorId, status: 'active' },
+    });
     return sub?.customSegmentRateMinor ?? null;
   }
 }

@@ -8,6 +8,7 @@ function fakeApplications(initial: TutorApplication | null = null) {
   let store = initial;
   const repo: ApplicationRepository = {
     findById: async (id) => (store && store.id === id ? store : null),
+    list: async () => (store ? [store] : []),
     save: async (app) => {
       store = app;
     },
@@ -19,11 +20,18 @@ function sampleApplication(overrides: Partial<TutorApplication> = {}): TutorAppl
   return {
     id: 'app_1',
     tutorId: 't_1',
+    displayName: 'Ada Yusuf',
+    photoUrl: '',
+    education: 'B.Sc. Mathematics — ABU Zaria',
     subjects: ['maths'],
+    languages: ['English'],
     bio: 'I love teaching',
     introVideoUrl: 'https://ex.com/v',
     certifications: ['NCE'],
+    timezone: 'Africa/Lagos',
+    availability: [{ id: 'a1', weekday: 1, startMinute: 480, endMinute: 720 }],
     status: 'pending',
+    reviewNote: '',
     submittedAt: '2026-09-01T09:00:00.000Z',
     ...overrides,
   };

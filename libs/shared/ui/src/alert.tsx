@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@mojo/shared/util';
+import { cva, type VariantProps } from 'class-variance-authority';
+import type * as React from 'react';
 
 const alertVariants = cva('flex gap-3 rounded-lg border p-4', {
   variants: {
@@ -13,7 +13,9 @@ const alertVariants = cva('flex gap-3 rounded-lg border p-4', {
   defaultVariants: { variant: 'info' },
 });
 
-export interface AlertProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof alertVariants> {}
+export interface AlertProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof alertVariants> {}
 
 export function Alert({ className, variant, children, ...props }: AlertProps) {
   return (

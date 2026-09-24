@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
-import type { User } from '../domain/user.types';
 import type { UserRepository } from '../domain/identity.ports';
+import type { User } from '../domain/user.types';
 
 export class PrismaUserRepository implements UserRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -13,6 +13,11 @@ export class PrismaUserRepository implements UserRepository {
   async findById(id: string): Promise<User | null> {
     const row = await this.prisma.user.findUnique({ where: { id } });
     return row ? toDomain(row) : null;
+  }
+
+  async listByRole(role: User['role']): Promise<User[]> {
+    const rows = await this.prisma.user.findMany({ where: { role } });
+    return rows.map(toDomain);
   }
 
   async save(user: User): Promise<void> {
@@ -28,6 +33,7 @@ export class PrismaUserRepository implements UserRepository {
 function toDomain(row: any): User {
   return {
     id: row.id,
+    name: row.name,
     email: row.email,
     role: row.role,
     passwordHash: row.passwordHash,

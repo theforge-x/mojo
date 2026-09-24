@@ -1,9 +1,9 @@
-import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@mojo/shared/util';
+import { cva, type VariantProps } from 'class-variance-authority';
+import type * as React from 'react';
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1.5 rounded-full border border-transparent px-2.5 py-1 font-mono text-xs font-medium',
+  'block inline-flex items-center gap-1.5 rounded-full border border-transparent px-1 py-.5 font-mono text-xs font-medium',
   {
     variants: {
       variant: {
@@ -19,8 +19,10 @@ const badgeVariants = cva(
   },
 );
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLSpanElement>,
+    VariantProps<typeof badgeVariants> {}
 
 export function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant, className }))} {...props} />;
+  return <span className={cn(badgeVariants({ variant, className }))} {...props} />;
 }

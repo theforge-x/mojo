@@ -1,0 +1,73 @@
+/*
+ * Re-skins LiveKit's default component theme with Mojo's tokens instead of
+ * writing video UI from scratch. LiveKit prefixes every themeable variable
+ * with --lk- (see @livekit/components-styles) specifically so a consuming
+ * app can override them without fighting specificity — this file is that
+ * override, mapped 1:1 onto the same custom properties the rest of Mojo
+ * already uses.
+ *
+ * Import order matters: this file must load AFTER '@livekit/components-styles'
+ * so these overrides win.
+ */
+
+[data-lk-theme="mojo"] {
+  --lk-bg: var(--background);
+  --lk-bg2: var(--card);
+  --lk-bg3: var(--muted);
+  --lk-fg: var(--foreground);
+  --lk-fg2: var(--muted-foreground);
+  --lk-border-color: var(--border);
+  --lk-accent-bg: var(--primary);
+  --lk-accent-fg: var(--primary-foreground);
+  --lk-danger: var(--destructive);
+  --lk-danger-fg: var(--destructive-foreground);
+  --lk-control-bg: var(--card);
+  --lk-control-fg: var(--headline);
+  --lk-control-hover-bg: var(--muted);
+  --lk-connection-excellent: var(--primary);
+  --lk-connection-good: var(--tertiary);
+  --lk-connection-poor: var(--destructive);
+  --lk-radius: var(--radius-md);
+  font-family: var(--font-sans);
+}
+
+[data-lk-theme="mojo"] .lk-participant-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+/* Screen-share tiles get a mint outline so a presenting participant reads
+   as "live" at a glance, consistent with badge-primary elsewhere in Mojo. */
+[data-lk-theme="mojo"] .lk-participant-tile[data-lk-source="screen_share"] {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Reaction emoji float up from the centre of the stage and fade out. The
+   translate(-50%, …) pairs with the overlay's top-1/2 left-1/2 anchor; the
+   duration must match REACTION_TTL_MS in lab-reactions.tsx so reactions
+   disappear at the same time they stop being visible. */
+@keyframes mojo-reaction-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 28px) scale(0.4);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.15);
+  }
+  30% {
+    transform: translate(-50%, -10px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -88px) scale(1);
+  }
+}
+
+[data-lk-theme="mojo"] .mojo-reaction {
+  animation: mojo-reaction-float 3.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+  line-height: 1;
+}
