@@ -10,8 +10,7 @@ import { revokeSessionToken } from '../../../../lib/credential-auth';
  */
 export async function POST(request: Request) {
   const header = request.headers.get('authorization');
-  const bearer =
-    header?.startsWith('Bearer ') && header.length > 7 ? header.slice(7).trim() : null;
+  const bearer = header?.startsWith('Bearer ') && header.length > 7 ? header.slice(7).trim() : null;
   const token = bearer || (await cookies()).get('mojo_user')?.value || '';
 
   if (token) await revokeSessionToken(token);

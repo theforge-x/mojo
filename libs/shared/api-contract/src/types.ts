@@ -16,7 +16,9 @@ export interface ContractUser {
   readonly role: Role;
 }
 
-export type ApiResponse<T> = { readonly ok: true } & T | { readonly ok: false; readonly error: string };
+export type ApiResponse<T> =
+  | ({ readonly ok: true } & T)
+  | { readonly ok: false; readonly error: string };
 
 export function isOk<T>(response: ApiResponse<T>): response is { readonly ok: true } & T {
   return response.ok === true;

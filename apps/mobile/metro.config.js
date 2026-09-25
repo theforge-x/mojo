@@ -14,7 +14,7 @@ const { assetExts, sourceExts } = defaultConfig.resolver;
  * @type {import('metro-config').MetroConfig}
  */
 const customConfig = {
-  cacheVersion: "mobile",
+  cacheVersion: 'mobile',
   transformer: {
     babelTransformerPath: require.resolve('react-native-svg-transformer'),
   },
@@ -30,7 +30,6 @@ const customConfig = {
     getPolyfills: () => require('@react-native/js-polyfills')(),
   },
 };
-
 
 module.exports = withNxMetro(mergeConfig(defaultConfig, customConfig), {
   // Change this to true to see debugging info.

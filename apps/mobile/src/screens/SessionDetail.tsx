@@ -1,6 +1,5 @@
-import React from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
 import type { SessionSummary } from '@mojo/shared/api-contract';
+import { Button, StyleSheet, Text, View } from 'react-native';
 
 interface Props {
   readonly session: SessionSummary;
@@ -16,7 +15,8 @@ export function SessionDetailScreen({ session, joinLab }: Props) {
       <Text style={styles.line}>Ends: {new Date(session.endIso).toLocaleString()}</Text>
       <Text style={styles.line}>Status: {session.status}</Text>
       <Text style={styles.line}>
-        Format: {session.groupId === null ? 'One-on-one' : `Group lab (${session.groupId.slice(0, 8)})`}
+        Format:{' '}
+        {session.groupId === null ? 'One-on-one' : `Group lab (${session.groupId.slice(0, 8)})`}
       </Text>
       <View style={styles.gap} />
       <Button title="Join lab" onPress={joinLab} />

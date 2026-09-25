@@ -127,9 +127,9 @@ import {
   makeBookSession,
   makeCancelGroupLab,
   makeCancelSession,
+  makeConfirmSession,
   makeCreateGroupLab,
   makeLockGroupLab,
-  makeConfirmSession,
   makeRescheduleSession,
   makeSetAvailability,
   makeSetExceptions,
@@ -141,11 +141,11 @@ import type {
   AvailabilityException,
   AvailabilityRepository,
   AvailabilityRule,
+  GroupLab,
+  GroupLabRepository,
   ScheduledSession,
   SchedulingSettings,
   SessionRepository,
-  GroupLab,
-  GroupLabRepository,
 } from '@mojo/scheduling/domain';
 import type { Money } from '@mojo/shared/domain';
 import {
@@ -171,6 +171,7 @@ import type { PrismaClient } from '@prisma/client';
 import { sharedPrismaClient } from './prisma-client';
 import {
   EmailDispatcher,
+  ExpoPushDispatcher,
   PaystackCollectAdapter,
   PaystackPayoutRail,
   PrismaApplicationRepository,
@@ -178,6 +179,7 @@ import {
   PrismaBookingRepository,
   PrismaChargeRepository,
   PrismaDisputeRepository,
+  PrismaGroupLabRepository,
   PrismaInterestRepository,
   PrismaMessageRepository,
   PrismaMojoPlusRepository,
@@ -187,7 +189,6 @@ import {
   PrismaReferralRepository,
   PrismaReplacementGrantRepository,
   PrismaReviewRepository,
-  PrismaGroupLabRepository,
   PrismaSessionRepository,
   PrismaSubjectTaxonomyRepository,
   PrismaTutorLevelReader,
@@ -197,7 +198,6 @@ import {
   PrismaUserRepository,
   PrismaWalletRepository,
   summarizerFromEnv,
-  ExpoPushDispatcher,
   WhatsAppDispatcher,
 } from './prisma-repos';
 import {
@@ -207,6 +207,7 @@ import {
   InMemoryBookingRepository,
   InMemoryChargeRepository,
   InMemoryDisputeRepository,
+  InMemoryGroupLabRepository,
   InMemoryInterestRepository,
   InMemoryMessageRepository,
   InMemoryMojoPlusRepository,
@@ -216,7 +217,6 @@ import {
   InMemoryReferralRepository,
   InMemoryReplacementGrantRepository,
   InMemoryReviewRepository,
-  InMemoryGroupLabRepository,
   InMemorySessionRepository,
   InMemorySessionStore,
   InMemoryStudentPaymentMethodRepository,
@@ -1059,7 +1059,11 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     },
     groups: {
       create: (input) =>
-        createGroupLab({ ...input, groupId: crypto.randomUUID(), nowIso: new Date().toISOString() }),
+        createGroupLab({
+          ...input,
+          groupId: crypto.randomUUID(),
+          nowIso: new Date().toISOString(),
+        }),
       lab: (groupId) => repos.groups.findById(groupId),
       labsByTutor: (tutorId) => repos.groups.listByTutor(tutorId),
       openLabs: (tutorId) => repos.groups.listOpenByTutor(tutorId),
@@ -1075,10 +1079,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
         // sizes only grow toward the lock, so members can only have overpaid —
         // refund the difference, never collect more.
         const lockedSize = group.lockedSize ?? 0;
-        const perSegment = await chargeRateReader.groupPerSegmentMinor(
-          group.tutorId,
-          lockedSize,
-        );
+        const perSegment = await chargeRateReader.groupPerSegmentMinor(group.tutorId, lockedSize);
         const adjustments: { sessionId: string; studentId: string; refundedMinor: number }[] = [];
         for (const sessionId of memberSessionIds) {
           const [session, charge] = await Promise.all([

@@ -1,4 +1,3 @@
-
 /**
  * This script is used to patch the '@nx/expo' package to work with EAS Build.
  * It is run as a eas-build-post-install script in the 'package.json' of expo app.
@@ -6,8 +5,8 @@
  * It will create a symlink from the project's node_modules to the workspace's node_modules.
  */
 
-import { symlink, existsSync } from 'fs';
-import { join } from 'path';
+import { existsSync, symlink } from 'node:fs';
+import { join } from 'node:path';
 
 const [workspaceRoot, projectRoot] = process.argv.slice(2);
 

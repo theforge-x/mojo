@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { resolvePaymentCallbackUrl } from '@mojo/payments/domain';
+import { NextResponse } from 'next/server';
 import { getHub } from '../../../../demo/composition-root';
 import { requireRole } from '../../../../lib/session';
 

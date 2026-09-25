@@ -76,9 +76,11 @@ export function makeChargeStudent(deps: {
   const quoteSessionCharge = makeQuoteSessionCharge({ rates: deps.rates, defaults: deps.defaults });
 
   return async function chargeStudent(input: ChargeStudentInput): Promise<StudentCharge> {
-    const groupSize = input.groupSize !== undefined && input.groupSize > 1 ? input.groupSize : undefined;
+    const groupSize =
+      input.groupSize !== undefined && input.groupSize > 1 ? input.groupSize : undefined;
     if (groupSize !== undefined && input.isTrial) throw new GroupTrialBookingError();
-    if (groupSize !== undefined && input.replacementGrantId) throw new InvalidReplacementGrantError();
+    if (groupSize !== undefined && input.replacementGrantId)
+      throw new InvalidReplacementGrantError();
 
     const method = input.paymentMethodId
       ? ((await deps.methods.findByStudent(input.studentId)).find(

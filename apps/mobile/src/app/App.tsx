@@ -1,8 +1,8 @@
-import { NavigationContainer, type LinkingOptions } from '@react-navigation/native';
+import { type LinkingOptions, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { HubClient, defaultHubUrl } from '../api/client';
+import { defaultHubUrl, HubClient } from '../api/client';
 import { clearSession, loadSession } from '../auth/session';
 import type { AuthState, RootStackParamList } from '../navigation/types';
 import { CheckoutScreen } from '../screens/Checkout';
@@ -44,7 +44,7 @@ export function App() {
       })
       .catch(() => {})
       .finally(() => setRestoring(false));
-  }, []);
+  }, [hubUrl]);
 
   const client = useMemo(
     () => new HubClient(auth?.hubUrl ?? hubUrl, () => auth?.token ?? null),
@@ -104,7 +104,9 @@ export function App() {
               {({ navigation, route }) => (
                 <SessionDetailScreen
                   session={route.params.session}
-                  joinLab={() => navigation.navigate('LabRoom', { sessionId: route.params.session.id })}
+                  joinLab={() =>
+                    navigation.navigate('LabRoom', { sessionId: route.params.session.id })
+                  }
                 />
               )}
             </Stack.Screen>

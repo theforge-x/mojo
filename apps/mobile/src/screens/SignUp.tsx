@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { isOk } from '@mojo/shared/api-contract';
+import { useState } from 'react';
+import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { HubClient } from '../api/client';
 import { saveSession } from '../auth/session';
 import type { AuthState } from '../navigation/types';

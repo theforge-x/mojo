@@ -155,9 +155,7 @@ export default async function TutorDetailPage({
             <h2 className="flex items-center gap-2 font-display text-lg font-bold text-headline">
               <Users className="size-5 text-primary" aria-hidden />
               Group labs
-              <span className="text-sm font-medium text-muted-foreground">
-                ({labCards.length})
-              </span>
+              <span className="text-sm font-medium text-muted-foreground">({labCards.length})</span>
             </h2>
           </div>
           <div className="mb-6 flex flex-col gap-4">

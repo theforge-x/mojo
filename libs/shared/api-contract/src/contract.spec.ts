@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  NATIVE_PAYMENT_CALLBACK,
-  contract,
-  isOk,
-  parsePaymentReference,
-} from './index';
+import { contract, isOk, NATIVE_PAYMENT_CALLBACK, parsePaymentReference } from './index';
 
 describe('contract paths', () => {
   it('builds the lab token path per session', () => {
@@ -34,9 +29,9 @@ describe('parsePaymentReference', () => {
   });
 
   it('reads the web verify page URL too', () => {
-    expect(
-      parsePaymentReference('https://mojo.example.com/payments/verify?reference=abc123'),
-    ).toBe('abc123');
+    expect(parsePaymentReference('https://mojo.example.com/payments/verify?reference=abc123')).toBe(
+      'abc123',
+    );
   });
 
   it('ignores sibling query params and decodes values', () => {

@@ -12,6 +12,7 @@ import { CalendarDays, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { CalendarExportButton } from '../../components/calendar-export-button';
 import { DisputeButton } from '../../components/dispute-button';
+import { GroupLabBadge } from '../../components/group-lab-badge';
 import { CancelSessionButton, ConfirmDeliveryButton } from '../../components/session-actions';
 import {
   dayLabel,
@@ -29,7 +30,6 @@ import {
 } from '../../components/session-feedback';
 import { SessionStatusBadge } from '../../components/session-status-badge';
 import { SessionViewToggle } from '../../components/session-view-toggle';
-import { GroupLabBadge } from '../../components/group-lab-badge';
 import { getHub } from '../../demo/composition-root';
 import { formatWhen } from '../../lib/format';
 import { currentUser } from '../../lib/session';
@@ -136,12 +136,12 @@ export async function StudentHome({ view }: { view: SessionView }) {
               title={tutor}
               subtitle={session.isTrial ? 'Trial lesson' : undefined}
               badges={
-              <StudentSessionBadges
-                status={session.status}
-                isTrial={session.isTrial}
-                groupSize={session.groupSize}
-              />
-            }
+                <StudentSessionBadges
+                  status={session.status}
+                  isTrial={session.isTrial}
+                  groupSize={session.groupSize}
+                />
+              }
               actions={<StudentSessionActions session={session} tutorName={tutor} />}
             >
               <StudentSessionExtras
@@ -165,12 +165,12 @@ export async function StudentHome({ view }: { view: SessionView }) {
               title={tutor}
               subtitle={session.isTrial ? 'Trial lesson' : undefined}
               badges={
-              <StudentSessionBadges
-                status={session.status}
-                isTrial={session.isTrial}
-                groupSize={session.groupSize}
-              />
-            }
+                <StudentSessionBadges
+                  status={session.status}
+                  isTrial={session.isTrial}
+                  groupSize={session.groupSize}
+                />
+              }
               actions={<StudentSessionActions session={session} tutorName={tutor} />}
             >
               <StudentSessionExtras

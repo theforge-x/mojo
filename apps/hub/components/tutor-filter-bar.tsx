@@ -49,10 +49,7 @@ function tabClass(active: boolean): string {
   );
 }
 
-function groupOfSubject(
-  groups: readonly SubjectGroup[],
-  subject: string,
-): string {
+function groupOfSubject(groups: readonly SubjectGroup[], subject: string): string {
   if (!subject) return CLEAR;
   return groups.find((group) => group.subjects.includes(subject))?.domain ?? CLEAR;
 }
@@ -96,9 +93,7 @@ export function TutorFilterBar({
   }, [subjectGroups, subject]);
 
   const activeSubjects =
-    tab === null
-      ? null
-      : (subjectGroups.find((group) => group.domain === tab)?.subjects ?? []);
+    tab === null ? null : (subjectGroups.find((group) => group.domain === tab)?.subjects ?? []);
 
   function apply(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());

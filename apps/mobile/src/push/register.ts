@@ -17,8 +17,7 @@ export async function registerPushToken(client: HubClient): Promise<PushRegistra
     return { registered: false, reason: 'Push needs a physical device.' };
   }
   const permission = await Notifications.getPermissionsAsync();
-  const granted =
-    permission.granted || (await Notifications.requestPermissionsAsync()).granted;
+  const granted = permission.granted || (await Notifications.requestPermissionsAsync()).granted;
   if (!granted) {
     return { registered: false, reason: 'Push permission denied.' };
   }

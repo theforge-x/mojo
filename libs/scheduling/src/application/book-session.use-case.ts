@@ -64,9 +64,7 @@ export function makeBookSession(deps: {
     // Members of the same group lab share one event — they neither conflict
     // with nor buffer against each other, only against everything else.
     const others =
-      input.groupId !== undefined
-        ? existing.filter((s) => s.groupId !== input.groupId)
-        : existing;
+      input.groupId !== undefined ? existing.filter((s) => s.groupId !== input.groupId) : existing;
 
     if (hasConflict(candidate, others)) {
       throw new SchedulingConflictError('overlaps an existing session.');

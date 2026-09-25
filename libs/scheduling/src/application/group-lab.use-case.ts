@@ -25,11 +25,7 @@ export class GroupLabNotFoundError extends Error {
   }
 }
 
-export class GroupLabStateError extends Error {
-  constructor(reason: string) {
-    super(reason);
-  }
-}
+export class GroupLabStateError extends Error {}
 
 function cleanTitle(title: string): string {
   return title.trim().replace(/\s+/g, ' ');
@@ -93,9 +89,7 @@ export function makeCreateGroupLab(deps: {
     }
     if (
       openGroups.some(
-        (g) =>
-          g.status === 'open' &&
-          overlaps(input.startIso, input.endIso, g.startIso, g.endIso),
+        (g) => g.status === 'open' && overlaps(input.startIso, input.endIso, g.startIso, g.endIso),
       )
     ) {
       throw new SchedulingConflictError('overlaps another open group lab.');

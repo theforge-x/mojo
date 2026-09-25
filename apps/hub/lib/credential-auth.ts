@@ -9,7 +9,9 @@ export interface CredentialAccount {
   readonly user: { readonly id: string; readonly email: string; readonly role: Role };
 }
 
-export type CredentialResult = { ok: true; account: CredentialAccount } | { ok: false; error: string };
+export type CredentialResult =
+  | { ok: true; account: CredentialAccount }
+  | { ok: false; error: string };
 
 /**
  * The single credential-auth funnel for web and mobile. Both the `/api/auth`
@@ -76,7 +78,10 @@ export async function registerAccount(input: {
     if (error instanceof WeakPasswordError) {
       return { ok: false, error: `Password too weak — ${error.reasons.join('; ')}.` };
     }
-    return { ok: false, error: error instanceof Error ? error.message : 'Could not create your account.' };
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Could not create your account.',
+    };
   }
 }
 

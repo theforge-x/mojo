@@ -39,7 +39,9 @@ export function GroupLabManage({ initialLabs }: { initialLabs: GroupLabRow[] }) 
         const count = (body.adjustments ?? []).length as number;
         setResult(
           `Locked at ${body.group.lockedSize} seats.` +
-            (count > 0 ? ` ${count} seat${count === 1 ? '' : 's'} refunded to the locked price.` : ' No refunds needed.'),
+            (count > 0
+              ? ` ${count} seat${count === 1 ? '' : 's'} refunded to the locked price.`
+              : ' No refunds needed.'),
         );
       } else {
         setResult(`Cancelled — ${(body.unwoundSessionIds ?? []).length} seats refunded in full.`);

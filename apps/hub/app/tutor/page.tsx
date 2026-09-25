@@ -7,6 +7,9 @@ import { CalendarDays, Sparkles, Users } from 'lucide-react';
 import Link from 'next/link';
 import { CalendarExportButton } from '../../components/calendar-export-button';
 import { DisputeButton } from '../../components/dispute-button';
+import { GroupLabBadge } from '../../components/group-lab-badge';
+import { GroupLabCreateForm } from '../../components/group-lab-create-form';
+import { GroupLabManage } from '../../components/group-lab-manage';
 import { LevelBadge } from '../../components/level-badge';
 import { MojoPlusSection } from '../../components/mojo-plus-section';
 import { RequestPayoutButton } from '../../components/request-payout-button';
@@ -24,9 +27,6 @@ import {
 import { NoShowButton, RecapCard, RescheduleForm } from '../../components/session-feedback';
 import { SessionStatusBadge } from '../../components/session-status-badge';
 import { SessionViewToggle } from '../../components/session-view-toggle';
-import { GroupLabBadge } from '../../components/group-lab-badge';
-import { GroupLabCreateForm } from '../../components/group-lab-create-form';
-import { GroupLabManage } from '../../components/group-lab-manage';
 import { getHub } from '../../demo/composition-root';
 import { formatMinor } from '../../lib/format';
 import { currentUser } from '../../lib/session';
@@ -162,8 +162,8 @@ export default async function TutorHome({
         <GroupLabManage initialLabs={groupLabRows} />
         <GroupLabCreateForm />
         <p className="text-xs text-muted-foreground">
-          Each extra 10 seats drops the per-student price 10%. Locking freezes the size and
-          refunds any seats that overpaid on the way in.
+          Each extra 10 seats drops the per-student price 10%. Locking freezes the size and refunds
+          any seats that overpaid on the way in.
         </p>
       </div>
 
