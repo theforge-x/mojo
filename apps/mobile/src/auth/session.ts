@@ -1,5 +1,5 @@
-import * as SecureStore from 'expo-secure-store';
 import type { ContractUser } from '@mojo/shared/api-contract';
+import * as SecureStore from 'expo-secure-store';
 
 const TOKEN_KEY = 'mojo.auth.token';
 const USER_KEY = 'mojo.auth.user';
@@ -33,5 +33,8 @@ export async function saveSession(token: string, user: ContractUser): Promise<vo
 }
 
 export async function clearSession(): Promise<void> {
-  await Promise.all([SecureStore.deleteItemAsync(TOKEN_KEY), SecureStore.deleteItemAsync(USER_KEY)]);
+  await Promise.all([
+    SecureStore.deleteItemAsync(TOKEN_KEY),
+    SecureStore.deleteItemAsync(USER_KEY),
+  ]);
 }

@@ -118,8 +118,7 @@ export const getLandingTutors = cache(async (): Promise<readonly LandingTutor[]>
         name: profile.displayName || profile.user.name,
         initials: initialsOf(profile.displayName || profile.user.name),
         subjects: profile.subjects,
-        tagline:
-          profile.bio.length > 110 ? `${profile.bio.slice(0, 107).trimEnd()}…` : profile.bio,
+        tagline: profile.bio.length > 110 ? `${profile.bio.slice(0, 107).trimEnd()}…` : profile.bio,
         rating: Math.round(rating * 10) / 10,
         reviewCount,
         hoursTaught: Math.round(perf?.cumulativeHoursTaught ?? 0),

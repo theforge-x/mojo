@@ -40,7 +40,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ ok: false, error: 'This lab is full.' }, { status: 409 });
   }
   if (active.some((m) => m.studentId === user.id)) {
-    return NextResponse.json({ ok: false, error: 'You already hold a seat in this lab.' }, { status: 409 });
+    return NextResponse.json(
+      { ok: false, error: 'You already hold a seat in this lab.' },
+      { status: 409 },
+    );
   }
   const liveSize = active.length + 1;
 

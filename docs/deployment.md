@@ -27,6 +27,24 @@ repositories — the same interfaces, same use-cases, different persistence.
 
 ## 1. Database (Supabase free)
 
+### Local dev (Docker)
+
+The repo ships a `docker-compose.yml` with postgres:17 mapped to host port
+**8642** (not 5432, so it runs alongside other local Postgres containers):
+
+```bash
+docker compose up -d postgres   # credentials mirror .env: mojo/mojo-dev, db mojo
+npx prisma migrate deploy       # applies prisma/migrations to localhost:8642
+npm run prisma:seed             # optional: first admin + subject catalogue
+```
+
+The volume `mojo-postgres-data` persists data across restarts; `docker compose
+down` stops the container without deleting it. This database is strictly
+local — production (`USE_PRISMA=true` on Vercel) must point at Supabase below,
+never at `localhost`.
+
+### Supabase (production)
+
 1. Create a project at <https://supabase.com> (free plan).
 2. Open **Project Settings → Database → Connection string**, copy the
    **URI** (transaction-pooler or direct). For migrations use the direct
@@ -62,6 +80,18 @@ repositories — the same interfaces, same use-cases, different persistence.
    Without these three the lab pages render a friendly "LiveKit is not
    configured" card instead of erroring; the rest of the app works fine.
 
+### Video quality ladder
+
+The lab's Settings panel (`libs/lab`) offers a free ladder of **144p → 240p
+→ 360p → 480p → 720p, capped at 1080p**. Each rung re-publishes the camera
+with a matched capture resolution *and* publish bitrate (`setCameraEnabled`
+with capture + publish options), and the room runs with `adaptiveStream`,
+`dynacast`, and `simulcast` on so viewers automatically receive a fitting
+layer. Anything above 1080p (1440p, 2160p) is defined in
+`libs/lab/src/domain/lab-video-quality.ts` with `requiresPlus: true` and
+renders disabled until the paid plan lands — unlocking it is a matter of
+passing `hasPlus: true` from the pricing entitlement, no refactor needed.
+
 ## 3. Payouts & email (both optional in demo)
 
 - **Paystack** — dashboard → Settings → API Keys. Test keys are free and do
@@ -87,7 +117,12 @@ Create one Vercel project per app. For each, set:
 Add the app's env vars (from `.env.example`) in each project's
 **Settings → Environment Variables**. `USE_PRISMA=true` must be set only once
 the Supabase database is reachable from Vercel — until then leave it unset so
-the app runs on the seeded demo data.
+the app runs on the seeded demo data. These dashboard values are the production
+source of truth (the CI `deploy` job pulls them via `vercel pull`): never copy
+localhost URLs there — `DATABASE_URL` must be the Supabase pooler string and
+`HUB_URL` the deployed `https://<hub>.vercel.app`, or Prisma and the
+admin→hub bridge break in production. Keep one `RESEND_API_KEY` entry (no
+empty duplicate) and use live Paystack keys once real payouts flow.
 
 > Tip: point the `DATABASE_URL` hostname at Supabase's connection-pooler
 > address so serverless functions don't exhaust Postgres connections.

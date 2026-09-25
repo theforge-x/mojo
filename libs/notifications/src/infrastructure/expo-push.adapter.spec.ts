@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  ExpoPushDispatcher,
-  InvalidPushTokenError,
-  isExpoPushToken,
-} from './expo-push.adapter';
+import { ExpoPushDispatcher, InvalidPushTokenError, isExpoPushToken } from './expo-push.adapter';
 
 const TOKEN = 'ExponentPushToken[abc123]';
 
@@ -52,11 +48,13 @@ describe('ExpoPushDispatcher', () => {
   it('surfaces Expo ticket errors', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify({ data: { status: 'error', message: 'bad' } }))),
+      vi.fn(
+        async () => new Response(JSON.stringify({ data: { status: 'error', message: 'bad' } })),
+      ),
     );
 
-    await expect(
-      new ExpoPushDispatcher('expo-key').send('push', TOKEN, 'x', {}),
-    ).rejects.toThrow('Push rejected: bad');
+    await expect(new ExpoPushDispatcher('expo-key').send('push', TOKEN, 'x', {})).rejects.toThrow(
+      'Push rejected: bad',
+    );
   });
 });

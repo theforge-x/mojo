@@ -22,7 +22,12 @@ import { LabChatPanel } from './lab-chat-panel';
 import { LabControlBar } from './lab-control-bar';
 import { LabFilePanel } from './lab-file-panel';
 import { HandRaiseOverlay, LabReactionsProvider, ReactionsOverlay } from './lab-reactions';
-import { DEFAULT_VIDEO_ASPECT_ID, type VideoAspectId, videoAspect } from './lab-settings-panel';
+import {
+  DEFAULT_VIDEO_ASPECT_ID,
+  LAB_ROOM_OPTIONS,
+  type VideoAspectId,
+  videoAspect,
+} from './lab-settings-panel';
 import { LabWhiteboard } from './lab-whiteboard';
 
 export interface LabRoomProps {
@@ -30,11 +35,19 @@ export interface LabRoomProps {
   access: LabAccess;
   fileStorage: FileStorageProvider;
   onDisconnected?: () => void;
+  /** Paid-plan entitlement — unlocks 1440p+ when the pricing model lands. */
+  hasPlus?: boolean;
 }
 
 type Panel = 'chat' | 'whiteboard' | 'files' | null;
 
-export function LabRoom({ sessionId, access, fileStorage, onDisconnected }: LabRoomProps) {
+export function LabRoom({
+  sessionId,
+  access,
+  fileStorage,
+  onDisconnected,
+  hasPlus = false,
+}: LabRoomProps) {
   const [panel, setPanel] = useState<Panel>(null);
   const [videoAspectId, setVideoAspectId] = useState<VideoAspectId>(DEFAULT_VIDEO_ASPECT_ID);
   // The aspect select flows strings (matching the panel's <Select>), so cast
@@ -57,6 +70,7 @@ export function LabRoom({ sessionId, access, fileStorage, onDisconnected }: LabR
         connect
         video
         audio
+        options={LAB_ROOM_OPTIONS}
         onDisconnected={onDisconnected}
         className="flex flex-1 flex-col overflow-hidden"
       >
@@ -78,6 +92,7 @@ export function LabRoom({ sessionId, access, fileStorage, onDisconnected }: LabR
             onDisconnected={onDisconnected}
             aspectRatioId={videoAspectId}
             onAspectRatioChange={changeAspect}
+            hasPlus={hasPlus}
           />
         </LabReactionsProvider>
         <RoomAudioRenderer />
@@ -195,12 +210,14 @@ function LabControlBarConnected({
   onDisconnected,
   aspectRatioId,
   onAspectRatioChange,
+  hasPlus,
 }: {
   panel: Panel;
   setPanel: (p: Panel) => void;
   onDisconnected?: () => void;
   aspectRatioId: string;
   onAspectRatioChange: (id: string) => void;
+  hasPlus: boolean;
 }) {
   const participants = useParticipants();
   const toggle = (p: Exclude<Panel, null>) => setPanel(panel === p ? null : p);
@@ -217,6 +234,7 @@ function LabControlBarConnected({
       onLeave={() => onDisconnected?.()}
       aspectRatioId={aspectRatioId}
       onAspectRatioChange={onAspectRatioChange}
+      hasPlus={hasPlus}
     />
   );
 }

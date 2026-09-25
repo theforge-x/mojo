@@ -104,6 +104,7 @@ as a full admin from day one.
 | `mojo_plus.subscribe` | Subscribe to Mojo+ | — | — | Own | — |
 | `mojo_plus.cancel` | Cancel Mojo+ | — | — | Own | — |
 | `mojo_plus.set_custom_price` | Set a custom segment price (requires Mojo+) | — | — | Own | — |
+| `mojo_plus.view_outreach` | See interested students + message them first (requires Mojo+) | — | — | Own | — |
 | `mojo_plus.configure_terms` | Set Mojo+ price, take-home bonus, perks | — | — | — | ✓ |
 
 ### Referrals

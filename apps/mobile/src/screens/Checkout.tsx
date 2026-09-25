@@ -1,11 +1,7 @@
+import { isOk, NATIVE_PAYMENT_CALLBACK, parsePaymentReference } from '@mojo/shared/api-contract';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
-import {
-  NATIVE_PAYMENT_CALLBACK,
-  isOk,
-  parsePaymentReference,
-} from '@mojo/shared/api-contract';
 import type { HubClient } from '../api/client';
 
 interface Props {
@@ -23,25 +19,30 @@ export function CheckoutScreen({ client, incomingReference }: Props) {
   const [status, setStatus] = useState('Idle — start a test payment to walk the loop.');
   const [busy, setBusy] = useState(false);
 
-  async function settle(reference: string) {
-    setBusy(true);
-    setStatus(`Verifying ${reference}…`);
-    try {
-      const response = await client.verifyPayment(reference);
-      setStatus(isOk(response) ? `Paid ✓ ${response.charge.status}` : `Not paid: ${response.error}`);
-    } catch (unknown) {
-      setStatus(unknown instanceof Error ? unknown.message : 'Verify failed.');
-    } finally {
-      setBusy(false);
-    }
-  }
+  const settle = useCallback(
+    async (reference: string) => {
+      setBusy(true);
+      setStatus(`Verifying ${reference}…`);
+      try {
+        const response = await client.verifyPayment(reference);
+        setStatus(
+          isOk(response) ? `Paid ✓ ${response.charge.status}` : `Not paid: ${response.error}`,
+        );
+      } catch (unknown) {
+        setStatus(unknown instanceof Error ? unknown.message : 'Verify failed.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [client],
+  );
 
   useEffect(() => {
     // Settle-once per cold-start link; the manual button covers retries.
     if (typeof incomingReference === 'string' && incomingReference !== '') {
       void settle(incomingReference);
     }
-  }, []);
+  }, [settle, incomingReference]);
 
   async function startTestPayment() {
     setBusy(true);
@@ -88,7 +89,11 @@ export function CheckoutScreen({ client, incomingReference }: Props) {
       <Text style={styles.title}>Checkout demo</Text>
       <Text style={styles.status}>{status}</Text>
       <View style={styles.gap} />
-      <Button title={busy ? 'Working…' : 'Start test payment'} onPress={startTestPayment} disabled={busy} />
+      <Button
+        title={busy ? 'Working…' : 'Start test payment'}
+        onPress={startTestPayment}
+        disabled={busy}
+      />
     </View>
   );
 }

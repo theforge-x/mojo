@@ -22,7 +22,9 @@ const SETTINGS = {
   pausedForNewBookings: false,
 };
 
-const RULES = [{ id: 'r1', tutorId: 't_1', weekday: 1 as const, startMinute: 480, endMinute: 1020 }];
+const RULES = [
+  { id: 'r1', tutorId: 't_1', weekday: 1 as const, startMinute: 480, endMinute: 1020 },
+];
 
 function member(id: string, status: ScheduledSession['status'] = 'booked'): ScheduledSession {
   return {

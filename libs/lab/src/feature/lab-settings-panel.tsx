@@ -9,27 +9,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@mojo/shared/ui';
-import { type VideoCaptureOptions, VideoPresets, VideoPresets43 } from 'livekit-client';
+import {
+  ALL_VIDEO_RESOLUTIONS,
+  DEFAULT_VIDEO_RESOLUTION_ID,
+  type FreeVideoResolutionId,
+  findVideoResolution,
+  isResolutionAllowed,
+  LAB_ROOM_OPTIONS,
+  MAX_FREE_RESOLUTION_ID,
+  PREMIUM_VIDEO_RESOLUTIONS,
+  type PremiumVideoResolutionId,
+  VIDEO_RESOLUTIONS,
+  type VideoResolutionId,
+  type VideoResolutionOption,
+  videoPublishOptions,
+  videoResolution,
+} from '../domain/lab-video-quality';
 
-export type VideoResolutionId = 'h360' | 'h480' | 'h720' | 'h1080' | 'h1440';
-
-export const VIDEO_RESOLUTIONS: {
-  readonly id: VideoResolutionId;
-  readonly label: string;
-  readonly captureOptions: VideoCaptureOptions;
-}[] = [
-  { id: 'h360', label: '360p', captureOptions: { resolution: VideoPresets.h360.resolution } },
-  { id: 'h480', label: '480p', captureOptions: { resolution: VideoPresets43.h480.resolution } },
-  { id: 'h720', label: '720p', captureOptions: { resolution: VideoPresets.h720.resolution } },
-  { id: 'h1080', label: '1080p', captureOptions: { resolution: VideoPresets.h1080.resolution } },
-  { id: 'h1440', label: '1440p', captureOptions: { resolution: VideoPresets.h1440.resolution } },
-];
-
-export const DEFAULT_VIDEO_RESOLUTION_ID: VideoResolutionId = 'h720';
-
-export function videoResolution(id: string | undefined): VideoCaptureOptions | undefined {
-  return VIDEO_RESOLUTIONS.find((r) => r.id === id)?.captureOptions;
-}
+export type {
+  FreeVideoResolutionId,
+  PremiumVideoResolutionId,
+  VideoResolutionId,
+  VideoResolutionOption,
+};
+export {
+  ALL_VIDEO_RESOLUTIONS,
+  DEFAULT_VIDEO_RESOLUTION_ID,
+  findVideoResolution,
+  isResolutionAllowed,
+  LAB_ROOM_OPTIONS,
+  MAX_FREE_RESOLUTION_ID,
+  PREMIUM_VIDEO_RESOLUTIONS,
+  VIDEO_RESOLUTIONS,
+  videoPublishOptions,
+  videoResolution,
+};
 
 export type VideoAspectId = 'dynamic' | '16-9' | '4-3' | '1-1';
 
@@ -61,6 +75,8 @@ export interface LabSettingsPanelProps {
   onResolutionChange: (id: string) => void;
   aspectRatioId: string;
   onAspectRatioChange: (id: string) => void;
+  /** Paid-plan entitlement — unlocks 1440p+ when the pricing model lands. */
+  hasPlus?: boolean;
 }
 
 /**
@@ -75,6 +91,7 @@ export function LabSettingsPanel({
   onResolutionChange,
   aspectRatioId,
   onAspectRatioChange,
+  hasPlus = false,
 }: LabSettingsPanelProps) {
   return (
     <div className="border-t border-border bg-card px-4 py-3">
@@ -92,6 +109,11 @@ export function LabSettingsPanel({
               <SelectContent>
                 {VIDEO_RESOLUTIONS.map((r) => (
                   <SelectItem key={r.id} value={r.id}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+                {PREMIUM_VIDEO_RESOLUTIONS.map((r) => (
+                  <SelectItem key={r.id} value={r.id} disabled={!hasPlus}>
                     {r.label}
                   </SelectItem>
                 ))}

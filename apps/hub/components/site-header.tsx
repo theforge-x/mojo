@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, useTransition, type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState, useTransition } from 'react';
 import { logout } from '../lib/actions';
 
 export type SiteHeaderUser = {
@@ -61,12 +61,7 @@ const ANON_NAV: NavItem[] = [
   { href: '/apply', label: 'Become a tutor', icon: Compass },
 ];
 
-function NavLink({
-  href,
-  label,
-  icon: Icon,
-  active,
-}: NavItem & { active: boolean }) {
+function NavLink({ href, label, icon: Icon, active }: NavItem & { active: boolean }) {
   return (
     <Link href={href}>
       <span
@@ -204,7 +199,7 @@ export function SiteHeader({
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [pathname]);
+  }, []);
 
   const chrome = scrolled
     ? 'border-b border-border bg-background/95 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.25)] backdrop-blur'
@@ -219,7 +214,10 @@ export function SiteHeader({
           <div className="justify-self-start">
             <SiteLogo />
           </div>
-          <nav className="hidden items-center gap-1 justify-self-center md:flex" aria-label="Primary">
+          <nav
+            className="hidden items-center gap-1 justify-self-center md:flex"
+            aria-label="Primary"
+          >
             <SubjectsMenu subjects={subjects} />
             <NavDropdown label="Tutors" icon={Sparkles}>
               <div className="p-2">
@@ -265,9 +263,9 @@ export function SiteHeader({
             aria-label="Mobile"
           >
             {ANON_NAV.map((item) => (
-              <div key={item.href} onClick={() => setMenuOpen(false)}>
+              <Button key={item.href} type="button" onClick={() => setMenuOpen(false)}>
                 <NavLink {...item} active={pathname === item.href} />
-              </div>
+              </Button>
             ))}
             {subjects.length > 0 && (
               <>
@@ -317,7 +315,10 @@ export function SiteHeader({
         </div>
 
         {items.length > 0 && (
-          <nav className="hidden items-center gap-1 justify-self-center sm:flex" aria-label="Primary">
+          <nav
+            className="hidden items-center gap-1 justify-self-center sm:flex"
+            aria-label="Primary"
+          >
             {items.map((item) => (
               <NavLink key={item.href} {...item} active={pathname === item.href} />
             ))}

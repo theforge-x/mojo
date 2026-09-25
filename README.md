@@ -16,7 +16,7 @@ README covers running it.
   bounded module; see `docs/mojo-modules.md` for what each owns
 
 Modules are implemented at **full depth** — domain logic, use-cases, Prisma
-repositories, and Vitest tests (38 spec files / 141 tests). Boundaries are
+repositories, and Vitest tests (52 spec files / 237 tests). Boundaries are
 **machine-enforced**: `npm run lint:boundaries` runs the Nx module-scope rule
 plus a custom clean-architecture layer rule (domains depend only on
 `@mojo/shared/*`; cross-module access is restricted to `domain` contract types
@@ -29,10 +29,11 @@ runs it first so violations fail the build.
 npm install
 npm run prisma:generate
 cp .env.example .env        # defaults are demo-mode: no infra required
+docker compose up -d postgres  # local Postgres on :8642 (only needed with USE_PRISMA=true)
 npm run dev:hub             # http://localhost:3003
 npm run dev:admin           # http://localhost:3000
 
-npm test                    # npx vitest run (38 files / 141 tests)
+npm test                    # npx vitest run (52 files / 237 tests)
 npm run lint:boundaries     # module + clean-architecture boundaries
 npm run lint                # biome check + lint:boundaries
 npm run build               # lint:boundaries + nx run-many --target=build --all
@@ -49,9 +50,11 @@ npm run build               # lint:boundaries + nx run-many --target=build --all
   port) — submit a tutor application on the hub and it appears in the admin's
   nexus / application queue for review and approval.
 - **`true`** — the same use-cases run against Prisma repositories. Requires a
-  reachable Postgres (`DATABASE_URL`) and `npx prisma migrate deploy`. Both
-  apps share the database, so the `HUB_URL` bridge is not used. See
-  `docs/deployment.md` for the free-tier setup (Supabase).
+  reachable Postgres (`DATABASE_URL`) and `npx prisma migrate deploy`. For
+  local dev, spin up the bundled container (`docker compose up -d postgres` —
+  postgres:17 on `localhost:8642`, credentials match `.env`) instead of
+  Supabase. Both apps share the database, so the `HUB_URL` bridge is not used.
+  See `docs/deployment.md` for the free-tier setup (Supabase, production).
 
 ### Demo accounts — password `Password123`
 

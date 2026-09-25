@@ -2,11 +2,7 @@
 
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import {
-  authenticateCredentials,
-  registerAccount,
-  revokeSessionToken,
-} from './credential-auth';
+import { authenticateCredentials, registerAccount, revokeSessionToken } from './credential-auth';
 import { sessionCookieOptions } from './session';
 
 async function actionIp(): Promise<string> {

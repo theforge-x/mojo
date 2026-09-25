@@ -26,7 +26,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     const mine = await hub.scheduling.sessionsByStudent(user.id);
     const session = mine.find((s) => s.id === id);
     if (!session) {
-      return NextResponse.json({ ok: false, error: 'You are not on this booking.' }, { status: 403 });
+      return NextResponse.json(
+        { ok: false, error: 'You are not on this booking.' },
+        { status: 403 },
+      );
     }
     roomKey = session.groupId ?? undefined;
   } else if (user.role === 'tutor') {

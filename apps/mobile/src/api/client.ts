@@ -1,7 +1,6 @@
-import Constants from 'expo-constants';
 import {
-  contract,
   type ApiResponse,
+  contract,
   type DevicesResponse,
   type InitializePaymentRequest,
   type LabTokenResponse,
@@ -14,6 +13,7 @@ import {
   type SignupResponse,
   type VerifyPaymentResponse,
 } from '@mojo/shared/api-contract';
+import Constants from 'expo-constants';
 
 /**
  * Derives the hub URL for a dev phone: Expo Go serves the bundle from the
@@ -75,7 +75,10 @@ export class HubClient {
     return this.request(contract.devices);
   }
 
-  registerDevice(token: string, platform: 'ios' | 'android'): Promise<ApiResponse<Record<string, never>>> {
+  registerDevice(
+    token: string,
+    platform: 'ios' | 'android',
+  ): Promise<ApiResponse<Record<string, never>>> {
     return this.request(contract.devices, {
       method: 'POST',
       body: JSON.stringify({ token, platform }),
@@ -93,10 +96,12 @@ export class HubClient {
     return this.request(contract.preferences);
   }
 
-  initializePayment(
-    body: InitializePaymentRequest,
-  ): Promise<
-    ApiResponse<{ readonly session: unknown; readonly charge: unknown; readonly authorizationUrl: string }>
+  initializePayment(body: InitializePaymentRequest): Promise<
+    ApiResponse<{
+      readonly session: unknown;
+      readonly charge: unknown;
+      readonly authorizationUrl: string;
+    }>
   > {
     return this.request(contract.paymentsInitialize, {
       method: 'POST',

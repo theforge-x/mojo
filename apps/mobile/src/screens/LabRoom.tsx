@@ -1,8 +1,8 @@
-import { LiveKitRoom, VideoTrack, registerGlobals, useTracks } from '@livekit/react-native';
-import { Track } from 'livekit-client';
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { LiveKitRoom, registerGlobals, useTracks, VideoTrack } from '@livekit/react-native';
 import { isOk, type LabAccess } from '@mojo/shared/api-contract';
+import { Track } from 'livekit-client';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import type { HubClient } from '../api/client';
 
 try {
@@ -21,7 +21,11 @@ function TrackGrid() {
   return (
     <View>
       {tracks.map((trackRef) => (
-        <VideoTrack key={trackRef.participant.identity + trackRef.source} trackRef={trackRef} style={styles.video} />
+        <VideoTrack
+          key={trackRef.participant.identity + trackRef.source}
+          trackRef={trackRef}
+          style={styles.video}
+        />
       ))}
     </View>
   );

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { isOk } from '@mojo/shared/api-contract';
+import { useState } from 'react';
+import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import { HubClient } from '../api/client';
 import { saveSession } from '../auth/session';
 import type { AuthState } from '../navigation/types';
@@ -41,7 +41,12 @@ export function SignInScreen({ hubUrl, onHubUrlChange, onSignedIn, goSignUp }: P
     <View style={styles.container}>
       <Text style={styles.title}>Mojo</Text>
       <Text style={styles.label}>Hub URL</Text>
-      <TextInput style={styles.input} value={hubUrl} onChangeText={onHubUrlChange} autoCapitalize="none" />
+      <TextInput
+        style={styles.input}
+        value={hubUrl}
+        onChangeText={onHubUrlChange}
+        autoCapitalize="none"
+      />
       <Text style={styles.label}>Email</Text>
       <TextInput
         style={styles.input}

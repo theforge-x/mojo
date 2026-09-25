@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
 import { isOk, type SessionSummary } from '@mojo/shared/api-contract';
+import { useCallback, useEffect, useState } from 'react';
+import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
 import type { HubClient } from '../api/client';
 import { registerPushToken } from '../push/register';
 

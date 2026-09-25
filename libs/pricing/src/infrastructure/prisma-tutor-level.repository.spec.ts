@@ -27,7 +27,9 @@ function stubPrisma(sub: SubRow | null, seen: { args?: unknown }) {
 describe('PrismaTutorLevelReader Mojo+ rates', () => {
   it('returns the custom rate for an active subscription', async () => {
     const seen: { args?: unknown } = {};
-    const reader = new PrismaTutorLevelReader(stubPrisma({ status: 'active', customSegmentRateMinor: 1_000_000 }, seen));
+    const reader = new PrismaTutorLevelReader(
+      stubPrisma({ status: 'active', customSegmentRateMinor: 1_000_000 }, seen),
+    );
     await expect(reader.getCustomRateMinor('t_1')).resolves.toBe(1_000_000);
     await expect(reader.hasMojoPlus('t_1')).resolves.toBe(true);
     expect(seen.args).toEqual({ where: { tutorId: 't_1', status: 'active' } });

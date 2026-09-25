@@ -1,0 +1,33 @@
+# Local Postgres for the Mojo monorepo (matches DATABASE_URL in .env).
+#
+#   docker compose up -d postgres
+#   npm run prisma:migrate   # applies prisma/migrations
+#
+# Uses host port 8642 (not the default 5432) so it can run alongside other
+# local Postgres containers. Credentials mirror .env:
+#   postgresql://mojo:mojo-dev@localhost:8642/mojo
+#
+# NOTE: the volume `mojo-postgres-data` is dedicated to this repo — do not
+# point it at the `mojo-pgdata` volume, which belongs to another project.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: mojo-postgres-local
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mojo
+      POSTGRES_USER: mojo
+      POSTGRES_PASSWORD: mojo-dev
+    ports:
+      - '8642:5432'
+    volumes:
+      - mojo-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U mojo -d mojo']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mojo-postgres-data:

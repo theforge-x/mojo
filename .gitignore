@@ -7,6 +7,7 @@ coverage
 *.tsbuildinfo
 *.env
 *.env.local
+*.env.production
 prisma/dev.db
 
 docs/ai_sessions
@@ -25,4 +26,3 @@ npm-debug.*
 *.orig.*
 web-build/
 cache/
-

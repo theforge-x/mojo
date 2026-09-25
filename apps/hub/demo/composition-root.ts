@@ -64,10 +64,15 @@ import type {
 } from '@mojo/messaging/domain';
 import {
   makeCancelMojoPlus,
+  makeListOutreachLeads,
   makeSetCustomRate,
   makeSubscribeMojoPlus,
 } from '@mojo/mojo-plus/application';
-import type { MojoPlusRepository, MojoPlusSubscription } from '@mojo/mojo-plus/domain';
+import type {
+  MojoPlusRepository,
+  MojoPlusSubscription,
+  OutreachLead,
+} from '@mojo/mojo-plus/domain';
 import { makeDispatchNotification } from '@mojo/notifications/application';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
@@ -122,9 +127,9 @@ import {
   makeBookSession,
   makeCancelGroupLab,
   makeCancelSession,
+  makeConfirmSession,
   makeCreateGroupLab,
   makeLockGroupLab,
-  makeConfirmSession,
   makeRescheduleSession,
   makeSetAvailability,
   makeSetExceptions,
@@ -136,11 +141,11 @@ import type {
   AvailabilityException,
   AvailabilityRepository,
   AvailabilityRule,
+  GroupLab,
+  GroupLabRepository,
   ScheduledSession,
   SchedulingSettings,
   SessionRepository,
-  GroupLab,
-  GroupLabRepository,
 } from '@mojo/scheduling/domain';
 import type { Money } from '@mojo/shared/domain';
 import {
@@ -166,6 +171,7 @@ import type { PrismaClient } from '@prisma/client';
 import { sharedPrismaClient } from './prisma-client';
 import {
   EmailDispatcher,
+  ExpoPushDispatcher,
   PaystackCollectAdapter,
   PaystackPayoutRail,
   PrismaApplicationRepository,
@@ -173,6 +179,7 @@ import {
   PrismaBookingRepository,
   PrismaChargeRepository,
   PrismaDisputeRepository,
+  PrismaGroupLabRepository,
   PrismaInterestRepository,
   PrismaMessageRepository,
   PrismaMojoPlusRepository,
@@ -182,7 +189,6 @@ import {
   PrismaReferralRepository,
   PrismaReplacementGrantRepository,
   PrismaReviewRepository,
-  PrismaGroupLabRepository,
   PrismaSessionRepository,
   PrismaSubjectTaxonomyRepository,
   PrismaTutorLevelReader,
@@ -192,7 +198,6 @@ import {
   PrismaUserRepository,
   PrismaWalletRepository,
   summarizerFromEnv,
-  ExpoPushDispatcher,
   WhatsAppDispatcher,
 } from './prisma-repos';
 import {
@@ -202,6 +207,7 @@ import {
   InMemoryBookingRepository,
   InMemoryChargeRepository,
   InMemoryDisputeRepository,
+  InMemoryGroupLabRepository,
   InMemoryInterestRepository,
   InMemoryMessageRepository,
   InMemoryMojoPlusRepository,
@@ -211,7 +217,6 @@ import {
   InMemoryReferralRepository,
   InMemoryReplacementGrantRepository,
   InMemoryReviewRepository,
-  InMemoryGroupLabRepository,
   InMemorySessionRepository,
   InMemorySessionStore,
   InMemoryStudentPaymentMethodRepository,
@@ -350,6 +355,8 @@ export interface HubApp {
     subscribe(tutorId: string): Promise<void>;
     cancel(tutorId: string): Promise<void>;
     setCustomRate(tutorId: string, rateMinor: number): Promise<void>;
+    /** Tutor-outreach leads — throws unless the tutor holds active Mojo+. */
+    outreachLeads(tutorId: string): Promise<OutreachLead[]>;
   };
   billing: {
     quote(input: QuoteSessionChargeInput): Promise<ChargeQuote>;
@@ -725,6 +732,12 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
   const subscribeMojoPlus = makeSubscribeMojoPlus({ subscriptions: repos.mojoPlus });
   const cancelMojoPlus = makeCancelMojoPlus({ subscriptions: repos.mojoPlus });
   const setCustomRate = makeSetCustomRate({ subscriptions: repos.mojoPlus });
+  // Outreach leads live in the messaging store; the mojo-plus use-case gates
+  // reads behind the subscription (same rows unlock on activation).
+  const listOutreachLeads = makeListOutreachLeads({
+    subscriptions: repos.mojoPlus,
+    leads: { forTutor: (tutorId) => repos.interests.forTutor(tutorId) },
+  });
   const fileDispute = makeFileDispute({ disputes: repos.disputes });
   const autoConfirmDeliveries = makeAutoConfirmDeliveries({
     listAwaitingConfirmation: (endBeforeIso) =>
@@ -1046,7 +1059,11 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
     },
     groups: {
       create: (input) =>
-        createGroupLab({ ...input, groupId: crypto.randomUUID(), nowIso: new Date().toISOString() }),
+        createGroupLab({
+          ...input,
+          groupId: crypto.randomUUID(),
+          nowIso: new Date().toISOString(),
+        }),
       lab: (groupId) => repos.groups.findById(groupId),
       labsByTutor: (tutorId) => repos.groups.listByTutor(tutorId),
       openLabs: (tutorId) => repos.groups.listOpenByTutor(tutorId),
@@ -1062,10 +1079,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
         // sizes only grow toward the lock, so members can only have overpaid —
         // refund the difference, never collect more.
         const lockedSize = group.lockedSize ?? 0;
-        const perSegment = await chargeRateReader.groupPerSegmentMinor(
-          group.tutorId,
-          lockedSize,
-        );
+        const perSegment = await chargeRateReader.groupPerSegmentMinor(group.tutorId, lockedSize);
         const adjustments: { sessionId: string; studentId: string; refundedMinor: number }[] = [];
         for (const sessionId of memberSessionIds) {
           const [session, charge] = await Promise.all([
@@ -1157,6 +1171,7 @@ function buildApp(repos: Repositories, isDemoMode: boolean, state: DemoState): H
       subscribe: (tutorId) => subscribeMojoPlus(tutorId, new Date().toISOString()),
       cancel: (tutorId) => cancelMojoPlus(tutorId, new Date().toISOString()),
       setCustomRate: (tutorId, rateMinor) => setCustomRate(tutorId, rateMinor),
+      outreachLeads: (tutorId) => listOutreachLeads(tutorId),
     },
     billing: {
       quote: (input) => quoteSessionCharge(input),

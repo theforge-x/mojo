@@ -37,6 +37,7 @@
       "@mojo/mojo-plus/domain": ["libs/mojo-plus/src/domain/index.ts"],
       "@mojo/mojo-plus/application": ["libs/mojo-plus/src/application/index.ts"],
       "@mojo/mojo-plus/infrastructure": ["libs/mojo-plus/src/infrastructure/index.ts"],
+      "@mojo/mojo-plus/feature": ["libs/mojo-plus/src/feature/index.ts"],
       "@mojo/payments/domain": ["libs/payments/src/domain/index.ts"],
       "@mojo/payments/application": ["libs/payments/src/application/index.ts"],
       "@mojo/payments/infrastructure": ["libs/payments/src/infrastructure/index.ts"],

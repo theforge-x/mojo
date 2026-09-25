@@ -371,9 +371,7 @@ export function LandingPage({ data }: { data: LandingData }) {
                       className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium transition-colors hover:border-primary hover:bg-accent"
                     >
                       <Icon className="size-3.5" /> {subject.name}
-                      <span className="text-xs text-muted-foreground">
-                        · {subject.tutorCount}
-                      </span>
+                      <span className="text-xs text-muted-foreground">· {subject.tutorCount}</span>
                     </Link>
                   </li>
                 );
@@ -386,9 +384,8 @@ export function LandingPage({ data }: { data: LandingData }) {
               <AvatarStack tutors={tutors} />
               <Stars value={stats.averageRating} />
               <span>
-                <strong className="text-headline">{stats.averageRating.toFixed(1)}</strong>{' '}
-                average across {stats.reviewCount} reviews · {stats.completedSessions} lessons
-                taught
+                <strong className="text-headline">{stats.averageRating.toFixed(1)}</strong> average
+                across {stats.reviewCount} reviews · {stats.completedSessions} lessons taught
               </span>
             </div>
           )}
@@ -429,7 +426,10 @@ export function LandingPage({ data }: { data: LandingData }) {
           </h2>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {testimonials.map((t) => (
-              <figure key={`${t.studentName}-${t.tutorName}`} className="rounded-lg border border-border bg-card p-6">
+              <figure
+                key={`${t.studentName}-${t.tutorName}`}
+                className="rounded-lg border border-border bg-card p-6"
+              >
                 <Stars value={t.rating} />
                 <blockquote className="mt-3 text-sm leading-relaxed text-foreground">
                   “{t.quote}”

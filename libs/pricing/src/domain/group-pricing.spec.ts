@@ -40,8 +40,8 @@ describe('groupPerSegmentMinor', () => {
   });
 
   it('never prices below the currency floor', () => {
-    expect(groupPerSegmentMinor(600_000, 'NGN', 10_000)).toBe(GROUP_FLOOR_MINOR['NGN']);
-    expect(groupPerSegmentMinor(100, 'USD', 10_000)).toBe(GROUP_FLOOR_MINOR['USD']);
+    expect(groupPerSegmentMinor(600_000, 'NGN', 10_000)).toBe(GROUP_FLOOR_MINOR.NGN);
+    expect(groupPerSegmentMinor(100, 'USD', 10_000)).toBe(GROUP_FLOOR_MINOR.USD);
   });
 });
 

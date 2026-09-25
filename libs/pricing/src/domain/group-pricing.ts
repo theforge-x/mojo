@@ -23,7 +23,7 @@ export function groupDiscountSteps(groupSize: number): number {
 }
 
 export function groupPriceMultiplier(groupSize: number): number {
-  return Math.pow(1 - GROUP_DISCOUNT_PERCENT / 100, groupDiscountSteps(groupSize));
+  return (1 - GROUP_DISCOUNT_PERCENT / 100) ** groupDiscountSteps(groupSize);
 }
 
 /** Per-student per-segment price in minor units, floored by currency. */

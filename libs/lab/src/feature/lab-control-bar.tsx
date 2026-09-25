@@ -24,7 +24,9 @@ import { useState } from 'react';
 import { REACTION_CHOICES, useLabReactions } from './lab-reactions';
 import {
   DEFAULT_VIDEO_RESOLUTION_ID,
+  isResolutionAllowed,
   LabSettingsPanel,
+  videoPublishOptions,
   videoResolution,
 } from './lab-settings-panel';
 
@@ -39,6 +41,8 @@ export interface LabControlBarProps {
   onLeave: () => void;
   aspectRatioId: string;
   onAspectRatioChange: (id: string) => void;
+  /** Paid-plan entitlement — unlocks 1440p+ when the pricing model lands. */
+  hasPlus?: boolean;
 }
 
 /**
@@ -58,6 +62,7 @@ export function LabControlBar({
   onLeave,
   aspectRatioId,
   onAspectRatioChange,
+  hasPlus = false,
 }: LabControlBarProps) {
   const { isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled, localParticipant } =
     useLocalParticipant();
@@ -66,12 +71,16 @@ export function LabControlBar({
   const [videoResolutionId, setVideoResolutionId] = useState<string>(DEFAULT_VIDEO_RESOLUTION_ID);
 
   const applyResolution = (id: string) => {
+    // Free tier caps at 1080p — premium rungs stay locked until hasPlus.
+    if (!isResolutionAllowed(id, { hasPlus })) return;
     setVideoResolutionId(id);
     const captureOptions = videoResolution(id);
-    // Re-publish with the new resolution straight away when the camera is
-    // already on; otherwise the next time it's enabled TrackToggle applies it.
+    const publishOptions = videoPublishOptions(id);
+    // Re-publish with the new capture + encoding straight away when the
+    // camera is already on; otherwise the next time it's enabled TrackToggle
+    // applies them.
     if (captureOptions && isCameraEnabled) {
-      void localParticipant?.setCameraEnabled(true, captureOptions).catch(() => {});
+      void localParticipant?.setCameraEnabled(true, captureOptions, publishOptions).catch(() => {});
     }
   };
 
@@ -83,6 +92,7 @@ export function LabControlBar({
           onResolutionChange={applyResolution}
           aspectRatioId={aspectRatioId}
           onAspectRatioChange={onAspectRatioChange}
+          hasPlus={hasPlus}
         />
       )}
 
@@ -100,6 +110,7 @@ export function LabControlBar({
             source={Track.Source.Camera}
             showIcon={false}
             captureOptions={videoResolution(videoResolutionId)}
+            publishOptions={videoPublishOptions(videoResolutionId)}
             className={iconBtn()}
           >
             {isCameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}
